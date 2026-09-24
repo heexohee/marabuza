@@ -17,7 +17,7 @@ export const SHELF_EXTRAS = [
   ...SKEWER_ITEMS.map((sk) => ({
     id: sk.id, kind: 'skewer', name: `${sk.name} 꼬치`, emoji: sk.emoji,
     packCost: SKEWER_PACK_COST[sk.id], startStock: SKEWER_START_STOCK,
-    desc: `${sk.name} ${sk.unitsPerSkewer}개가 꽂힌 꼬치! 계산할 땐 꼬치 1개로 세요`,
+    desc: `${sk.name} 꼬치! 꼬치 1개당 1,000원이에요`,
   })),
   { id: 'cilantro', kind: 'cilantro', name: '고수', emoji: '🌿', packCost: 2000, startStock: 20, desc: '향긋한 고수 한 줌! 호불호가 갈려요' },
 ]

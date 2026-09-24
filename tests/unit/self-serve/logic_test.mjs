@@ -1,7 +1,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  buyPack, buyUpgrade, createNewGame, generateWish, hiddenItems, setPrice, startDay, tick, unlockIngredient,
+  buyPack, buyUpgrade, createNewGame, generateWish, hiddenItemLabel, hiddenItems, setPrice, startDay, tick, unlockIngredient,
 } from '../../../src/js/self-serve/logic.js'
 import { DAY_LENGTH_SEC, PACK_SIZE, PRICE } from '../../../src/js/data.js'
 import { START_WAREHOUSE_STOCK } from '../../../src/js/self-serve/data.js'
@@ -22,6 +22,13 @@ test('generateWish picks distinct unlocked ingredients with valid quantities', (
   assert.ok(ids.length >= 3 && ids.length <= 4)
   assert.ok(ids.every((id) => unlocked.includes(id)))
   assert.ok(Object.values(wish).every((q) => q >= 1 && q <= 2))
+})
+
+test('test_hidden_item_label_counts_skewers_not_pieces', () => {
+  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_shrimp', count: 2 }), '새우 꼬치 ×2')
+  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_fishcake_deluxe', count: 1 }), '고급 어묵 꼬치 ×1')
+  assert.equal(hiddenItemLabel({ kind: 'meat', id: 'beef', count: 2 }), '소고기 ×2')
+  assert.equal(hiddenItemLabel({ kind: 'meat', id: 'lamb', count: 1 }), '양고기 ×1')
 })
 
 test('hiddenItems lists nothing for a vegetable-only bowl', () => {

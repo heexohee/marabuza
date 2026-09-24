@@ -103,6 +103,9 @@ export function hiddenItems(bowl) {
   ]
 }
 
+/** Counter label for a dug-out item, always in charge units: "새우 꼬치 ×2", "소고기 ×2". */
+export const hiddenItemLabel = (item) => `${SHELF_ITEM_BY_ID[item.id].name} ×${item.count}`
+
 /** Register numbers for the front customer: POS base (ticket mode), charged, and the correct price (real mode). */
 export function counterPrice(s) {
   const c = frontCustomer(s)

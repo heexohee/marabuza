@@ -2,7 +2,7 @@
 // bars (patience, cooking, freshness, busy) update every frame.
 // Reuses the shared sprites, CSS classes and shop screen; never edits them.
 import {
-  CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS, INGREDIENT_BY_ID, PACK_SIZE, SKEWER_ITEM_BY_ID,
+  CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS, INGREDIENT_BY_ID, PACK_SIZE,
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
@@ -10,7 +10,9 @@ import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, WILT_SEC,
 } from './data.js'
-import { checkoutBowlWeight, counterPrice, frontCustomer, hiddenItems, isClosing, meatCount } from './logic.js'
+import {
+  checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, meatCount,
+} from './logic.js'
 import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
 import { shelfQty } from './shelf.js'
 
@@ -147,15 +149,9 @@ function queueHtml(s) {
       <i class="q-bar"><b data-bar="queue-${c.id}"></b></i></span>`).join('') || '<span class="hint">줄이 비었어요</span>'}</div>`
 }
 
-function foundChip(item) {
-  if (item.kind === 'meat') {
-    const ing = INGREDIENT_BY_ID[item.id]
-    return `<span class="chip found">${spriteImg(ing.emoji, 16, 'chip-img')}${ing.name}${item.count > 1 ? ` ×${item.count}` : ''}</span>`
-  }
-  const sk = SKEWER_ITEM_BY_ID[item.id]
-  // Shows pieces, not skewers: the owner works out 새우 2마리 = 꼬치 1개.
-  return `<span class="chip found">${spriteImg(sk.emoji, 16, 'chip-img')}${sk.name} ${item.count * sk.unitsPerSkewer}개</span>`
-}
+/** A dug-out meat or skewer, labelled in the unit it is charged in (every skewer kind = 1,000원 each). */
+const foundChip = (item) =>
+  `<span class="chip found">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${hiddenItemLabel(item)}</span>`
 
 function counterHtml(s) {
   const c = frontCustomer(s)
