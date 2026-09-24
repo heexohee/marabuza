@@ -1,12 +1,12 @@
 // Regression: the warehouse used to run dry early on day 1 (start stock 10, 5 of it
 // shelved at opening, one restock empties the rest). A scripted owner plays day 1 and
-// the starter ingredients must still have warehouse stock at closing time.
+// no shelf item (ingredients, skewers, cilantro) may be left unrefillable before closing.
 // design/quick-specs/self-serve-restock-flow-2026-09-24.md §A
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
   adjustCharge, confirmCharge, counterPrice, createNewGame, frontCustomer, pickPot, restock, serveTable,
-  setTicketMode, setTicketSpice, startCooking, startDay, tick,
+  setTicketMode, setTicketSpice, shelfIds, startCooking, startDay, tick,
 } from '../../../src/js/self-serve/logic.js'
 import { shelfQty } from '../../../src/js/self-serve/shelf.js'
 import { DAY_LENGTH_SEC } from '../../../src/js/data.js'
@@ -33,7 +33,7 @@ function ownerStep(s) {
   }
   const donePot = s.pots.findIndex((p) => p && p.remaining <= 0)
   if (donePot >= 0) return pickPot(s, donePot)
-  const low = s.unlocked.find((id) => shelfQty(s.shelf, id) <= RESTOCK_BELOW && s.stock[id] > 0)
+  const low = shelfIds(s).find((id) => shelfQty(s.shelf, id) <= RESTOCK_BELOW && s.stock[id] > 0)
   if (low) return restock(s, low)
   if (s.rail.length > 0 && s.pots.includes(null)) return startCooking(s, s.rail[0].ticketNo)
   const c = frontCustomer(s)
@@ -44,7 +44,7 @@ function ownerStep(s) {
 }
 
 /** "Dry" = a shelf slot needs topping up but the warehouse has nothing left to bring. */
-const dryIds = (s) => s.unlocked.filter((id) => shelfQty(s.shelf, id) <= RESTOCK_BELOW && s.stock[id] <= 0)
+const dryIds = (s) => shelfIds(s).filter((id) => shelfQty(s.shelf, id) <= RESTOCK_BELOW && s.stock[id] <= 0)
 
 /** Plays the open hours; returns the final state and the first moment a slot could not be refilled. */
 function playOpenHours(s, rng) {

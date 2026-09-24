@@ -1,9 +1,10 @@
-// Full-screen / modal HTML specific to the self-serve variant: title, help, end-of-day summary.
-// The shop screen is shared with the original flow (../screens.js).
-import { CUSTOMER_FACES } from '../data.js'
+// Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
+// The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
+import { CUSTOMER_FACES, INGREDIENTS, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
-import { BOX_SIZE, WILT_SEC } from './data.js'
+import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, WILT_SEC } from './data.js'
+import { demandFactor, upgradeCost } from './logic.js'
 
 /** Title screen, with a link back to the original flow for side-by-side playtests. */
 export function menuHtml(view) {
@@ -35,8 +36,9 @@ export function helpHtml() {
         <li>손님 말대로 <b>주문표</b>에 조리 방식(마라탕/샹궈)과 맵기를 적어요. 조리 방식에 따라 저울 단가가 바뀌어요.</li>
         <li>저울 금액에 <b>소고기 3,000 / 양고기 4,000 / 꼬치·고수 1,000</b>을 더해 <b>선결제</b>(Enter). 새우는 2마리 = 꼬치 1개!</li>
         <li>결제하면 <b>번호표</b>를 받고 테이블에 앉아요. 주문표를 눌러 냄비에 넣고, 완성되면 냄비를 집어 <b>같은 번호 테이블</b>에 서빙!</li>
-        <li>틈틈이 진열대 칸을 눌러 창고에서 <b>${BOX_SIZE}개씩 보충</b>하세요. 보충하는 동안은 손이 묶여요.</li>
-        <li>채소·버섯은 진열대에 <b>${WILT_SEC}초</b> 넘게 두면 시들어 버려요. 너무 많이 채우지 마세요!</li>
+        <li>틈틈이 진열대 칸을 눌러 창고에서 <b>${BOX_SIZE}개씩 보충</b>하세요. 꼬치·고수도 진열대에 있어요. 보충하는 동안은 손이 묶여요.</li>
+        <li>채소·버섯·고수는 진열대에 <b>${WILT_SEC}초</b> 넘게 두면 시들어 버려요. 너무 많이 채우지 마세요!</li>
+        <li>창고가 비면 마감 후 <b>상점</b>에서 재료·꼬치·고수를 발주하세요.</li>
       </ol>
       <button class="btn big" data-action="closeHelp">알겠어요!</button>
     </div></div>`
@@ -64,4 +66,84 @@ export function summaryHtml(s) {
       </table>
       <button class="btn big" data-action="toShop">상점으로 →</button>
     </div></div>`
+}
+
+// ---------- shop ----------
+
+/** Warehouse item card: unlock (ingredients only) or buy PACK_SIZE units. */
+function stockCard(s, item) {
+  const isLocked = item.unlockCost > 0 && !s.unlocked.includes(item.id)
+  const action = isLocked
+    ? `<button class="btn buy" data-action="unlock" data-arg="${item.id}" ${s.money < item.unlockCost ? 'disabled' : ''}><span>🔓 해금</span><span>${won(item.unlockCost)}</span></button>`
+    : `<button class="btn buy" data-action="buy" data-arg="${item.id}" ${s.money < item.packCost ? 'disabled' : ''}><span>+${PACK_SIZE}개</span><span>${won(item.packCost)}</span></button>`
+  const sub = isLocked ? '신메뉴' : `창고 ${s.stock[item.id] ?? 0}개`
+  const tag = item.grams ? `${item.grams}g` : item.kind === 'skewer' ? '꼬치' : '토핑'
+  return `
+    <div class="card ing-card ${isLocked ? 'locked' : ''}">
+      <div class="card-art">${spriteImg(item.emoji, 16, 'card-img')}</div>
+      <div class="card-name">${item.name}</div>
+      <div class="card-sub">${sub} · ${tag}${PERISHABLE_IDS.has(item.id) ? ' · ⏳' : ''}</div>
+      ${action}
+    </div>`
+}
+
+function upgradeCard(s, u) {
+  const level = s.upgrades[u.id] - u.start
+  const cost = upgradeCost(s, u.id)
+  const pips = u.costs.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('')
+  const btn = cost === null
+    ? '<button class="btn buy" disabled>MAX</button>'
+    : `<button class="btn buy" data-action="upgrade" data-arg="${u.id}" ${s.money < cost ? 'disabled' : ''}>${won(cost)}</button>`
+  return `
+    <div class="card up-card">
+      <div class="card-art big">${spriteImg(u.emoji, 20, 'card-img')}</div>
+      <div class="card-name">${u.name}</div>
+      <div class="card-desc">${u.desc}</div>
+      <div class="pips">${pips}</div>
+      ${btn}
+    </div>`
+}
+
+function priceBox(s) {
+  const demand = demandFactor(s.pricePer100g)
+  const mood = demand >= 1.15 ? '손님 폭주! 💨' : demand >= 0.9 ? '적당해요 🙂' : demand >= 0.7 ? '조금 비싸요 😕' : '너무 비싸요 😱'
+  return `
+    <div class="price-box">
+      <div class="price-title">100g당 가격</div>
+      <div class="price-row">
+        <button class="btn round" data-action="price" data-arg="-${PRICE.step}" ${s.pricePer100g <= PRICE.min ? 'disabled' : ''}>−</button>
+        <span class="price-value">${won(s.pricePer100g)}</span>
+        <button class="btn round" data-action="price" data-arg="${PRICE.step}" ${s.pricePer100g >= PRICE.max ? 'disabled' : ''}>+</button>
+      </div>
+      <div class="price-hint">손님 방문 ×${demand.toFixed(2)} · ${mood}</div>
+    </div>`
+}
+
+/** Between-days shop: upgrades, ingredient orders and skewer/cilantro orders into the warehouse. */
+export function shopHtml(s) {
+  const toasts = s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join('')
+  return `
+    <div class="shop-screen">
+      <header class="shop-head">
+        <h1 class="title-logo small">마라부자 <span>: 상점 · 셀프 담기</span></h1>
+        <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>
+      </header>
+      <section class="shop-section">
+        <h2>가게 업그레이드</h2>
+        <div class="cards">${UPGRADES.map((u) => upgradeCard(s, u)).join('')}${priceBox(s)}</div>
+      </section>
+      <section class="shop-section orange">
+        <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
+        <div class="cards ing">${INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>
+      </section>
+      <section class="shop-section orange">
+        <h2>꼬치 · 고수 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
+        <div class="cards ing">${SHELF_EXTRAS.map((i) => stockCard(s, i)).join('')}</div>
+      </section>
+      <footer class="shop-foot">
+        <button class="bubble-btn alt2" data-action="menu">타이틀</button>
+        <button class="bubble-btn" data-action="nextDay">DAY ${s.day + 1} 영업 시작!</button>
+      </footer>
+      <div class="toasts shop-toasts">${toasts}</div>
+    </div>`
 }

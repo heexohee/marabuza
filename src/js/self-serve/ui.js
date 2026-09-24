@@ -5,12 +5,13 @@ import {
   CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS, INGREDIENT_BY_ID, PACK_SIZE, SKEWER_ITEM_BY_ID,
   SPICE_LEVELS,
 } from '../data.js'
-import { shopHtml } from '../screens.js'
 import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
-import { PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, WILT_SEC } from './data.js'
+import {
+  EXTRA_IDS, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, WILT_SEC,
+} from './data.js'
 import { checkoutBowlWeight, counterPrice, frontCustomer, hiddenItems, isClosing, meatCount } from './logic.js'
-import { helpHtml, menuHtml, summaryHtml } from './screens.js'
+import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
 import { shelfQty } from './shelf.js'
 
 const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
@@ -200,9 +201,13 @@ const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringif
 
 // ---------- shelf ----------
 
+// Every shelf slot in display order: ingredients first, then skewers and cilantro.
+const SHELF_SLOTS = [...INGREDIENTS, ...SHELF_EXTRAS]
+const isSlotLocked = (s, id) => !EXTRA_IDS.includes(id) && !s.unlocked.includes(id)
+
 function shelfHtml(s, view) {
-  return INGREDIENTS.map((ing) => {
-    const isLocked = !s.unlocked.includes(ing.id)
+  return SHELF_SLOTS.map((ing) => {
+    const isLocked = isSlotLocked(s, ing.id)
     const qty = shelfQty(s.shelf, ing.id)
     const cls = [isLocked && 'locked', !isLocked && qty === 0 && 'out', !isLocked && qty > 0 && qty <= LOW_SHELF && 'low', view.hover === ing.id && 'hover']
       .filter(Boolean).join(' ')
@@ -219,16 +224,23 @@ function shelfHtml(s, view) {
 }
 
 const shelfKey = (s, view) =>
-  `${INGREDIENTS.map((i) => shelfQty(s.shelf, i.id)).join(',')}|${JSON.stringify(s.stock)}|${s.unlocked}|${view.hover}`
+  `${SHELF_SLOTS.map((i) => shelfQty(s.shelf, i.id)).join(',')}|${JSON.stringify(s.stock)}|${s.unlocked}|${view.hover}`
+
+/** Price hint for the hovered shelf item: weighed scoop, meat surcharge, skewer or cilantro. */
+function priceLineFor(item) {
+  if (item.kind === 'skewer') return `꼬치 1개 ${won(CHECKOUT_PRICE.skewerPrice)} (무게 제외)`
+  if (item.kind === 'cilantro') return `고수 ${won(CHECKOUT_PRICE.cilantroSurcharge)} (무게 제외)`
+  const meat = { beef: CHECKOUT_PRICE.beefSurcharge, lamb: CHECKOUT_PRICE.lambSurcharge }[item.id]
+  return meat ? `고기 추가 ${won(meat)} (무게 제외)` : `1스쿱 ${item.grams}g`
+}
 
 function infoHtml(s, view) {
-  const ing = INGREDIENT_BY_ID[view.hover]
+  const ing = SHELF_ITEM_BY_ID[view.hover]
   if (!ing) {
     return '<p><b>사장님, 영업 시작!</b> 손님이 담아 온 그릇을 <b>뒤적여</b> 확인하고, 주문표를 적고 <b>선결제</b>를 받으세요.<br>진열대가 비면 손님이 투덜대고, 너무 채우면 채소가 시들어요.</p>'
   }
-  const isLocked = !s.unlocked.includes(ing.id)
-  const meat = { beef: CHECKOUT_PRICE.beefSurcharge, lamb: CHECKOUT_PRICE.lambSurcharge }[ing.id]
-  const priceLine = meat ? `고기 추가 ${won(meat)} (무게 제외)` : `1스쿱 ${ing.grams}g`
+  const isLocked = isSlotLocked(s, ing.id)
+  const priceLine = priceLineFor(ing)
   const freshLine = PERISHABLE_IDS.has(ing.id) ? ` · ⏳ 진열 ${WILT_SEC}초 후 시듦` : ''
   return `<p><b>${ing.desc}</b></p>
     <p>${priceLine}${freshLine}</p>

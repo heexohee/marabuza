@@ -53,10 +53,11 @@ export const closeShelf = (stock, shelf) =>
 
 /**
  * A customer scoops their wish list from the shelf (FIFO). Units that were sold
- * out are replaced one by one with random other ingredients still on the shelf.
+ * out are replaced one by one with random other ingredients still on the shelf,
+ * chosen only from `substitutes` (defaults to every shelf id).
  * `missing` lists wished ingredients the customer got none of.
  */
-export function fillBowl(shelf, wish, rng) {
+export function fillBowl(shelf, wish, rng, substitutes = Object.keys(shelf)) {
   let cur = shelf
   let deficit = 0
   const items = {}
@@ -70,7 +71,7 @@ export function fillBowl(shelf, wish, rng) {
     else missing.push(id)
   }
   for (; deficit > 0; deficit -= 1) {
-    const available = Object.keys(cur).filter((id) => shelfQty(cur, id) > 0)
+    const available = substitutes.filter((id) => shelfQty(cur, id) > 0)
     if (available.length === 0) break
     const id = available[Math.floor(rng() * available.length)]
     cur = takeFromShelf(cur, id, 1).shelf

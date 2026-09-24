@@ -5,7 +5,7 @@
 // Lives beside the original flow (../logic.js) so both can be played and compared.
 // Pricing, shop and timing helpers are shared by import — never duplicated or modified here.
 import {
-  CHECKOUT_PRICE, CUSTOMER_FACES, INGREDIENTS, INGREDIENT_BY_ID, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
+  CHECKOUT_PRICE, CUSTOMER_FACES, INGREDIENTS, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
   PRICE, SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
 } from '../data.js'
 import {
@@ -13,14 +13,14 @@ import {
   maxPatience, round100, spawnInterval, toCheckoutBowl,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DIG_BUSY_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, RESTOCK_BUSY_SEC,
-  SHANGUO_CHANCE, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  CILANTRO_CHANCE, DIG_BUSY_SEC, EXTRA_IDS, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
 } from './data.js'
-import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf } from './shelf.js'
+import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 export {
-  addToast, buyPack, buyUpgrade, checkoutBowlWeight, cookTime, demandFactor, fadeToasts, isClosing, openShop,
+  addToast, buyUpgrade, checkoutBowlWeight, cookTime, demandFactor, fadeToasts, isClosing, openShop,
   setPrice, unlockIngredient, upgradeCost,
 } from '../logic.js'
 
@@ -53,7 +53,10 @@ export function createNewGame() {
     money: START_MONEY,
     rating: START_RATING,
     pricePer100g: PRICE.base,
-    stock: Object.fromEntries(INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
+    stock: {
+      ...Object.fromEntries(INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
+      ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i.startStock])),
+    },
     unlocked: starters,
     upgrades: Object.fromEntries(UPGRADES.map((u) => [u.id, u.start])),
     toasts: [],
@@ -84,6 +87,9 @@ function emptyDay(potCount, seatCount) {
 
 /** The customer currently at the counter, or null. */
 export const frontCustomer = (s) => s.queue[0] ?? null
+
+/** Everything that lives on the shelf today: unlocked ingredients plus skewers and cilantro. */
+export const shelfIds = (s) => [...s.unlocked, ...EXTRA_IDS]
 
 /** Meat portions in a checkout bowl (the shared shape allows a flag or a portion count). */
 export const meatCount = (bowl, id) => Number(bowl[id] ?? 0)
@@ -128,7 +134,7 @@ function whenFree(s, action) {
 /** Opens the shop for the day: fresh day state plus one box of every unlocked ingredient on the shelf. */
 export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
-  return { ...s, phase: 'day', ...day, ...openShelf(s.stock, s.unlocked) }
+  return { ...s, phase: 'day', ...day, ...openShelf(s.stock, shelfIds(s)) }
 }
 export const startNextDay = (s) => startDay({ ...s, day: s.day + 1 })
 
@@ -142,22 +148,40 @@ export function generateWish(unlocked, rng) {
   }))
 }
 
-function pickSkewers(rng) {
-  if (rng() >= SKEWER_CHANCE) return {}
-  const picks = Array.from({ length: randInt(rng, 1, MAX_SKEWERS) },
+/**
+ * The customer takes 1..MAX_SKEWERS skewer sticks from the shelf (maybe). A stick of a
+ * sold-out kind is simply not taken and that kind is reported as missing.
+ */
+function takeSkewers(shelf, rng) {
+  if (rng() >= SKEWER_CHANCE) return { shelf, skewers: {}, missing: [] }
+  const wanted = Array.from({ length: randInt(rng, 1, MAX_SKEWERS) },
     () => SKEWER_ITEMS[randInt(rng, 0, SKEWER_ITEMS.length - 1)].id)
-  return picks.reduce((acc, id) => ({ ...acc, [id]: (acc[id] ?? 0) + 1 }), {})
+  return wanted.reduce((acc, id) => {
+    const r = takeFromShelf(acc.shelf, id, 1)
+    if (r.taken === 0) return { ...acc, missing: acc.missing.includes(id) ? acc.missing : [...acc.missing, id] }
+    return { ...acc, shelf: r.shelf, skewers: { ...acc.skewers, [id]: (acc.skewers[id] ?? 0) + 1 } }
+  }, { shelf, skewers: {}, missing: [] })
+}
+
+/** The customer adds a handful of cilantro from the shelf (maybe), if there is any left. */
+function takeCilantro(shelf, rng) {
+  if (rng() >= CILANTRO_CHANCE) return { shelf, cilantro: false, missing: [] }
+  const r = takeFromShelf(shelf, 'cilantro', 1)
+  return r.taken > 0 ? { shelf: r.shelf, cilantro: true, missing: [] } : { shelf, cilantro: false, missing: ['cilantro'] }
 }
 
 /** A customer arrives, fills a bowl from the shelf, and joins the counter queue (or walks out). */
 export function spawnCustomer(s, rng) {
   const id = s.nextCustomerId
   const next = { ...s, nextCustomerId: id + 1 }
-  const filled = fillBowl(s.shelf, generateWish(s.unlocked, rng), rng)
+  const filled = fillBowl(s.shelf, generateWish(s.unlocked, rng), rng, s.unlocked)
   if (filled.total < MIN_BOWL_ITEMS) {
     const left = withRating(withStat(next, 'left', 1), RATING_DELTA.stockoutLeave)
     return addToast(left, '"담을 게 없네…" 손님이 그냥 나갔어요 🚪', 'bad')
   }
+  const skewered = takeSkewers(filled.shelf, rng)
+  const topped = takeCilantro(skewered.shelf, rng)
+  const missing = [...filled.missing, ...skewered.missing, ...topped.missing]
   const mode = rng() < SHANGUO_CHANCE ? 'shanguo' : 'maratang'
   const patience = maxPatience(s)
   const customer = {
@@ -165,19 +189,15 @@ export function spawnCustomer(s, rng) {
     face: CUSTOMER_FACES[randInt(rng, 0, CUSTOMER_FACES.length - 1)],
     mode,
     spice: randInt(rng, 0, SPICE_LEVELS.length - 1),
-    missing: filled.missing,
-    bowl: {
-      ...toCheckoutBowl({ items: filled.items }, mode),
-      skewers: pickSkewers(rng),
-      cilantro: rng() < CILANTRO_CHANCE,
-    },
+    missing,
+    bowl: { ...toCheckoutBowl({ items: filled.items }, mode), skewers: skewered.skewers, cilantro: topped.cilantro },
     patience,
     maxPatience: patience,
   }
-  const queued = syncCounter({ ...next, shelf: filled.shelf, queue: [...s.queue, customer] })
-  if (filled.missing.length === 0) return queued
-  const names = filled.missing.map((m) => INGREDIENT_BY_ID[m].name).join(', ')
-  return addToast(withRating(queued, RATING_DELTA.grumble * filled.missing.length), `"${names} 없네…" 😕`, 'bad')
+  const queued = syncCounter({ ...next, shelf: topped.shelf, queue: [...s.queue, customer] })
+  if (missing.length === 0) return queued
+  const names = missing.map((m) => SHELF_ITEM_BY_ID[m].name).join(', ')
+  return addToast(withRating(queued, RATING_DELTA.grumble * missing.length), `"${names} 없네…" 😕`, 'bad')
 }
 
 function advanceSpawn(s, dt, rng) {
@@ -193,8 +213,8 @@ function wiltShelf(s, dt) {
   const entries = Object.entries(wilted)
   if (entries.length === 0) return { ...s, shelf }
   const count = sum(entries.map(([, q]) => q))
-  const cost = Math.round(sum(entries.map(([id, q]) => (q * INGREDIENT_BY_ID[id].packCost) / PACK_SIZE)))
-  const names = entries.map(([id, q]) => `${INGREDIENT_BY_ID[id].name} ${q}개`).join(', ')
+  const cost = Math.round(sum(entries.map(([id, q]) => (q * SHELF_ITEM_BY_ID[id].packCost) / PACK_SIZE)))
+  const names = entries.map(([id, q]) => `${SHELF_ITEM_BY_ID[id].name} ${q}개`).join(', ')
   const wasted = withStat(withStat({ ...s, shelf }, 'wasted', count), 'wasteCost', cost)
   return addToast(wasted, `🥀 ${names}가 시들어 버렸어요`, 'bad')
 }
@@ -250,14 +270,29 @@ export function tick(s, dt, rng = Math.random) {
 
 /** Owner carries one box from the warehouse to a shelf slot (keeps them busy for a moment). */
 export function restock(s, id) {
-  if (!s.unlocked.includes(id)) return s
+  if (!shelfIds(s).includes(id)) return s
   return whenFree(s, (free) => {
     const r = restockShelf(free.stock, free.shelf, id)
     if (r.moved > 0) return { ...free, stock: r.stock, shelf: r.shelf, busy: RESTOCK_BUSY_SEC }
-    const name = INGREDIENT_BY_ID[id].name
+    const name = SHELF_ITEM_BY_ID[id].name
     const reason = (free.stock[id] ?? 0) <= 0 ? `창고에 ${name} 재고가 없어요! 마감 후 상점에서 사세요` : `${name} 칸이 꽉 찼어요`
     return addToast(free, reason, 'bad')
   })
+}
+
+// ---------- shop ----------
+
+/**
+ * Buys PACK_SIZE units into the warehouse. Unlike the shared buyPack this also sells skewers
+ * and cilantro; ingredients still need to be unlocked first.
+ */
+export function buyPack(s, id) {
+  const item = SHELF_ITEM_BY_ID[id]
+  const isBuyable = item && (EXTRA_IDS.includes(id) || s.unlocked.includes(id))
+  if (!isBuyable) return s
+  if (s.money < item.packCost) return addToast(s, '돈이 부족해요 💸', 'bad')
+  const bought = { ...s, money: s.money - item.packCost, stock: { ...s.stock, [id]: (s.stock[id] ?? 0) + PACK_SIZE } }
+  return addToast(bought, `${item.name} ${PACK_SIZE}개 창고 입고`, 'good')
 }
 
 // ---------- counter ----------

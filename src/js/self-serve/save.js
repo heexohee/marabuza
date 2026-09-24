@@ -1,10 +1,30 @@
 // localStorage persistence for the self-serve variant, in its own slot so it never
-// touches the original flow's save. Validation is shared with ../save.js.
-import { isValidSave } from '../save.js'
+// touches the original flow's save. Only the between-days progress is saved.
+// Has its own validator: the warehouse here also holds skewer/cilantro stock, which the
+// original flow's validator (../save.js) does not know about.
+import { INGREDIENT_BY_ID, MAX_RATING, PRICE, UPGRADE_BY_ID } from '../data.js'
+import { SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
 import { createNewGame } from './logic.js'
-import { SAVE_KEY } from './data.js'
 
-const SAVE_VERSION = 1 // same between-days shape as ../save.js, so isValidSave applies
+const SAVE_VERSION = 1
+
+const isNonNegInt = (v) => Number.isInteger(v) && v >= 0
+const isNumberMap = (obj, validKeys, check) =>
+  obj !== null && typeof obj === 'object' &&
+  Object.entries(obj).every(([k, v]) => validKeys[k] !== undefined && check(v))
+
+/** Validates untrusted save data; true only for a well-formed v1 self-serve save. */
+export function isValidSave(d) {
+  return d !== null && typeof d === 'object' &&
+    d.version === SAVE_VERSION &&
+    Number.isInteger(d.day) && d.day >= 1 &&
+    isNonNegInt(d.money) &&
+    typeof d.rating === 'number' && d.rating >= 0 && d.rating <= MAX_RATING &&
+    Number.isInteger(d.pricePer100g) && d.pricePer100g >= PRICE.min && d.pricePer100g <= PRICE.max &&
+    isNumberMap(d.stock, SHELF_ITEM_BY_ID, isNonNegInt) &&
+    Array.isArray(d.unlocked) && d.unlocked.every((id) => INGREDIENT_BY_ID[id] !== undefined) &&
+    isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt)
+}
 
 /** Saves between-days progress; returns false when storage is unavailable. */
 export function saveGame(s) {

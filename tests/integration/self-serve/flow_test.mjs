@@ -7,7 +7,7 @@ import {
   serveTable, setTicketMode, setTicketSpice, spawnCustomer, startCooking, startDay, tick,
 } from '../../../src/js/self-serve/logic.js'
 import { shelfQty } from '../../../src/js/self-serve/shelf.js'
-import { CHECKOUT_PRICE, DAY_LENGTH_SEC } from '../../../src/js/data.js'
+import { CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS } from '../../../src/js/data.js'
 import { BOX_SIZE, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, RESTOCK_BUSY_SEC, WILT_SEC } from '../../../src/js/self-serve/data.js'
 
 const constant = (v) => () => v
@@ -42,12 +42,13 @@ test('test_flow_start_day_stocks_the_shelf_from_the_warehouse', () => {
 
 test('test_flow_spawned_customer_carries_a_bowl_filled_from_the_shelf', () => {
   const s = startDay(createNewGame())
-  const before = Object.keys(s.shelf).reduce((n, id) => n + shelfQty(s.shelf, id), 0)
+  const weighedOnShelf = (st) => INGREDIENTS.reduce((n, i) => n + shelfQty(st.shelf, i.id), 0)
+  const before = weighedOnShelf(s)
   const next = spawnCustomer(s, constant(0.1))
   assert.equal(next.queue.length, 1)
   const c = next.queue[0]
   const scooped = Object.values(c.bowl.weighed).reduce((a, b) => a + b, 0)
-  const after = Object.keys(next.shelf).reduce((n, id) => n + shelfQty(next.shelf, id), 0)
+  const after = weighedOnShelf(next)
   assert.ok(scooped >= MIN_BOWL_ITEMS)
   assert.equal(before - after, scooped, 'shelf shrinks by exactly what was scooped')
   assert.ok(['maratang', 'shanguo'].includes(c.mode))
