@@ -1,0 +1,71 @@
+/* Self-serve variant only — loaded after styles.css by self-serve.html.
+   Everything is scoped under .ss (or variant-only class names) so the original flow is untouched. */
+
+/* ---------- title ---------- */
+.variant-tag { font-size: 12px; background: var(--yellow); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
+.variant-link { color: #fff; font-size: 13px; margin-top: 4px; }
+
+/* ---------- layout ---------- */
+.ss .kitchen { grid-template-columns: 1fr 300px; align-items: start; }
+.ss-kitchen { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.ss .hall-sign small { display: block; font-size: 11px; color: var(--ink); opacity: .7; }
+.ss .seat { min-height: 120px; }
+.hint.center { text-align: center; }
+
+/* ---------- tables ---------- */
+.ticket-badge { background: var(--yellow); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 8px; font-size: 13px; }
+.ss-table.can-serve { outline: 4px dashed var(--green); animation: pulse .8s infinite alternate; }
+
+/* ---------- ticket rail ---------- */
+.rail {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 44px;
+  background: #fff7e6; border: 4px solid var(--ink); border-radius: var(--radius); padding: 6px 8px;
+}
+.rail-title { font-size: 13px; color: var(--red-dark); margin-right: 4px; }
+.ticket {
+  display: inline-flex; align-items: center; gap: 4px; font-size: 12px; background: #fff;
+  border: 2px solid var(--ink); border-radius: 6px; padding: 3px 6px; box-shadow: 0 3px 0 var(--ink);
+}
+.ticket:active { transform: translateY(3px); box-shadow: none; }
+.ticket .chili { width: 10px; height: 10px; }
+
+/* ---------- pots ---------- */
+.btn.serve.held { background: var(--yellow); color: var(--ink); animation: none; }
+.pot.is-held .pot-art { transform: translateY(-6px); filter: drop-shadow(0 6px 0 rgba(0, 0, 0, .35)); }
+
+/* ---------- counter ---------- */
+.counter { gap: 5px; }
+.q-line { display: flex; gap: 6px; justify-content: center; min-height: 30px; }
+.q-face { display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: .6; }
+.q-face.front { opacity: 1; transform: scale(1.15); }
+.q-bar { display: block; width: 28px; height: 5px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
+.q-bar b { display: block; height: 100%; background: var(--green); }
+.q-bar b[data-level="warn"] { background: var(--orange); }
+.q-bar b[data-level="bad"] { background: var(--red); }
+.bubble.say { font-size: 12px; text-align: center; background: #fffbd1; }
+.bowl-art.small { transform: scale(.8); margin: -8px auto -10px; }
+.chip.found { background: #ffe0b8; }
+.dig-row { display: flex; align-items: center; justify-content: space-between; gap: 6px; }
+.btn.dig { font-size: 12px; padding: 4px 8px; }
+.ticket-row { display: flex; align-items: center; gap: 4px; justify-content: center; font-size: 12px; }
+.mode-btn { border: 2px solid var(--ink); border-radius: 6px; background: #fff; font-size: 12px; padding: 3px 8px; }
+.mode-btn.on { background: var(--orange); color: #fff; }
+.counter .receipt { font-size: 12px; }
+.counter .keys .btn.key { font-size: 12px; padding: 4px 2px; }
+
+/* ---------- shelf ---------- */
+.ss .panel-title { display: flex; align-items: center; gap: 8px; }
+.busy { margin-left: auto; display: none; align-items: center; gap: 6px; font-size: 12px; }
+.busy.on { display: inline-flex; }
+.busy i { display: block; width: 80px; height: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 4px; }
+.busy em { font-style: normal; }
+.slot.low { background: #ffe9c9; }
+.wh { font-size: 10px; opacity: .75; }
+.fresh { position: absolute; top: 3px; left: 3px; width: 34px; height: 6px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
+.fresh b { display: block; height: 100%; background: var(--green); }
+.fresh b[data-level="warn"] { background: var(--orange); }
+.fresh b[data-level="bad"] { background: var(--red); }
+
+@media (max-width: 760px) {
+  .ss .kitchen { grid-template-columns: 1fr; }
+}

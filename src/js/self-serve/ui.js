@@ -1,0 +1,316 @@
+// DOM rendering for the self-serve variant. Sections re-render only when their key changes;
+// bars (patience, cooking, freshness, busy) update every frame.
+// Reuses the shared sprites, CSS classes and shop screen; never edits them.
+import {
+  CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS, INGREDIENT_BY_ID, PACK_SIZE, SKEWER_ITEM_BY_ID,
+  SPICE_LEVELS,
+} from '../data.js'
+import { shopHtml } from '../screens.js'
+import { spriteImg } from '../sprites.js'
+import { chiliRow, stars, won } from '../ui.js'
+import { PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, WILT_SEC } from './data.js'
+import { checkoutBowlWeight, counterPrice, frontCustomer, hiddenItems, isClosing, meatCount } from './logic.js'
+import { helpHtml, menuHtml, summaryHtml } from './screens.js'
+import { shelfQty } from './shelf.js'
+
+const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
+const LOW_SHELF = 2
+
+/** Re-renders el only when key changed (keeps buttons stable between clicks). */
+function patch(el, key, html) {
+  if (!el || el.__key === key) return
+  el.__key = key
+  el.innerHTML = html()
+}
+
+const slot = (root, name) => root.querySelector(`[data-slot="${name}"]`)
+const spiceSay = (level) => (level === 0 ? '안 맵게' : `${level}단계`)
+
+/** Bowl contents as ingredient ids → qty (weighed items plus meat, for floating art). */
+const bowlItems = (bowl) => ({
+  ...bowl.weighed,
+  ...Object.fromEntries(['beef', 'lamb'].map((id) => [id, meatCount(bowl, id)]).filter(([, n]) => n > 0)),
+})
+
+// Deterministic scatter so floating ingredients do not jump between renders.
+function floating(items, px) {
+  const list = Object.entries(items).flatMap(([id, q]) => Array.from({ length: q }, () => id))
+  return list.map((id, i) => {
+    const x = 16 + ((i * 37) % 60)
+    const y = 14 + ((i * 53) % 44)
+    return `<span class="float" style="left:${x}%;top:${y}%;animation-delay:${(i % 5) * 0.3}s">${spriteImg(INGREDIENT_BY_ID[id].emoji, px, 'float-img')}</span>`
+  }).join('')
+}
+
+const GAME_SKELETON = `
+<div class="game ss">
+  <main class="stage">
+    <header class="topbar">
+      <div class="day-badge" data-slot="day"></div>
+      <div class="clock"><div class="clock-fill" data-bar="clock"></div><span class="clock-text" data-text="clock"></span></div>
+      <span class="hourglass">⌛</span>
+    </header>
+    <section class="hall">
+      <div class="hall-sign">麻辣烫 · 테이블 <small>냄비를 들고 같은 번호 테이블을 누르세요</small></div>
+      <div class="seats" data-slot="tables"></div>
+    </section>
+    <section class="kitchen">
+      <div class="ss-kitchen">
+        <div class="rail" data-slot="rail"></div>
+        <div class="pots" data-slot="pots"></div>
+      </div>
+      <div class="bowl-panel counter" data-slot="counter"></div>
+    </section>
+    <section class="shelf-panel">
+      <div class="panel-title">진열대 <small>칸을 누르면 창고에서 1박스 보충</small>
+        <span class="busy" data-busy><i data-bar="busy"></i><em>보충 중…</em></span></div>
+      <div class="shelf" data-slot="shelf"></div>
+      <div class="info" data-slot="info"></div>
+    </section>
+  </main>
+  <aside class="side" data-slot="side"></aside>
+  <div class="toasts" data-slot="toasts"></div>
+  <div class="overlay-slot" data-slot="overlay"></div>
+</div>`
+
+// ---------- hall: tables ----------
+
+function tablesHtml(s) {
+  const isHolding = s.heldPot !== null
+  return s.tables.map((t, i) => {
+    if (!t) return '<div class="seat empty"><div class="stool"></div><span class="seat-tag">빈 테이블</span></div>'
+    return `
+      <button class="seat ss-table ${isHolding ? 'can-serve' : ''}" data-action="table" data-arg="${i}">
+        <div class="ticket-badge">🎫 ${t.ticketNo}</div>
+        <div class="animal">${spriteImg(t.face, 20, 'animal-img')}</div>
+        <div class="patience"><div class="patience-fill" data-bar="table-${t.ticketNo}"></div></div>
+        <span class="seat-tag">${isHolding ? '여기로 서빙?' : '음식 기다리는 중'}</span>
+      </button>`
+  }).join('')
+}
+
+const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(',')}|${s.heldPot !== null}`
+
+// ---------- kitchen: ticket rail + pots ----------
+
+function railHtml(s) {
+  const tickets = s.rail.map((o) => `
+    <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기">
+      <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}
+      <span>${MODE_LABEL[o.mode]}</span>${chiliRow(o.spice, 10)}
+    </button>`).join('')
+  return `<div class="rail-title">주문표</div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
+}
+
+/** Stainless pot on a burner (same art classes as the original flow). */
+function potArt(p) {
+  const isDone = p && p.remaining <= 0
+  const broth = p
+    ? `<div class="broth spice-${p.order.spice}">${floating(bowlItems(p.order.bowl), 12)}<i class="bubbles"></i></div>`
+    : '<div class="broth off"></div>'
+  const flames = p && !isDone ? '<div class="flames"><i></i><i></i><i></i></div>' : ''
+  return `
+    <div class="pot-art">
+      <i class="pot-handle left"></i><i class="pot-handle right"></i>
+      <div class="pot-rim">${broth}</div>
+      <div class="pot-body"><i class="pot-shine"></i></div>
+      <div class="burner">${flames}</div>
+    </div>`
+}
+
+function potsHtml(s) {
+  return s.pots.map((p, i) => {
+    if (!p) return `<div class="pot empty"><div class="steam"></div>${potArt(null)}<div class="pot-label">빈 냄비</div></div>`
+    const isDone = p.remaining <= 0
+    const isHeld = s.heldPot === i
+    const label = isDone
+      ? `<button class="btn serve ${isHeld ? 'held' : ''}" data-action="pick" data-arg="${i}">${isHeld ? '✋ 들고 있어요' : `🎫${p.ticketNo} 완성! 집기`}</button>`
+      : `<span>🎫${p.ticketNo} 보글보글…</span>`
+    return `
+      <div class="pot ${isDone ? 'done' : 'cooking'} ${isHeld ? 'is-held' : ''}">
+        <div class="steam">${isDone ? '♨' : ''}</div>
+        ${potArt(p)}
+        <div class="pot-bar"><div class="pot-fill" data-bar="pot-${i}"></div></div>
+        <div class="pot-label">${label}</div>
+      </div>`
+  }).join('')
+}
+
+const potsKey = (s) => `${s.pots.map((p) => (p ? `${p.ticketNo}:${p.remaining <= 0}` : '-')).join('|')}|${s.heldPot}`
+
+// ---------- counter ----------
+
+function queueHtml(s) {
+  return `<div class="q-line">${s.queue.map((c, i) => `
+    <span class="q-face ${i === 0 ? 'front' : ''}">${spriteImg(c.face, 16, 'mini-face')}
+      <i class="q-bar"><b data-bar="queue-${c.id}"></b></i></span>`).join('') || '<span class="hint">줄이 비었어요</span>'}</div>`
+}
+
+function foundChip(item) {
+  if (item.kind === 'meat') {
+    const ing = INGREDIENT_BY_ID[item.id]
+    return `<span class="chip found">${spriteImg(ing.emoji, 16, 'chip-img')}${ing.name}${item.count > 1 ? ` ×${item.count}` : ''}</span>`
+  }
+  const sk = SKEWER_ITEM_BY_ID[item.id]
+  // Shows pieces, not skewers: the owner works out 새우 2마리 = 꼬치 1개.
+  return `<span class="chip found">${spriteImg(sk.emoji, 16, 'chip-img')}${sk.name} ${item.count * sk.unitsPerSkewer}개</span>`
+}
+
+function counterHtml(s) {
+  const c = frontCustomer(s)
+  if (!c) return `<div class="bowl-title">계산대</div>${queueHtml(s)}<p class="hint center">손님이 재료를 담는 중이에요…</p>`
+  const { base, charged } = counterPrice(s)
+  const hidden = hiddenItems(c.bowl)
+  const found = hidden.slice(0, s.counter.revealed).map(foundChip).join('')
+  const weighed = Object.entries(c.bowl.weighed).map(([id, q]) =>
+    `<span class="chip">${spriteImg(INGREDIENT_BY_ID[id].emoji, 16, 'chip-img')}×${q}</span>`).join('')
+  const cilantro = c.bowl.cilantro ? '<span class="chip found">🌿 고수</span>' : ''
+  const modes = Object.keys(MODE_LABEL).map((m) =>
+    `<button class="mode-btn ${s.counter.mode === m ? 'on' : ''}" data-action="mode" data-arg="${m}">${MODE_LABEL[m]}</button>`).join('')
+  const spice = SPICE_LEVELS.map((l) =>
+    `<button class="spice-btn lv-${l.level} ${s.counter.spice === l.level ? 'on' : ''}" data-action="spice" data-arg="${l.level}" title="${l.note}">${l.level}</button>`).join('')
+  const plus = CHARGE_STEPS.map((v) => `<button class="btn key" data-action="charge" data-arg="${v}">+${v.toLocaleString()}</button>`).join('')
+  const minus = CHARGE_STEPS.map((v) => `<button class="btn key ghost" data-action="charge" data-arg="-${v}">−${v.toLocaleString()}</button>`).join('')
+  return `
+    ${queueHtml(s)}
+    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}</div>
+    <div class="bowl-art small">
+      <div class="bowl-rim"><div class="broth spice-0">${floating(c.bowl.weighed, 12)}</div></div>
+      <div class="bowl-body"><div class="bowl-inner"><i class="bowl-band"></i></div></div>
+      <div class="bowl-foot"></div>
+    </div>
+    <div class="chips">${weighed}${cilantro}${found}</div>
+    <div class="dig-row">
+      <span class="bowl-meta">⚖ ${checkoutBowlWeight(c.bowl)}g</span>
+      <button class="btn ghost dig" data-action="dig">🥢 뒤적이기 <kbd>Space</kbd></button>
+    </div>
+    <div class="ticket-row"><span>주문표</span>${modes}</div>
+    <div class="spice-pick"><span>맵기</span>${spice}</div>
+    <div class="receipt"><span>저울 (${MODE_LABEL[s.counter.mode]} ${won(CHECKOUT_PRICE.ratePer100g[s.counter.mode])}/100g)</span><b>${won(base)}</b></div>
+    <div class="till"><small>청구 금액</small> ${won(charged)}</div>
+    <div class="keys">${plus}</div>
+    <div class="keys">${minus}</div>
+    <div class="bowl-actions">
+      <button class="btn ghost" data-action="chargeReset">추가금 지우기</button>
+      <button class="btn cook" data-action="chargeConfirm">선결제 <kbd>Enter</kbd></button>
+    </div>`
+}
+
+const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringify(s.counter)}`
+
+// ---------- shelf ----------
+
+function shelfHtml(s, view) {
+  return INGREDIENTS.map((ing) => {
+    const isLocked = !s.unlocked.includes(ing.id)
+    const qty = shelfQty(s.shelf, ing.id)
+    const cls = [isLocked && 'locked', !isLocked && qty === 0 && 'out', !isLocked && qty > 0 && qty <= LOW_SHELF && 'low', view.hover === ing.id && 'hover']
+      .filter(Boolean).join(' ')
+    const fresh = PERISHABLE_IDS.has(ing.id) && qty > 0 ? `<i class="fresh"><b data-bar="fresh-${ing.id}"></b></i>` : ''
+    return `
+      <button class="slot ${cls}" data-action="restock" data-arg="${ing.id}" data-hover="${ing.id}" ${isLocked ? 'disabled' : ''} aria-label="${ing.name} 보충">
+        ${fresh}
+        ${spriteImg(ing.emoji, 16, 'slot-img')}
+        <span class="slot-name">${ing.name}</span>
+        <span class="stock">${isLocked ? '🔒' : `${qty}/${SHELF_CAPACITY}`}</span>
+        ${isLocked ? '' : `<span class="wh">창고 ${s.stock[ing.id]}</span>`}
+      </button>`
+  }).join('')
+}
+
+const shelfKey = (s, view) =>
+  `${INGREDIENTS.map((i) => shelfQty(s.shelf, i.id)).join(',')}|${JSON.stringify(s.stock)}|${s.unlocked}|${view.hover}`
+
+function infoHtml(s, view) {
+  const ing = INGREDIENT_BY_ID[view.hover]
+  if (!ing) {
+    return '<p><b>사장님, 영업 시작!</b> 손님이 담아 온 그릇을 <b>뒤적여</b> 확인하고, 주문표를 적고 <b>선결제</b>를 받으세요.<br>진열대가 비면 손님이 투덜대고, 너무 채우면 채소가 시들어요.</p>'
+  }
+  const isLocked = !s.unlocked.includes(ing.id)
+  const meat = { beef: CHECKOUT_PRICE.beefSurcharge, lamb: CHECKOUT_PRICE.lambSurcharge }[ing.id]
+  const priceLine = meat ? `고기 추가 ${won(meat)} (무게 제외)` : `1스쿱 ${ing.grams}g`
+  const freshLine = PERISHABLE_IDS.has(ing.id) ? ` · ⏳ 진열 ${WILT_SEC}초 후 시듦` : ''
+  return `<p><b>${ing.desc}</b></p>
+    <p>${priceLine}${freshLine}</p>
+    <p>원가 ${won(ing.packCost / PACK_SIZE)} / 개 · ${isLocked ? `🔒 상점에서 ${won(ing.unlockCost)}에 해금` : `진열대 ${shelfQty(s.shelf, ing.id)} · 창고 ${s.stock[ing.id]}`}</p>`
+}
+
+function sideHtml(s, view) {
+  return `
+    <div class="logo">마라<br>부자</div>
+    <div class="stat">${spriteImg('🪙', 16, 'stat-img')}<span>× ${s.money.toLocaleString()}</span></div>
+    <div class="stat rating">${stars(s.rating)}<small>${s.rating.toFixed(1)}</small></div>
+    <div class="stat">${spriteImg('😋', 16, 'stat-img')}<span>× ${s.stats.served}</span></div>
+    <div class="stat">${spriteImg('😤', 16, 'stat-img')}<span>× ${s.stats.left}</span></div>
+    <div class="stat">🥀<span>× ${s.stats.wasted}</span></div>
+    <button class="btn pause" data-action="pause">${view.paused ? '계속하기' : '일시정지'}</button>
+    <div class="coins" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`
+}
+
+function overlayHtml(s, view) {
+  if (s.phase === 'summary') return summaryHtml(s)
+  if (view.help) return helpHtml()
+  if (view.paused) {
+    return '<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button><button class="btn ghost" data-action="menu">타이틀로</button></div></div>'
+  }
+  return ''
+}
+
+// ---------- per-frame bars ----------
+
+function setBar(root, name, ratio) {
+  const el = root.querySelector(`[data-bar="${name}"]`)
+  if (el) el.style.width = `${Math.max(0, Math.min(1, ratio)) * 100}%`
+  return el
+}
+
+function setLevelBar(root, name, ratio) {
+  const el = setBar(root, name, ratio)
+  if (el) el.dataset.level = ratio > 0.5 ? 'ok' : ratio > 0.25 ? 'warn' : 'bad'
+}
+
+function updateBars(root, s) {
+  const left = Math.max(0, DAY_LENGTH_SEC - s.dayTime)
+  setBar(root, 'clock', left / DAY_LENGTH_SEC)
+  const clockText = root.querySelector('[data-text="clock"]')
+  if (clockText) clockText.textContent = isClosing(s) ? '마감! 남은 손님만 받아요' : `영업 ${Math.ceil(left)}초 남음`
+  s.queue.forEach((c) => setLevelBar(root, `queue-${c.id}`, c.patience / c.maxPatience))
+  s.tables.forEach((t) => t && setLevelBar(root, `table-${t.ticketNo}`, t.patience / t.maxPatience))
+  s.pots.forEach((p, i) => p && setBar(root, `pot-${i}`, 1 - p.remaining / p.total))
+  Object.entries(s.shelf).forEach(([id, batches]) =>
+    batches[0] && PERISHABLE_IDS.has(id) && setLevelBar(root, `fresh-${id}`, 1 - batches[0].age / WILT_SEC))
+  const busy = root.querySelector('[data-busy]')
+  if (busy) busy.classList.toggle('on', s.busy > 0)
+  setBar(root, 'busy', s.busy / RESTOCK_BUSY_SEC)
+}
+
+// ---------- entry ----------
+
+/** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
+export function render(root, s, view) {
+  const screen = s.phase === 'menu' || s.phase === 'shop' ? s.phase : 'game'
+  if (root.dataset.screen !== screen) {
+    root.dataset.screen = screen
+    root.__key = null
+    root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
+  }
+  if (screen === 'menu') {
+    return patch(root, `menu|${view.hasSave}|${view.help}`, () => menuHtml(view) + (view.help ? helpHtml() : ''))
+  }
+  if (screen === 'shop') {
+    const key = `shop|${s.money}|${s.pricePer100g}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
+    return patch(root, key, () => shopHtml(s))
+  }
+  patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day}`)
+  patch(slot(root, 'tables'), tablesKey(s), () => tablesHtml(s))
+  patch(slot(root, 'rail'), s.rail.map((o) => o.ticketNo).join(','), () => railHtml(s))
+  patch(slot(root, 'pots'), potsKey(s), () => potsHtml(s))
+  patch(slot(root, 'counter'), counterKey(s), () => counterHtml(s))
+  patch(slot(root, 'shelf'), shelfKey(s, view), () => shelfHtml(s, view))
+  patch(slot(root, 'info'), `${view.hover}|${shelfKey(s, view)}`, () => infoHtml(s, view))
+  patch(slot(root, 'side'), `${s.money}|${s.rating.toFixed(2)}|${JSON.stringify(s.stats)}|${view.paused}`, () => sideHtml(s, view))
+  patch(slot(root, 'toasts'), s.toasts.map((t) => t.id).join(','), () =>
+    s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join(''))
+  patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.help}`, () => overlayHtml(s, view))
+  return updateBars(root, s)
+}
