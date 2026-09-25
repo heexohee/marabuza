@@ -212,3 +212,43 @@
   .create-body { flex-direction: column; }
   .scene { height: 220px; }
 }
+
+/* ---------- fixed panel sizes ----------
+   Panels used to grow and shrink with their content (hover text, chip rows, ticket count,
+   an empty counter), shifting the whole layout mid-shift. Every panel now has a fixed height;
+   anything longer scrolls inside its own box. */
+:root {
+  --ss-counter-h: 620px;
+  --ss-info-h: 96px;
+  --ss-slot-h: 80px;
+  --ss-rail-h: 46px;
+  --ss-seat-h: 118px;
+  --ss-chips-h: 60px;
+}
+.ss .info { height: var(--ss-info-h); overflow-y: auto; box-sizing: border-box; }
+.ss .slot { height: var(--ss-slot-h); min-height: 0; box-sizing: border-box; }
+.ss .slot-name {
+  height: 2.2em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.ss .rail {
+  height: var(--ss-rail-h); min-height: 0; box-sizing: border-box;
+  flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
+}
+.ss .ticket { flex: none; }
+.ss .seat { height: var(--ss-seat-h); min-height: 0; box-sizing: border-box; }
+
+.ss-counter { height: var(--ss-counter-h); box-sizing: border-box; overflow: hidden; }
+.ss-counter > * { flex: none; }
+.ss .owner { height: 48px; box-sizing: border-box; }
+.ss .q-line { height: 34px; }
+.ss .bubble.say { height: 40px; box-sizing: border-box; overflow: hidden; display: flex; align-items: center; justify-content: center; }
+.ss .counter .chips { height: var(--ss-chips-h); align-content: flex-start; overflow-y: auto; }
+.ss .counter-idle { flex: 1; display: flex; align-items: center; justify-content: center; margin: 0; }
+
+/* ---------- 10% larger on roomy screens (e.g. 14" MacBook Pro Chrome ≈ 1512×860) ---------- */
+@media (min-width: 1450px) and (min-height: 760px) {
+  .game.ss { zoom: 1.1; }
+}
+/* Counter content must fit --ss-counter-h even with a full queue and every item dug out. */
+.ss .counter .till { padding: 4px 10px; font-size: 30px; line-height: 1.2; }
+.ss .bowl-art.small { transform: scale(.7); margin: -14px auto -18px; }

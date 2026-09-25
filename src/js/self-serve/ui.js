@@ -167,7 +167,7 @@ function ownerHtml(s) {
 
 function counterHtml(s) {
   const c = frontCustomer(s)
-  if (!c) return `${ownerHtml(s)}${queueHtml(s)}<p class="hint center">손님이 재료를 담는 중이에요…</p>`
+  if (!c) return `${ownerHtml(s)}${queueHtml(s)}<p class="hint center counter-idle">손님이 재료를 담는 중이에요…</p>`
   const { base, charged } = counterPrice(s)
   const hidden = hiddenItems(c.bowl)
   const found = hidden.slice(0, s.counter.revealed).map(foundChip).join('')
@@ -189,7 +189,7 @@ function counterHtml(s) {
       <div class="bowl-body"><div class="bowl-inner"><i class="bowl-band"></i></div></div>
       <div class="bowl-foot"></div>
     </div>
-    <div class="chips">${weighed}${cilantro}${found}</div>
+    <div class="chips">${found}${cilantro}${weighed}</div>
     <div class="dig-row">
       <span class="bowl-meta">⚖ ${checkoutBowlWeight(c.bowl)}g</span>
       <button class="btn ghost dig" data-action="dig">🥢 뒤적이기 <kbd>Space</kbd></button>
