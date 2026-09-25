@@ -332,7 +332,10 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 /* ---------- readability: larger, bolder text (Galmuri11 has a real 700 weight) ----------
    Small labels were 9–11px regular and hard to read (feedback 2026-09-25). Key labels move to
    12–13px bold; the shelf column and slots grow to keep two-line names whole. */
-.game.ss { grid-template-columns: 276px minmax(0, 1fr) 300px; }
+/* only the 3-column layout: an unscoped rule here would override the ≤1000px / ≤700px columns above */
+@media (min-width: 1001px) {
+  .game.ss { grid-template-columns: 276px minmax(0, 1fr) 300px; }
+}
 :root { --ss-slot-h: 92px; }
 .ss .slot { padding: 14px 3px 5px; gap: 2px; }
 .ss .slot-img { width: 28px; height: 28px; }
