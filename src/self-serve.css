@@ -78,7 +78,7 @@
 .ss .slot { min-height: 70px; padding: 10px 2px 4px; gap: 2px; }
 .ss .slot-img { width: 26px; height: 26px; }
 .ss .slot-name { font-size: 10px; line-height: 1.1; text-align: center; }
-.ss .info { font-size: 11px; min-height: 0; }
+.ss-shelf .info { font-size: 11px; min-height: 0; }
 .busy { display: flex; visibility: hidden; align-items: center; gap: 6px; font-size: 12px; color: #fff; margin-bottom: 6px; }
 .busy.on { visibility: visible; }
 .busy i { display: block; width: 80px; height: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 4px; }
@@ -225,7 +225,7 @@
   --ss-seat-h: 118px;
   --ss-chips-h: 84px; /* fits the largest bowl: 5 found meat/skewers + cilantro + every vegetable kind */
 }
-.ss .info { height: var(--ss-info-h); overflow-y: auto; box-sizing: border-box; }
+.ss-shelf .info { height: var(--ss-info-h); overflow-y: auto; box-sizing: border-box; }
 .ss .slot { height: var(--ss-slot-h); min-height: 0; box-sizing: border-box; }
 .ss .slot-name {
   height: 2.2em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
@@ -257,7 +257,7 @@
    Rail: at most 5 tickets (one per table, tables max 5) laid out as 5 equal slots.
    Counter chips: compact enough that the largest possible bowl (every meat/skewer found,
    cilantro, 7 vegetable kinds) fits in --ss-chips-h. Info: text sized to its box. */
-.ss .rail, .ss .counter .chips, .ss .info { overflow: hidden; }
+.ss .rail, .ss .counter .chips, .ss-shelf .info { overflow: hidden; }
 .ss .counter .chips { gap: 3px; }
 .ss .counter .chip { font-size: 10px; padding: 0 3px; gap: 1px; }
 .ss .counter .chip .chip-img { width: 14px; height: 14px; }
@@ -268,4 +268,62 @@
 .ss .ticket .mini-face { width: 14px; height: 14px; }
 .ss .ticket .chili { width: 10px; height: 10px; }
 .ss .tspice { display: inline-flex; align-items: center; }
-.ss .info { font-size: 11px; line-height: 1.35; }
+.ss-shelf .info { font-size: 11px; line-height: 1.35; }
+
+/* ======================================================================
+   Theme A · 딸기우유 (strawberry milk) — self-serve page only.
+   self-serve.css is loaded only by self-serve.html, so overriding the shared tokens
+   here recolours this flow without touching the original flow (index.html).
+   Pastel buttons get dark strawberry text instead of white for contrast.
+   ====================================================================== */
+:root {
+  --ink: #7a4a5c;
+  --paper: #fffaf5;
+  --paper-2: #ffeede;
+  --red: #ff9a8b;
+  --red-dark: #c9587a;
+  --orange: #ffb38a;
+  --yellow: #fff3c9;
+  --green: #8fd9b6;
+  --green-dark: #3f8f6a;
+  --blue: #a9c8f2;
+  --wood: #f6c9b3;
+  --on-pastel: #5c2a36; /* text on pastel fills */
+  --page: #f9dbe4;
+  --page-stripe: #fbe3ea;
+}
+body { background: var(--page) repeating-linear-gradient(45deg, var(--page-stripe) 0 12px, var(--page) 12px 24px); }
+
+/* title & page-level text that used to sit on the dark background */
+.title-logo { color: #ff7fa0; text-shadow: 3px 3px 0 var(--yellow), 6px 6px 0 var(--ink); }
+.title-logo span, .title-sub, .variant-link, .create-sub { color: var(--ink); }
+.create-screen { color: var(--ink); }
+
+/* coloured buttons and badges: dark strawberry text */
+.btn.cook, .btn.serve, .btn.buy, .bubble-btn, .day-badge, .speaker,
+.mode-btn.on, .spice-btn.on, .ss-stats .stat { color: var(--on-pastel); }
+.ss-stats .stat .star { color: rgba(92, 42, 54, .3); }
+.ss-stats .stat .star.full { color: #ff7fa0; }
+.ss-stats .stat .star.half { color: #ffb3c6; }
+
+/* surfaces */
+.hall { background: #ffe6ec; }
+.pots { background: #e8a9b9; }
+.pot { color: var(--on-pastel); }
+.panel-title, .busy { color: var(--on-pastel); }
+.rail { background: #fff5f7; }
+.till { background: #5a3d4b; color: #b9f5d8; }
+.till small { color: #b9f5d8; }
+.overlay, .overlay.light { background: rgba(122, 74, 92, .45); }
+.toast.good { background: #d7f5e6; }
+.toast.bad { background: #ffd6dc; }
+.slot.out { background: #f3e4e8; }
+.slot.hover { background: #fff3f6; }
+.seat.is-selected { background: #fff3f6; }
+.shop-section.orange { background: #ffe6ec; }
+.card.locked { background: #f3e4e8; }
+.create-preview { background: #ffe6ec; }
+
+/* Toasts of kind "info" carry class "info", which the shared styles.css also uses for the shelf
+   description panel (min-height, margin, background). Keep info toasts looking like toasts. */
+.ss .toast.info { min-height: 0; margin-top: 0; padding: 6px 14px; font-size: 13px; background: var(--paper); border: 3px solid var(--ink); }
