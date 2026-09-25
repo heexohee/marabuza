@@ -218,12 +218,12 @@
    an empty counter), shifting the whole layout mid-shift. Every panel now has a fixed height;
    anything longer scrolls inside its own box. */
 :root {
-  --ss-counter-h: 620px;
+  --ss-counter-h: 646px;
   --ss-info-h: 96px;
   --ss-slot-h: 80px;
   --ss-rail-h: 46px;
   --ss-seat-h: 118px;
-  --ss-chips-h: 60px;
+  --ss-chips-h: 84px; /* fits the largest bowl: 5 found meat/skewers + cilantro + every vegetable kind */
 }
 .ss .info { height: var(--ss-info-h); overflow-y: auto; box-sizing: border-box; }
 .ss .slot { height: var(--ss-slot-h); min-height: 0; box-sizing: border-box; }
@@ -252,3 +252,20 @@
 /* Counter content must fit --ss-counter-h even with a full queue and every item dug out. */
 .ss .counter .till { padding: 4px 10px; font-size: 30px; line-height: 1.2; }
 .ss .bowl-art.small { transform: scale(.7); margin: -14px auto -18px; }
+
+/* Fixed panels show everything they hold — nothing scrolls (playtest feedback 2026-09-25).
+   Rail: at most 5 tickets (one per table, tables max 5) laid out as 5 equal slots.
+   Counter chips: compact enough that the largest possible bowl (every meat/skewer found,
+   cilantro, 7 vegetable kinds) fits in --ss-chips-h. Info: text sized to its box. */
+.ss .rail, .ss .counter .chips, .ss .info { overflow: hidden; }
+.ss .counter .chips { gap: 3px; }
+.ss .counter .chip { font-size: 10px; padding: 0 3px; gap: 1px; }
+.ss .counter .chip .chip-img { width: 14px; height: 14px; }
+.ss .rail { display: grid; grid-template-columns: auto repeat(5, minmax(0, 1fr)); gap: 5px; }
+.ss .rail > .hint { grid-column: 2 / -1; }
+.ss .rail-title { white-space: nowrap; }
+.ss .ticket { min-width: 0; justify-content: center; font-size: 11px; padding: 2px 3px; gap: 2px; white-space: nowrap; }
+.ss .ticket .mini-face { width: 14px; height: 14px; }
+.ss .ticket .chili { width: 10px; height: 10px; }
+.ss .tspice { display: inline-flex; align-items: center; }
+.ss .info { font-size: 11px; line-height: 1.35; }

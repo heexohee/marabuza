@@ -97,11 +97,16 @@ const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(','
 
 // ---------- kitchen: ticket rail + pots ----------
 
+// Compact spice mark for rail tickets: one chili + level, so every ticket fits on one line.
+const spiceTag = (level) => (level === 0 ? '순한' : `${spriteImg('🌶️', 10, 'chili')}${level}`)
+
+// The rail holds at most one ticket per table (paid customers are seated), and tables top out
+// at 5, so the rail is laid out as 5 fixed slots and never needs to scroll.
 function railHtml(s) {
   const tickets = s.rail.map((o) => `
-    <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기">
+    <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기 · ${MODE_LABEL[o.mode]} ${o.spice}단계">
       <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}
-      <span>${MODE_LABEL[o.mode]}</span>${chiliRow(o.spice, 10)}
+      <span>${MODE_LABEL[o.mode]}</span><span class="tspice">${spiceTag(o.spice)}</span>
     </button>`).join('')
   return `<div class="rail-title">주문표</div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
 }
