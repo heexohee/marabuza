@@ -1,9 +1,27 @@
 // Shelf (진열대) rules: warehouse → shelf restocking, FIFO self-serve, wilting.
 // A shelf maps ingredient id → batches [{ qty, age }], oldest first. All functions are pure.
-import { BOX_SIZE, PERISHABLE_IDS, SHELF_CAPACITY, WILT_SEC } from './data.js'
+import { BOX_SIZE, PERISHABLE_IDS, SHELF_CAPACITY, WILT_SEC, WILT_WARN_RATIO } from './data.js'
+
+const RATIO_EPSILON = 1e-9
 
 /** Units of one ingredient currently on the shelf. */
 export const shelfQty = (shelf, id) => (shelf[id] ?? []).reduce((sum, b) => sum + b.qty, 0)
+
+/**
+ * Share of wilt time left on the oldest batch (1 = just shelved, 0 = wilting now).
+ * null for an empty slot or an item that never wilts.
+ */
+export function freshness(shelf, id) {
+  const oldest = shelf[id]?.[0]
+  if (!PERISHABLE_IDS.has(id) || !oldest) return null
+  return Math.max(0, 1 - oldest.age / WILT_SEC)
+}
+
+/** True once the oldest batch is close enough to wilting to warn the owner. */
+export function isWilting(shelf, id) {
+  const f = freshness(shelf, id)
+  return f !== null && f <= WILT_WARN_RATIO + RATIO_EPSILON
+}
 
 /** Moves up to one box from warehouse to shelf as a fresh batch; `moved` is 0 when nothing fits. */
 export function restockShelf(stock, shelf, id) {

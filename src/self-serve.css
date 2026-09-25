@@ -94,6 +94,24 @@
   .ss .slot.out { animation: none; box-shadow: 0 0 0 4px var(--red); }
 }
 .wh { font-size: 10px; opacity: .75; }
+
+/* Freshness feedback (playtest 2026-09-25: wilting went unnoticed).
+   About to wilt → sprite yellows + "곧 시듦" tag; batch just wilted → slot flashes. */
+.ss .slot.wilting { background: #f3e2b3; }
+.ss .slot.wilting .slot-img { filter: sepia(.9) saturate(.7) brightness(.95); }
+.wilt-tag {
+  position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, 50%); z-index: 1; white-space: nowrap;
+  font-size: 9px; background: #7a5a2b; color: #fff; border: 2px solid var(--ink); border-radius: 6px; padding: 0 4px;
+}
+.ss .slot { overflow: visible; }
+.ss .slot.just-wilted { animation: wilt-flash .25s steps(2) 6; }
+@keyframes wilt-flash { 50% { background: #8a6d3b; transform: translateX(-2px); } }
+@media (prefers-reduced-motion: reduce) {
+  .ss .slot.just-wilted { animation: none; background: #8a6d3b; }
+}
+
+/* Register result toasts carry the correct breakdown, so give them room. */
+.ss .toast { max-width: min(560px, 92vw); line-height: 1.4; }
 .fresh { position: absolute; top: 3px; left: 3px; width: 34px; height: 6px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
 .fresh b { display: block; height: 100%; background: var(--green); }
 .fresh b[data-level="warn"] { background: var(--orange); }

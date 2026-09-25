@@ -9,11 +9,11 @@ import {
   PRICE, SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
 } from '../data.js'
 import {
-  addToast, checkoutBasePrice, checkoutBowlPrice, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
+  addToast, checkoutBasePrice, checkoutBowlPrice, checkoutBowlWeight, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
   maxPatience, round100, spawnInterval, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DIG_BUSY_SEC, EXTRA_IDS, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  CILANTRO_CHANCE, DIG_BUSY_SEC, EXTRA_IDS, FEEDBACK_TOAST_SEC, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
   RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID,
 } from './data.js'
@@ -77,6 +77,7 @@ function emptyDay(potCount, seatCount) {
     pots: Array.from({ length: potCount }, () => null),
     heldPot: null,
     busy: 0,
+    wiltedAt: {}, // shelf id → dayTime of its last wilt (drives the slot flash)
     spawnTimer: SPAWN.firstDelaySec,
     nextCustomerId: 1,
     nextTicketNo: 1,
@@ -114,6 +115,57 @@ export function counterPrice(s) {
   const base = checkoutBasePrice({ ...c.bowl, mode: s.counter.mode })
   return { base, charged: Math.max(0, base + s.counter.extra), correct: checkoutBowlPrice(c.bowl) }
 }
+
+/** True for a short moment after a shelf slot lost a batch to wilting (UI flash). */
+export const isJustWilted = (s, id) =>
+  s.wiltedAt?.[id] !== undefined && s.dayTime - s.wiltedAt[id] < WILT_FLASH_SEC
+
+/** The correct price of a bowl, line by line: scale, meat, skewers, cilantro. */
+export function chargeBreakdown(bowl) {
+  const skewers = sum(Object.values(bowl.skewers))
+  const beef = meatCount(bowl, 'beef')
+  const lamb = meatCount(bowl, 'lamb')
+  return [
+    { label: `저울 ${MODE_LABEL[bowl.mode]} ${checkoutBowlWeight(bowl)}g`, amount: checkoutBasePrice(bowl) },
+    ...(beef > 0 ? [{ label: `소고기 ×${beef}`, amount: beef * CHECKOUT_PRICE.beefSurcharge }] : []),
+    ...(lamb > 0 ? [{ label: `양고기 ×${lamb}`, amount: lamb * CHECKOUT_PRICE.lambSurcharge }] : []),
+    ...(skewers > 0 ? [{ label: `꼬치 ×${skewers}`, amount: skewers * CHECKOUT_PRICE.skewerPrice }] : []),
+    ...(bowl.cilantro ? [{ label: '고수', amount: CHECKOUT_PRICE.cilantroSurcharge }] : []),
+  ]
+}
+
+/**
+ * Why the register total is off for the front customer: 'mode' (ticket mode ≠ what they asked),
+ * 'undug' (buried items never found), 'extras' (surcharges punched wrong), or null when exact.
+ */
+export function chargeMistake(s) {
+  const c = frontCustomer(s)
+  if (!c) return null
+  const { charged, correct } = counterPrice(s)
+  if (charged === correct) return null
+  if (s.counter.mode !== c.mode) return 'mode'
+  if (s.counter.revealed < hiddenItems(c.bowl).length) return 'undug'
+  return 'extras'
+}
+
+const MISTAKE_TEXT = {
+  mode: (c) => `주문표 조리 방식이 달라요 (손님은 ${MODE_LABEL[c.mode]})`,
+  undug: () => '숨은 재료를 다 못 찾았어요 — 뒤적이기!',
+  extras: () => '추가금 계산이 달라요',
+}
+
+/** Register result line shown right after prepay: praise, or how much was off and why. */
+function chargeFeedback(c, type, difference, mistake, correct, ticketNo) {
+  if (type === 'exact') return `🎫 ${ticketNo}번 ${correct.toLocaleString()}원 — 딱 맞게 받았어요 👍`
+  const breakdown = chargeBreakdown(c.bowl).map((l) => `${l.label} ${l.amount.toLocaleString()}`).join(' + ')
+  const head = type === 'undercharge'
+    ? `💸 ${difference.toLocaleString()}원 덜 받았어요`
+    : `😠 ${difference.toLocaleString()}원 더 받았어요 — 손님 컴플레인!`
+  return `${head} · ${MISTAKE_TEXT[mistake](c)} (정답 ${correct.toLocaleString()}원 = ${breakdown})`
+}
+
+/** Makes the most recent toast stay up for `sec` seconds. */
+const lingerLastToast = (s, sec) => ({ ...s, toasts: s.toasts.map((t, i, all) => (i === all.length - 1 ? { ...t, ttl: sec } : t)) })
 
 // ---------- helpers ----------
 
@@ -219,7 +271,8 @@ function wiltShelf(s, dt) {
   const count = sum(entries.map(([, q]) => q))
   const cost = Math.round(sum(entries.map(([id, q]) => (q * SHELF_ITEM_BY_ID[id].packCost) / PACK_SIZE)))
   const names = entries.map(([id, q]) => `${SHELF_ITEM_BY_ID[id].name} ${q}개`).join(', ')
-  const wasted = withStat(withStat({ ...s, shelf }, 'wasted', count), 'wasteCost', cost)
+  const wiltedAt = { ...s.wiltedAt, ...Object.fromEntries(entries.map(([id]) => [id, s.dayTime])) }
+  const wasted = withStat(withStat({ ...s, shelf, wiltedAt }, 'wasted', count), 'wasteCost', cost)
   return addToast(wasted, `🥀 ${names}가 시들어 버렸어요`, 'bad')
 }
 
@@ -349,6 +402,7 @@ export function confirmCharge(s) {
     if (tableIdx < 0) return addToast(free, '빈 테이블이 없어요! 먼저 서빙하세요', 'bad')
     const { charged, correct } = counterPrice(free)
     const { type, difference } = checkoutOutcome(correct, charged)
+    const mistake = chargeMistake(free)
     const ticketNo = free.nextTicketNo
     const patience = maxPatience(free)
     const table = {
@@ -357,15 +411,17 @@ export function confirmCharge(s) {
     }
     const order = { ticketNo, face: c.face, bowl: c.bowl, mode: free.counter.mode, spice: free.counter.spice }
     const recorded = withStat(OUTCOME_STATS[type](free, difference), 'revenue', charged)
+    const rated = type === 'overcharge' ? withRating(recorded, RATING_DELTA.overcharge) : recorded
     const seated = syncCounter({
-      ...recorded,
+      ...rated,
       money: free.money + charged,
       queue: free.queue.slice(1),
       tables: free.tables.map((t, i) => (i === tableIdx ? table : t)),
       rail: [...free.rail, order],
       nextTicketNo: ticketNo + 1,
     })
-    return addToast(seated, `🎫 ${ticketNo}번 결제 ${charged.toLocaleString()}원`, 'good')
+    const text = chargeFeedback(c, type, difference, mistake, correct, ticketNo)
+    return lingerLastToast(addToast(seated, text, type === 'exact' ? 'good' : 'bad'), FEEDBACK_TOAST_SEC)
   })
 }
 

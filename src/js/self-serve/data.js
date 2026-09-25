@@ -39,6 +39,7 @@ export const RATING_DELTA = {
   serveGood: 0.08, // ticket mode + spice matched what the customer asked for
   serveWrong: -0.2,
   fastBonus: 0.05,
+  overcharge: -0.1, // customer complains about being overcharged (design/game-brief.md)
 }
 
 // Starting warehouse units per starter ingredient. Day-1 warehouse draw measured at 15–25 per
@@ -55,6 +56,12 @@ export const RESTOCK_BUSY_SEC = 0.5
 export const DIG_BUSY_SEC = 0.3 // one dig through the customer's bowl
 export const WILT_SEC = 55 // perishable batches older than this are thrown away
 export const PERISHABLE_IDS = new Set(['bokchoy', 'sprout', 'enoki', 'woodear', 'cilantro'])
+
+// Player feedback (playtest 2026-09-25: wilting went unnoticed, 3 of 10 charges were wrong).
+export const WILT_WARN_RATIO = 0.3 // slot shows "곧 시듦" once its oldest batch has ≤30% of WILT_SEC left
+export const WILT_FLASH_SEC = 1.5 // a slot flashes this long right after a batch wilts away
+export const FEEDBACK_TOAST_SEC = 5 // register result toast stays longer than the default 2.5s
+export const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
 export const QUEUE_MAX = 3 // customers waiting at the counter
 export const MIN_BOWL_ITEMS = 2 // fewer scoops than this and the customer walks out
 export const SHANGUO_CHANCE = 0.3

@@ -8,16 +8,15 @@ import {
 import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
-  EXTRA_IDS, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
+  EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
   WILT_SEC,
 } from './data.js'
 import {
-  checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, meatCount,
+  checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
 } from './logic.js'
 import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
-import { shelfQty } from './shelf.js'
+import { isWilting, shelfQty } from './shelf.js'
 
-const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
 const LOW_SHELF = 2
 
 /** Re-renders el only when key changed (keeps buttons stable between clicks). */
@@ -206,8 +205,11 @@ const isSlotLocked = (s, id) => !EXTRA_IDS.includes(id) && !s.unlocked.includes(
 function shelfHtml(s, view) {
   return SHELF_SLOTS.filter((ing) => !isSlotLocked(s, ing.id)).map((ing) => {
     const qty = shelfQty(s.shelf, ing.id)
-    const cls = [qty === 0 && 'out', qty > 0 && qty <= LOW_SHELF && 'low', view.hover === ing.id && 'hover']
-      .filter(Boolean).join(' ')
+    const wilting = isWilting(s.shelf, ing.id)
+    const cls = [
+      qty === 0 && 'out', qty > 0 && qty <= LOW_SHELF && 'low', wilting && 'wilting',
+      isJustWilted(s, ing.id) && 'just-wilted', view.hover === ing.id && 'hover',
+    ].filter(Boolean).join(' ')
     const fresh = PERISHABLE_IDS.has(ing.id) && qty > 0 ? `<i class="fresh"><b data-bar="fresh-${ing.id}"></b></i>` : ''
     return `
       <button class="slot ${cls}" data-action="restock" data-arg="${ing.id}" data-hover="${ing.id}" aria-label="${ing.name} 보충">
@@ -216,12 +218,14 @@ function shelfHtml(s, view) {
         <span class="slot-name">${ing.name}</span>
         <span class="stock">${qty}/${SHELF_CAPACITY}</span>
         <span class="wh">창고 ${s.stock[ing.id]}</span>
+        ${wilting ? '<span class="wilt-tag">🥀 곧 시듦</span>' : ''}
       </button>`
   }).join('')
 }
 
+// Wilt warnings change with time, not stock, so they are part of the re-render key.
 const shelfKey = (s, view) =>
-  `${SHELF_SLOTS.map((i) => shelfQty(s.shelf, i.id)).join(',')}|${JSON.stringify(s.stock)}|${s.unlocked}|${view.hover}`
+  `${SHELF_SLOTS.map((i) => `${shelfQty(s.shelf, i.id)}:${isWilting(s.shelf, i.id) ? 'w' : ''}${isJustWilted(s, i.id) ? 'x' : ''}`).join(',')}|${JSON.stringify(s.stock)}|${s.unlocked}|${view.hover}`
 
 /** Price hint for the hovered shelf item: weighed scoop, meat surcharge, skewer or cilantro. */
 function priceLineFor(item) {
