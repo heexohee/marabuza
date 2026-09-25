@@ -5,23 +5,24 @@
 // Lives beside the original flow (../logic.js) so both can be played and compared.
 // Pricing, shop and timing helpers are shared by import — never duplicated or modified here.
 import {
-  CHECKOUT_PRICE, CUSTOMER_FACES, INGREDIENTS, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
+  CHECKOUT_PRICE, CUSTOMER_FACES, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
   PRICE, SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
 } from '../data.js'
 import {
   addToast, checkoutBasePrice, checkoutBowlPrice, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
-  maxPatience, round100, spawnInterval, toCheckoutBowl,
+  maxPatience, round100, spawnInterval, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DIG_BUSY_SEC, EXTRA_IDS, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
   RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 export {
   addToast, buyUpgrade, checkoutBowlWeight, cookTime, demandFactor, fadeToasts, isClosing, openShop,
-  setPrice, unlockIngredient, upgradeCost,
+  setPrice, upgradeCost,
 } from '../logic.js'
 
 const SEATED_PATIENCE_RATE = 0.5
@@ -46,7 +47,7 @@ const freshCounter = (customerId = null) =>
   ({ customerId, mode: DEFAULT_MODE, spice: DEFAULT_SPICE, extra: 0, revealed: 0 })
 
 export function createNewGame() {
-  const starters = INGREDIENTS.filter((i) => i.unlockCost === 0).map((i) => i.id)
+  const starters = VARIANT_INGREDIENTS.filter((i) => i.unlockCost === 0).map((i) => i.id)
   return {
     phase: 'menu',
     day: 1,
@@ -54,7 +55,7 @@ export function createNewGame() {
     rating: START_RATING,
     pricePer100g: PRICE.base,
     stock: {
-      ...Object.fromEntries(INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
+      ...Object.fromEntries(VARIANT_INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
       ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i.startStock])),
     },
     unlocked: starters,
@@ -284,6 +285,9 @@ export function restock(s, id) {
 }
 
 // ---------- shop ----------
+
+/** Unlocks a new ingredient; ingredients this variant does not sell (weighed shrimp) are refused. */
+export const unlockIngredient = (s, id) => (VARIANT_INGREDIENT_BY_ID[id] ? unlockSharedIngredient(s, id) : s)
 
 /**
  * Buys PACK_SIZE units into the warehouse. Unlike the shared buyPack this also sells skewers

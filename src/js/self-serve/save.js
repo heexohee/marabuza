@@ -3,12 +3,17 @@
 // Has its own validator: the warehouse here also holds skewer/cilantro stock, which the
 // original flow's validator (../save.js) does not know about.
 import { INGREDIENT_BY_ID, MAX_RATING, PRICE, UPGRADE_BY_ID } from '../data.js'
-import { SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
+import { DROPPED_INGREDIENT_IDS, SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
 import { createNewGame } from './logic.js'
 
 const SAVE_VERSION = 1
 
 const isNonNegInt = (v) => Number.isInteger(v) && v >= 0
+
+// Saves made before weighed shrimp was dropped still carry a `shrimp` stock key: accept it, then strip it on load.
+const SAVEABLE_STOCK_IDS = { ...SHELF_ITEM_BY_ID, ...Object.fromEntries(DROPPED_INGREDIENT_IDS.map((id) => [id, true])) }
+const isDropped = (id) => DROPPED_INGREDIENT_IDS.includes(id)
+const withoutDropped = (map) => Object.fromEntries(Object.entries(map).filter(([id]) => !isDropped(id)))
 const isNumberMap = (obj, validKeys, check) =>
   obj !== null && typeof obj === 'object' &&
   Object.entries(obj).every(([k, v]) => validKeys[k] !== undefined && check(v))
@@ -21,7 +26,7 @@ export function isValidSave(d) {
     isNonNegInt(d.money) &&
     typeof d.rating === 'number' && d.rating >= 0 && d.rating <= MAX_RATING &&
     Number.isInteger(d.pricePer100g) && d.pricePer100g >= PRICE.min && d.pricePer100g <= PRICE.max &&
-    isNumberMap(d.stock, SHELF_ITEM_BY_ID, isNonNegInt) &&
+    isNumberMap(d.stock, SAVEABLE_STOCK_IDS, isNonNegInt) &&
     Array.isArray(d.unlocked) && d.unlocked.every((id) => INGREDIENT_BY_ID[id] !== undefined) &&
     isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt)
 }
@@ -60,8 +65,8 @@ export function loadGame() {
       money: d.money,
       rating: d.rating,
       pricePer100g: d.pricePer100g,
-      stock: { ...fresh.stock, ...d.stock },
-      unlocked: d.unlocked,
+      stock: { ...fresh.stock, ...withoutDropped(d.stock) },
+      unlocked: d.unlocked.filter((id) => !isDropped(id)),
       upgrades: { ...fresh.upgrades, ...d.upgrades },
     }
   } catch {

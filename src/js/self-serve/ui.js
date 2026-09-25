@@ -2,13 +2,14 @@
 // bars (patience, cooking, freshness, busy) update every frame.
 // Reuses the shared sprites, CSS classes and shop screen; never edits them.
 import {
-  CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS, INGREDIENT_BY_ID, PACK_SIZE,
+  CHARGE_STEPS, CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENT_BY_ID, PACK_SIZE,
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
-  EXTRA_IDS, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, WILT_SEC,
+  EXTRA_IDS, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
+  WILT_SEC,
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, meatCount,
@@ -197,7 +198,7 @@ const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringif
 // ---------- shelf ----------
 
 // Every shelf slot in display order: ingredients first, then skewers and cilantro.
-const SHELF_SLOTS = [...INGREDIENTS, ...SHELF_EXTRAS]
+const SHELF_SLOTS = [...VARIANT_INGREDIENTS, ...SHELF_EXTRAS]
 const isSlotLocked = (s, id) => !EXTRA_IDS.includes(id) && !s.unlocked.includes(id)
 
 // Locked ingredients cannot be restocked during the day, so their slots are left off the shelf

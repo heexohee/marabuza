@@ -1,9 +1,9 @@
 // Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
 // The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
-import { CUSTOMER_FACES, INGREDIENTS, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
+import { CUSTOMER_FACES, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
-import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, WILT_SEC } from './data.js'
+import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
 import { demandFactor, upgradeCost } from './logic.js'
 
 /** Title screen, with a link back to the original flow for side-by-side playtests. */
@@ -134,7 +134,7 @@ export function shopHtml(s) {
       </section>
       <section class="shop-section orange">
         <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
-        <div class="cards ing">${INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>
+        <div class="cards ing">${VARIANT_INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>
       </section>
       <section class="shop-section orange">
         <h2>꼬치 · 고수 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>

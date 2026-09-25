@@ -1,7 +1,14 @@
 // Balance constants for the self-serve flow variant only.
 // design/quick-specs/self-serve-restock-flow-2026-09-24.md
 // Shared data (ingredients, prices, upgrades) stays in ../data.js and is only imported here.
-import { INGREDIENT_BY_ID, SKEWER_ITEMS } from '../data.js'
+import { INGREDIENTS, SKEWER_ITEMS } from '../data.js'
+
+// Weighed ingredients sold in this variant. The shared list's weighed "새우" scoop is dropped:
+// here shrimp is only sold as 새우 꼬치 (one skewer = 1,000원), so the shelf and shop show it once.
+// The original flow keeps its weighed shrimp — it has no skewer shelf.
+export const DROPPED_INGREDIENT_IDS = ['shrimp']
+export const VARIANT_INGREDIENTS = INGREDIENTS.filter((i) => !DROPPED_INGREDIENT_IDS.includes(i.id))
+export const VARIANT_INGREDIENT_BY_ID = Object.fromEntries(VARIANT_INGREDIENTS.map((i) => [i.id, i]))
 
 // Shelf items that are not weighed: skewers (one shelf unit = one skewer stick) and cilantro
 // (one handful). They go through the same shop → warehouse → shelf path as ingredients, but are
@@ -22,7 +29,7 @@ export const SHELF_EXTRAS = [
   { id: 'cilantro', kind: 'cilantro', name: '고수', emoji: '🌿', packCost: 2000, startStock: 20, desc: '향긋한 고수 한 줌! 호불호가 갈려요' },
 ]
 export const EXTRA_IDS = SHELF_EXTRAS.map((i) => i.id)
-export const SHELF_ITEM_BY_ID = { ...INGREDIENT_BY_ID, ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i])) }
+export const SHELF_ITEM_BY_ID = { ...VARIANT_INGREDIENT_BY_ID, ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i])) }
 
 export const RATING_DELTA = {
   leave: -0.25,
