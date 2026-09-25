@@ -45,33 +45,32 @@ function floating(items, px) {
   }).join('')
 }
 
+// Three columns so the whole shop fits one screen: shelf (left) · tables + kitchen (centre) · counter (right).
+// Stats sit in the top bar instead of a side column. Layout lives in self-serve.css (.game.ss).
 const GAME_SKELETON = `
 <div class="game ss">
-  <main class="stage">
-    <header class="topbar">
-      <div class="day-badge" data-slot="day"></div>
-      <div class="clock"><div class="clock-fill" data-bar="clock"></div><span class="clock-text" data-text="clock"></span></div>
-      <span class="hourglass">⌛</span>
-    </header>
+  <header class="topbar ss-top">
+    <div class="day-badge" data-slot="day"></div>
+    <div class="clock"><div class="clock-fill" data-bar="clock"></div><span class="clock-text" data-text="clock"></span></div>
+    <div class="ss-stats" data-slot="side"></div>
+  </header>
+  <section class="shelf-panel ss-shelf">
+    <div class="panel-title">진열대 <small>눌러서 창고에서 보충</small></div>
+    <div class="busy" data-busy><i data-bar="busy"></i><em>보충 중…</em></div>
+    <div class="shelf" data-slot="shelf"></div>
+    <div class="info" data-slot="info"></div>
+  </section>
+  <main class="ss-center">
     <section class="hall">
       <div class="hall-sign">麻辣烫 · 테이블 <small>냄비를 들고 같은 번호 테이블을 누르세요</small></div>
       <div class="seats" data-slot="tables"></div>
     </section>
-    <section class="kitchen">
-      <div class="ss-kitchen">
-        <div class="rail" data-slot="rail"></div>
-        <div class="pots" data-slot="pots"></div>
-      </div>
-      <div class="bowl-panel counter" data-slot="counter"></div>
-    </section>
-    <section class="shelf-panel">
-      <div class="panel-title">진열대 <small>칸을 누르면 창고에서 1박스 보충</small>
-        <span class="busy" data-busy><i data-bar="busy"></i><em>보충 중…</em></span></div>
-      <div class="shelf" data-slot="shelf"></div>
-      <div class="info" data-slot="info"></div>
+    <section class="ss-kitchen">
+      <div class="rail" data-slot="rail"></div>
+      <div class="pots" data-slot="pots"></div>
     </section>
   </main>
-  <aside class="side" data-slot="side"></aside>
+  <section class="bowl-panel counter ss-counter" data-slot="counter"></section>
   <div class="toasts" data-slot="toasts"></div>
   <div class="overlay-slot" data-slot="overlay"></div>
 </div>`
@@ -201,20 +200,21 @@ const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringif
 const SHELF_SLOTS = [...INGREDIENTS, ...SHELF_EXTRAS]
 const isSlotLocked = (s, id) => !EXTRA_IDS.includes(id) && !s.unlocked.includes(id)
 
+// Locked ingredients cannot be restocked during the day, so their slots are left off the shelf
+// (they are unlocked in the shop); keeps the shelf column short enough to fit the screen.
 function shelfHtml(s, view) {
-  return SHELF_SLOTS.map((ing) => {
-    const isLocked = isSlotLocked(s, ing.id)
+  return SHELF_SLOTS.filter((ing) => !isSlotLocked(s, ing.id)).map((ing) => {
     const qty = shelfQty(s.shelf, ing.id)
-    const cls = [isLocked && 'locked', !isLocked && qty === 0 && 'out', !isLocked && qty > 0 && qty <= LOW_SHELF && 'low', view.hover === ing.id && 'hover']
+    const cls = [qty === 0 && 'out', qty > 0 && qty <= LOW_SHELF && 'low', view.hover === ing.id && 'hover']
       .filter(Boolean).join(' ')
     const fresh = PERISHABLE_IDS.has(ing.id) && qty > 0 ? `<i class="fresh"><b data-bar="fresh-${ing.id}"></b></i>` : ''
     return `
-      <button class="slot ${cls}" data-action="restock" data-arg="${ing.id}" data-hover="${ing.id}" ${isLocked ? 'disabled' : ''} aria-label="${ing.name} 보충">
+      <button class="slot ${cls}" data-action="restock" data-arg="${ing.id}" data-hover="${ing.id}" aria-label="${ing.name} 보충">
         ${fresh}
         ${spriteImg(ing.emoji, 16, 'slot-img')}
         <span class="slot-name">${ing.name}</span>
-        <span class="stock">${isLocked ? '🔒' : `${qty}/${SHELF_CAPACITY}`}</span>
-        ${isLocked ? '' : `<span class="wh">창고 ${s.stock[ing.id]}</span>`}
+        <span class="stock">${qty}/${SHELF_CAPACITY}</span>
+        <span class="wh">창고 ${s.stock[ing.id]}</span>
       </button>`
   }).join('')
 }
@@ -243,16 +243,15 @@ function infoHtml(s, view) {
     <p>원가 ${won(ing.packCost / PACK_SIZE)} / 개 · ${isLocked ? `🔒 상점에서 ${won(ing.unlockCost)}에 해금` : `진열대 ${shelfQty(s.shelf, ing.id)} · 창고 ${s.stock[ing.id]}`}</p>`
 }
 
+/** One-line stats strip for the top bar (replaces the original flow's side column). */
 function sideHtml(s, view) {
   return `
-    <div class="logo">마라<br>부자</div>
-    <div class="stat">${spriteImg('🪙', 16, 'stat-img')}<span>× ${s.money.toLocaleString()}</span></div>
-    <div class="stat rating">${stars(s.rating)}<small>${s.rating.toFixed(1)}</small></div>
-    <div class="stat">${spriteImg('😋', 16, 'stat-img')}<span>× ${s.stats.served}</span></div>
-    <div class="stat">${spriteImg('😤', 16, 'stat-img')}<span>× ${s.stats.left}</span></div>
-    <div class="stat">🥀<span>× ${s.stats.wasted}</span></div>
-    <button class="btn pause" data-action="pause">${view.paused ? '계속하기' : '일시정지'}</button>
-    <div class="coins" aria-hidden="true">${'<i></i>'.repeat(14)}</div>`
+    <div class="stat" title="돈">${spriteImg('🪙', 16, 'stat-img')}<span>${s.money.toLocaleString()}</span></div>
+    <div class="stat rating" title="평판">${stars(s.rating)}<small>${s.rating.toFixed(1)}</small></div>
+    <div class="stat" title="서빙한 손님">${spriteImg('😋', 16, 'stat-img')}<span>${s.stats.served}</span></div>
+    <div class="stat" title="떠난 손님">${spriteImg('😤', 16, 'stat-img')}<span>${s.stats.left}</span></div>
+    <div class="stat" title="시든 재료">🥀<span>${s.stats.wasted}</span></div>
+    <button class="btn pause" data-action="pause" title="Esc">${view.paused ? '▶' : '⏸'}</button>`
 }
 
 function overlayHtml(s, view) {

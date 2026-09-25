@@ -5,12 +5,30 @@
 .variant-tag { font-size: 12px; background: var(--yellow); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
 .variant-link { color: #fff; font-size: 13px; margin-top: 4px; }
 
-/* ---------- layout ---------- */
-.ss .kitchen { grid-template-columns: 1fr 300px; align-items: start; }
+/* ---------- layout: shelf | tables + kitchen | counter, one screen tall ---------- */
+.game.ss {
+  width: min(1280px, 100%);
+  grid-template-columns: 250px minmax(0, 1fr) 300px;
+  grid-template-areas:
+    "top    top    top"
+    "shelf  center counter";
+  align-items: start;
+  gap: 10px;
+}
+.ss-top { grid-area: top; }
+.ss-shelf { grid-area: shelf; }
+.ss-center { grid-area: center; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.ss-counter { grid-area: counter; }
 .ss-kitchen { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .ss .hall-sign small { display: block; font-size: 11px; color: var(--ink); opacity: .7; }
-.ss .seat { min-height: 120px; }
+.ss .seat { min-height: 110px; }
 .hint.center { text-align: center; }
+
+/* stats strip in the top bar (replaces the side column) */
+.ss-stats { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ss-stats .stat { background: var(--red); color: #fff; border: 3px solid var(--ink); border-radius: 8px; padding: 2px 8px; font-size: 13px; }
+.ss-stats .star { font-size: 12px; }
+.ss-stats .btn.pause { width: auto; margin: 0; padding: 2px 10px; }
 
 /* ---------- tables ---------- */
 .ticket-badge { background: var(--yellow); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 8px; font-size: 13px; }
@@ -53,10 +71,16 @@
 .counter .receipt { font-size: 12px; }
 .counter .keys .btn.key { font-size: 12px; padding: 4px 2px; }
 
-/* ---------- shelf ---------- */
-.ss .panel-title { display: flex; align-items: center; gap: 8px; }
-.busy { margin-left: auto; display: none; align-items: center; gap: 6px; font-size: 12px; }
-.busy.on { display: inline-flex; }
+/* ---------- shelf (left column: compact 3-wide slots) ---------- */
+.ss .panel-title { display: flex; align-items: baseline; gap: 6px; }
+.ss .panel-title small { font-size: 10px; opacity: .8; }
+.ss .shelf { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.ss .slot { min-height: 70px; padding: 10px 2px 4px; gap: 2px; }
+.ss .slot-img { width: 26px; height: 26px; }
+.ss .slot-name { font-size: 10px; line-height: 1.1; text-align: center; }
+.ss .info { font-size: 11px; min-height: 0; }
+.busy { display: flex; visibility: hidden; align-items: center; gap: 6px; font-size: 12px; color: #fff; margin-bottom: 6px; }
+.busy.on { visibility: visible; }
 .busy i { display: block; width: 80px; height: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 4px; }
 .busy em { font-style: normal; }
 .slot.low { background: #ffe9c9; }
@@ -66,6 +90,22 @@
 .fresh b[data-level="warn"] { background: var(--orange); }
 .fresh b[data-level="bad"] { background: var(--red); }
 
-@media (max-width: 760px) {
-  .ss .kitchen { grid-template-columns: 1fr; }
+/* tablet: tables + kitchen | counter on top, a wide short shelf underneath */
+@media (max-width: 1000px) {
+  .game.ss {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    grid-template-areas:
+      "top    top"
+      "center counter"
+      "shelf  shelf";
+  }
+  .ss .shelf { grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+}
+
+/* phone: one column — counter first (the main job), then shelf, then tables + kitchen */
+@media (max-width: 700px) {
+  .game.ss {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "top" "counter" "shelf" "center";
+  }
 }
