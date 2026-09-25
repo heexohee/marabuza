@@ -7,7 +7,9 @@ import {
   HAIR_STYLES, HAIR_TONE_KEYS, characterGrid, characterPalette, normalizeCharacter, sanitizeName, toneScale, withCharacterOption,
 } from '../../../src/js/self-serve/character.js'
 import { HERO_BODY, HERO_HAIR, HERO_NECK_Y } from '../../../src/js/self-serve/hero-art.js'
-import { OPENING_SCENES, dayEndLine, dayStartLine, lineText, speakerName } from '../../../src/js/self-serve/story.js'
+import {
+  CREATE_AT_SCENE, OPENING_SCENES, dayEndLine, dayStartLine, lineText, speakerName, storyName,
+} from '../../../src/js/self-serve/story.js'
 import {
   advanceStory, beginNewGame, finishCharacter, ownerLineText, setCharacterName, setCharacterOption, skipStory, tick,
 } from '../../../src/js/self-serve/logic.js'
@@ -21,7 +23,6 @@ function memoryStorage() {
 beforeEach(() => { globalThis.localStorage = memoryStorage() })
 
 const totalLines = OPENING_SCENES.reduce((n, sc) => n + sc.lines.length, 0)
-const playThroughOpening = (s) => Array.from({ length: totalLines }).reduce((cur) => advanceStory(cur), s)
 
 // ---------- character ----------
 
@@ -140,7 +141,8 @@ test('test_character_normalize_repairs_bad_saved_data', () => {
 
 test('test_story_opening_has_four_scenes_with_lines', () => {
   assert.equal(OPENING_SCENES.length, 4)
-  OPENING_SCENES.forEach((sc) => assert.ok(sc.lines.length > 0 && sc.bg && sc.props.length > 0))
+  // props may be empty when the scene's background is a painted image (scene-office)
+  OPENING_SCENES.forEach((sc) => assert.ok(sc.lines.length > 0 && sc.bg && Array.isArray(sc.props)))
 })
 
 test('test_story_name_placeholder_and_speaker', () => {
@@ -160,39 +162,66 @@ test('test_story_day_lines_exist_for_any_day_and_result', () => {
 
 // ---------- flow ----------
 
-test('test_flow_new_game_starts_at_character_creation', () => {
+const linesBeforeCreate = OPENING_SCENES.slice(0, CREATE_AT_SCENE).reduce((n, sc) => n + sc.lines.length, 0)
+const advance = (s, n) => Array.from({ length: n }).reduce((cur) => advanceStory(cur), s)
+const toCreation = () => advance(beginNewGame(), linesBeforeCreate)
+
+test('test_flow_character_is_created_right_before_the_shop_opens', () => {
+  assert.equal(OPENING_SCENES[CREATE_AT_SCENE].id, 'alley', 'creation sits between the notice and the alley')
+})
+
+test('test_flow_new_game_starts_with_the_opening_as_the_default_protagonist', () => {
   const s = beginNewGame()
-  assert.equal(s.phase, 'create')
+  assert.equal(s.phase, 'opening')
+  assert.deepEqual(s.story, { scene: 0, line: 0 })
   assert.deepEqual(s.character, DEFAULT_CHARACTER)
 })
 
+test('test_flow_opening_pauses_for_character_creation_before_the_alley', () => {
+  assert.equal(advance(beginNewGame(), linesBeforeCreate - 1).phase, 'opening')
+  const s = toCreation()
+  assert.equal(s.phase, 'create')
+  assert.deepEqual(s.story, { scene: CREATE_AT_SCENE, line: 0 })
+})
+
 test('test_flow_character_options_only_apply_while_creating', () => {
-  const s = setCharacterName(setCharacterOption(beginNewGame(), 'apron', 'mint'), '  민지 ')
+  assert.equal(setCharacterOption(beginNewGame(), 'apron', 'mint').character.apron, DEFAULT_CHARACTER.apron)
+  const s = setCharacterName(setCharacterOption(toCreation(), 'apron', 'mint'), '  민지 ')
   assert.equal(s.character.apron, 'mint')
   const opening = finishCharacter(s)
   assert.equal(opening.character.name, '민지')
   assert.equal(opening.phase, 'opening')
+  assert.deepEqual(opening.story, { scene: CREATE_AT_SCENE, line: 0 }, 'resumes at the alley')
   assert.equal(setCharacterOption(opening, 'apron', 'pink').character.apron, 'mint')
 })
 
 test('test_flow_opening_plays_every_line_then_opens_day_one', () => {
-  const opening = finishCharacter(beginNewGame())
-  assert.deepEqual(opening.story, { scene: 0, line: 0 })
-  const oneShort = Array.from({ length: totalLines - 1 }).reduce((cur) => advanceStory(cur), opening)
-  assert.equal(oneShort.phase, 'opening')
-  const day = playThroughOpening(opening)
+  const resumed = finishCharacter(toCreation())
+  const rest = totalLines - linesBeforeCreate
+  assert.equal(advance(resumed, rest - 1).phase, 'opening')
+  const day = advance(resumed, rest)
   assert.equal(day.phase, 'day')
   assert.equal(day.day, 1)
   assert.equal(day.story, null)
 })
 
-test('test_flow_skip_goes_straight_to_day_one', () => {
-  const s = skipStory(finishCharacter(beginNewGame()))
-  assert.equal(s.phase, 'day')
+test('test_flow_skip_before_creation_goes_to_creation_after_it_to_day_one', () => {
+  const skipped = skipStory(beginNewGame())
+  assert.equal(skipped.phase, 'create', 'the protagonist is always created')
+  assert.deepEqual(skipped.story, { scene: CREATE_AT_SCENE, line: 0 })
+  assert.equal(skipStory(finishCharacter(skipped)).phase, 'day')
+})
+
+test('test_flow_protagonist_is_called_me_until_created', () => {
+  assert.equal(storyName(0, '초아'), '나')
+  assert.equal(storyName(CREATE_AT_SCENE - 1, '초아'), '나')
+  assert.equal(storyName(CREATE_AT_SCENE, '초아'), '초아')
+  OPENING_SCENES.slice(0, CREATE_AT_SCENE).flatMap((sc) => sc.lines)
+    .forEach((l) => assert.ok(!l.text.includes('{name}'), `no name before creation: ${l.text}`))
 })
 
 test('test_flow_day_start_line_shows_then_fades', () => {
-  const day = skipStory(finishCharacter(beginNewGame()))
+  const day = skipStory(finishCharacter(skipStory(beginNewGame())))
   assert.equal(ownerLineText(day), dayStartLine(1))
   const later = tick({ ...day, spawnTimer: 999 }, DAY_LINE_SEC + 0.1, () => 0.5)
   assert.equal(ownerLineText(later), null)
@@ -201,7 +230,7 @@ test('test_flow_day_start_line_shows_then_fades', () => {
 // ---------- save ----------
 
 test('test_save_keeps_the_protagonist', () => {
-  const s = finishCharacter(setCharacterName(setCharacterOption(beginNewGame(), 'hair', 'long'), '하나'))
+  const s = finishCharacter(setCharacterName(setCharacterOption(skipStory(beginNewGame()), 'hair', 'long'), '하나'))
   saveGame(s)
   const loaded = loadGame()
   assert.deepEqual(loaded.character, { ...DEFAULT_CHARACTER, name: '하나', hair: 'long' })

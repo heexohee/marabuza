@@ -10,7 +10,7 @@ const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문' }
  */
 export const OPENING_SCENES = [
   {
-    id: 'office', bg: 'scene-office', props: ['🖥️', '🌙', '☕'], cast: ['me'],
+    id: 'office', bg: 'scene-office', props: [], cast: ['me'], // painted background carries the moon and city
     lines: [
       { who: 'me', text: '새벽 2시… 오늘도 야근이다.' },
       { who: 'me', text: '그래도 버틸 수 있는 건, 퇴근길 마라탕 한 그릇 덕분이야.' },
@@ -40,6 +40,15 @@ export const OPENING_SCENES = [
     ],
   },
 ]
+
+/**
+ * The protagonist is created right before this scene (the alley, where she opens her own shop):
+ * the office-worker prologue plays first with the default look, then she picks name, hair and apron.
+ */
+export const CREATE_AT_SCENE = OPENING_SCENES.findIndex((sc) => sc.id === 'alley')
+
+/** Before creation the protagonist has no chosen name yet, so she is just "나". */
+export const storyName = (sceneIdx, name) => (sceneIdx < CREATE_AT_SCENE ? '나' : name)
 
 /** Display name of a line's speaker ('me' is the protagonist). */
 export const speakerName = (who, name) => (who === 'me' ? name : SPEAKERS[who] ?? '')

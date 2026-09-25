@@ -19,7 +19,7 @@ import {
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
-import { OPENING_SCENES, dayStartLine } from './story.js'
+import { CREATE_AT_SCENE, OPENING_SCENES, dayStartLine } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 export {
@@ -204,8 +204,11 @@ export const ownerLineText = (s) => (s.ownerLine && s.dayTime < s.ownerLine.unti
 
 // ---------- protagonist & opening story (design/quick-specs/story-character-2026-09-25.md) ----------
 
-/** New game begins at character creation. */
-export const beginNewGame = () => ({ ...createNewGame(), phase: 'create' })
+const AT_CREATION = { scene: CREATE_AT_SCENE, line: 0 }
+const toCreation = (s) => ({ ...s, phase: 'create', story: AT_CREATION })
+
+/** New game begins with the opening prologue, played by the default protagonist. */
+export const beginNewGame = () => ({ ...createNewGame(), phase: 'opening', story: { scene: 0, line: 0 } })
 
 /** Changes one appearance option (hair / hairColor / apron) while creating the character. */
 export const setCharacterOption = (s, key, value) =>
@@ -215,23 +218,27 @@ export const setCharacterOption = (s, key, value) =>
 export const setCharacterName = (s, raw) =>
   (s.phase === 'create' ? { ...s, character: { ...s.character, name: [...String(raw ?? '')].slice(0, NAME_MAX_LEN).join('') } } : s)
 
-/** Confirms the character and starts the opening cutscene. */
+/** Confirms the character and resumes the opening at the scene where she opens her shop. */
 export const finishCharacter = (s) =>
   (s.phase === 'create'
-    ? { ...s, phase: 'opening', story: { scene: 0, line: 0 }, character: { ...s.character, name: sanitizeName(s.character.name) } }
+    ? { ...s, phase: 'opening', story: AT_CREATION, character: { ...s.character, name: sanitizeName(s.character.name) } }
     : s)
 
-/** Next line of the opening; after the last line of the last scene, day 1 opens. */
+/** Next line of the opening; creation interrupts before CREATE_AT_SCENE, and after the last line day 1 opens. */
 export function advanceStory(s) {
   if (s.phase !== 'opening' || !s.story) return s
   const { scene, line } = s.story
   if (line + 1 < OPENING_SCENES[scene].lines.length) return { ...s, story: { scene, line: line + 1 } }
+  if (scene + 1 === CREATE_AT_SCENE) return toCreation(s)
   if (scene + 1 < OPENING_SCENES.length) return { ...s, story: { scene: scene + 1, line: 0 } }
   return startDay(s)
 }
 
-/** Skips the rest of the opening straight into day 1. */
-export const skipStory = (s) => (s.phase === 'opening' ? startDay(s) : s)
+/** Skips ahead: from the prologue to character creation (never skipped), after it straight into day 1. */
+export function skipStory(s) {
+  if (s.phase !== 'opening' || !s.story) return s
+  return s.story.scene < CREATE_AT_SCENE ? toCreation(s) : startDay(s)
+}
 export const startNextDay = (s) => startDay({ ...s, day: s.day + 1 })
 
 /** Picks the ingredients a new customer would like: distinct unlocked ids × 1..maxQty. */

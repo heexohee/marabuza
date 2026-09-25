@@ -4,7 +4,7 @@
 import { spriteImg } from '../sprites.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
 import { NAME_MAX_LEN } from './data.js'
-import { OPENING_SCENES, lineText, speakerName } from './story.js'
+import { OPENING_SCENES, lineText, speakerName, storyName } from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
@@ -30,8 +30,8 @@ export function createHtml(s) {
   const c = s.character
   return `
     <div class="create-screen">
-      <h1 class="title-logo small">주인공 만들기</h1>
-      <p class="create-sub">번아웃으로 회사를 그만둔 날, 최애 마라탕집이 문을 닫았다…</p>
+      <h1 class="title-logo small">사장님 준비</h1>
+      <p class="create-sub">이제 내 마라탕집의 사장님! 이름과 모습을 정하고 앞치마를 골라요.</p>
       <div class="create-body">
         <div class="create-preview">${heroImg(c, 'hero-big')}<span class="preview-note">앞치마 착용 완료!</span></div>
         <div class="create-options">
@@ -43,7 +43,7 @@ export function createHtml(s) {
           ${optionRow('앞치마', 'apron', APRON_COLORS, c.apron, true)}
         </div>
       </div>
-      <button class="bubble-btn" data-action="charDone">이대로 시작!</button>
+      <button class="bubble-btn" data-action="charDone">앞치마 입고 가게로!</button>
     </div>`
 }
 
@@ -66,7 +66,7 @@ export function openingHtml(s) {
     <div class="opening-screen" data-action="storyNext">
       <div class="scene ${scene.bg}">${props}${cast}</div>
       <div class="dialogue ${line.who === 'notice' ? 'is-notice' : ''}">
-        <b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>
+        <b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>
         <p>${esc(lineText(line.text, s.character.name))}</p>
         <span class="next-hint">▶ 클릭 / Space</span>
       </div>

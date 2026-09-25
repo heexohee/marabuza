@@ -169,7 +169,8 @@
 /* opening cutscene */
 .opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: pointer; user-select: none; }
 .scene { position: relative; height: 300px; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
-.scene-office { background: linear-gradient(#1c1f3a 0 55%, #2c2f4f 55% 100%); }
+/* painted by tools/art/scene_office.py (384×152 art px, ~×2 here); bump ?v= when regenerating so caches refresh */
+.scene-office { background: #1e2c4c url("img/scene-office.png?v=5") center bottom / cover no-repeat; }
 .scene-regular { background: linear-gradient(#f7b267 0 55%, #b5651d 55% 100%); }
 .scene-notice { background: linear-gradient(#8e9bb0 0 55%, #5b6475 55% 100%); }
 .scene-alley { background: linear-gradient(#ffd6e0 0 55%, #e8b98a 55% 100%); }
