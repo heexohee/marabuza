@@ -38,7 +38,7 @@ export function createHtml(s) {
           <label class="opt-row"><span class="opt-title">이름</span>
             <input class="name-input" data-input="name" maxlength="${NAME_MAX_LEN}" value="${esc(c.name)}" placeholder="이름 (최대 ${NAME_MAX_LEN}자)" autocomplete="off">
           </label>
-          ${optionRow('머리 모양', 'hair', HAIR_STYLES, c.hair, false)}
+          ${optionRow('머리 기장', 'hair', HAIR_STYLES, c.hair, false)}
           ${optionRow('머리색', 'hairColor', HAIR_COLORS, c.hairColor, true)}
           ${optionRow('앞치마', 'apron', APRON_COLORS, c.apron, true)}
         </div>

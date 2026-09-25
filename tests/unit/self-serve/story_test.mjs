@@ -3,9 +3,10 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  APRON_COLORS, CHARACTER_H, CHARACTER_W, DEFAULT_CHARACTER, HAIR_COLORS, HAIR_STYLES, characterGrid, characterPalette,
-  normalizeCharacter, sanitizeName, withCharacterOption,
+  APRON_BASE_KEY, APRON_COLORS, APRON_TONE_KEYS, CHARACTER_H, CHARACTER_W, DEFAULT_CHARACTER, HAIR_BASE_KEY, HAIR_COLORS,
+  HAIR_STYLES, HAIR_TONE_KEYS, characterGrid, characterPalette, normalizeCharacter, sanitizeName, toneScale, withCharacterOption,
 } from '../../../src/js/self-serve/character.js'
+import { HERO_BODY, HERO_HAIR, HERO_NECK_Y } from '../../../src/js/self-serve/hero-art.js'
 import { OPENING_SCENES, dayEndLine, dayStartLine, lineText, speakerName } from '../../../src/js/self-serve/story.js'
 import {
   advanceStory, beginNewGame, finishCharacter, ownerLineText, setCharacterName, setCharacterOption, skipStory, tick,
@@ -24,12 +25,45 @@ const playThroughOpening = (s) => Array.from({ length: totalLines }).reduce((cur
 
 // ---------- character ----------
 
-test('test_character_every_look_is_a_full_16x20_grid', () => {
+test('test_character_every_look_is_a_full_64x112_grid', () => {
+  assert.equal(CHARACTER_W, 64)
+  assert.equal(CHARACTER_H, 112)
   for (const hair of HAIR_STYLES) {
     const grid = characterGrid({ ...DEFAULT_CHARACTER, hair: hair.id })
     assert.equal(grid.length, CHARACTER_H)
     grid.forEach((row, y) => assert.equal([...row].length, CHARACTER_W, `${hair.id} row ${y}`))
   }
+})
+
+test('test_character_options_are_the_three_reference_girls', () => {
+  assert.deepEqual(HAIR_STYLES.map((o) => o.id), ['bob', 'long', 'pony'])
+  assert.deepEqual(HAIR_COLORS.map((o) => o.id), ['brown', 'black', 'gold'])
+  assert.deepEqual(APRON_COLORS.map((o) => o.id), ['pink', 'mint', 'yellow'])
+  assert.deepEqual(DEFAULT_CHARACTER, { name: '초아', hair: 'bob', hairColor: 'brown', apron: 'pink' })
+})
+
+test('test_character_old_save_with_removed_colours_falls_back_to_defaults', () => {
+  const look = normalizeCharacter({ name: '민지', hair: 'pony', hairColor: 'orange', apron: 'red' })
+  assert.deepEqual(look, { name: '민지', hair: 'pony', hairColor: 'brown', apron: 'pink' })
+})
+
+test('test_character_styles_share_one_body_and_only_swap_the_hair_layer', () => {
+  for (const hair of HAIR_STYLES) {
+    const grid = characterGrid({ ...DEFAULT_CHARACTER, hair: hair.id })
+    const layer = HERO_HAIR[hair.id]
+    grid.forEach((row, y) => [...row].forEach((k, x) => {
+      const h = layer[y][x]
+      const b = HERO_BODY[y][x]
+      const want = y <= HERO_NECK_Y ? (h !== '.' ? h : b) : (b !== '.' ? b : h)
+      assert.equal(k, want, `${hair.id} (${x},${y})`)
+    }))
+  }
+})
+
+test('test_character_body_below_the_hair_is_identical_for_every_style', () => {
+  const skirtDown = (id) => characterGrid({ ...DEFAULT_CHARACTER, hair: id }).slice(-40).join('\n')
+  const drawn = new Set(HAIR_STYLES.map((h) => skirtDown(h.id)))
+  assert.equal(drawn.size, 1)
 })
 
 test('test_character_hair_styles_draw_differently', () => {
@@ -38,12 +72,48 @@ test('test_character_hair_styles_draw_differently', () => {
 })
 
 test('test_character_palette_follows_hair_and_apron_choice', () => {
-  const look = { ...DEFAULT_CHARACTER, hairColor: HAIR_COLORS[2].id, apron: APRON_COLORS[3].id }
+  const look = { ...DEFAULT_CHARACTER, hairColor: HAIR_COLORS[2].id, apron: APRON_COLORS[2].id }
   const pal = characterPalette(look)
-  assert.equal(pal.h, HAIR_COLORS[2].hex)
-  assert.equal(pal.a, APRON_COLORS[3].hex)
-  const used = new Set(characterGrid(look).join('').replace(/\./g, ''))
-  used.forEach((ch) => assert.ok(pal[ch], `palette has colour for "${ch}"`))
+  assert.equal(pal[HAIR_BASE_KEY], HAIR_COLORS[2].hex, 'middle hair tone is the swatch colour')
+  assert.equal(pal[APRON_BASE_KEY], APRON_COLORS[2].hex, 'middle apron tone is the swatch colour')
+  for (const hair of HAIR_STYLES) {
+    const used = new Set(characterGrid({ ...look, hair: hair.id }).join('').replace(/\./g, ''))
+    used.forEach((ch) => assert.ok(pal[ch], `${hair.id}: palette has colour for "${ch}"`))
+  }
+})
+
+test('test_character_hair_and_apron_colours_each_have_light_base_shade_tones', () => {
+  const HEX = /^#[0-9a-f]{6}$/
+  for (const opt of [...HAIR_COLORS, ...APRON_COLORS]) {
+    assert.equal(opt.ramp.length, 3, opt.id)
+    opt.ramp.forEach((c) => assert.match(c, HEX, opt.id))
+    assert.equal(opt.ramp[1], opt.hex, `${opt.id}: swatch shows the base tone`)
+  }
+})
+
+test('test_character_tone_scale_runs_dark_to_light_through_the_ramp', () => {
+  const [light, base, shade] = ['#fee9a5', '#eab782', '#b98a58']
+  const scale = toneScale([light, base, shade], 7)
+  assert.equal(scale.length, 7)
+  assert.equal(scale[3], base, 'the middle tone is the base colour')
+  const lum = (hex) => [1, 3, 5].reduce((s, i, k) => s + parseInt(hex.slice(i, i + 2), 16) * [0.299, 0.587, 0.114][k], 0)
+  scale.slice(1).forEach((c, i) => assert.ok(lum(c) > lum(scale[i]), `tone ${i + 1} is lighter than tone ${i}`))
+})
+
+test('test_character_palette_maps_every_tone_key_to_the_chosen_colour', () => {
+  const pal = characterPalette({ ...DEFAULT_CHARACTER, hairColor: 'black', apron: 'mint' })
+  const black = toneScale(HAIR_COLORS.find((o) => o.id === 'black').ramp, HAIR_TONE_KEYS.length)
+  const mint = toneScale(APRON_COLORS.find((o) => o.id === 'mint').ramp, APRON_TONE_KEYS.length)
+  assert.deepEqual([...HAIR_TONE_KEYS].map((k) => pal[k]), black)
+  assert.deepEqual([...APRON_TONE_KEYS].map((k) => pal[k]), mint)
+})
+
+test('test_character_every_hair_style_recolours_hair_and_apron', () => {
+  for (const hair of HAIR_STYLES) {
+    const used = characterGrid({ ...DEFAULT_CHARACTER, hair: hair.id }).join('')
+    assert.ok([...HAIR_TONE_KEYS].filter((k) => used.includes(k)).length >= 5, `${hair.id} hair uses most tones`)
+    assert.ok([...APRON_TONE_KEYS].filter((k) => used.includes(k)).length >= 4, `${hair.id} apron uses most tones`)
+  }
 })
 
 test('test_character_option_rejects_unknown_keys_and_values', () => {

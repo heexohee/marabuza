@@ -139,10 +139,11 @@
 
 /* ---------- protagonist & story (design/quick-specs/story-character-2026-09-25.md) ---------- */
 .hero-sprite { image-rendering: pixelated; display: block; }
-.hero-big { width: 128px; height: 160px; }
-.hero-scene { width: 80px; height: 100px; }
-.hero-owner { width: 32px; height: 40px; }
-.hero-small { width: 24px; height: 30px; }
+/* 64×112 art: ×1.5 / ×1 / ×0.5 keep every art pixel on whole device pixels at 2× DPR */
+.hero-big { width: 96px; height: 168px; }
+.hero-scene { width: 64px; height: 112px; }
+.hero-owner { width: 32px; height: 56px; }
+.hero-small { width: 32px; height: 56px; }
 
 /* character creation */
 .create-screen { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; gap: 12px; color: #fff; }
