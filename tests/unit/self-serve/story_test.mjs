@@ -141,7 +141,7 @@ test('test_character_normalize_repairs_bad_saved_data', () => {
 
 test('test_story_opening_has_four_scenes_with_lines', () => {
   assert.equal(OPENING_SCENES.length, 4)
-  // props may be empty when the scene's background is a painted image (scene-office)
+  // props may be empty when the scene's background is a painted image (scene-office, scene-regular)
   OPENING_SCENES.forEach((sc) => assert.ok(sc.lines.length > 0 && sc.bg && Array.isArray(sc.props)))
 })
 
@@ -166,8 +166,18 @@ const linesBeforeCreate = OPENING_SCENES.slice(0, CREATE_AT_SCENE).reduce((n, sc
 const advance = (s, n) => Array.from({ length: n }).reduce((cur) => advanceStory(cur), s)
 const toCreation = () => advance(beginNewGame(), linesBeforeCreate)
 
-test('test_flow_character_is_created_right_before_the_shop_opens', () => {
-  assert.equal(OPENING_SCENES[CREATE_AT_SCENE].id, 'alley', 'creation sits between the notice and the alley')
+test('test_flow_character_is_created_right_before_the_takeover_day', () => {
+  assert.equal(OPENING_SCENES[CREATE_AT_SCENE].id, 'takeover', 'creation sits between the notice and the takeover')
+  assert.equal(OPENING_SCENES[CREATE_AT_SCENE].bg, 'scene-regular', 'she takes over the same shop she used to eat at')
+})
+
+test('test_story_opening_tells_the_takeover_of_mara_panda', () => {
+  const text = OPENING_SCENES.flatMap((sc) => sc.lines.map((l) => l.text)).join('\n')
+  assert.match(text, /마라판다/)
+  assert.match(text, /권리금/)
+  assert.match(text, /월세/)
+  assert.doesNotMatch(text, /동물 마을 골목|창업 대출/, 'no new shop in another place any more')
+  assert.ok(OPENING_SCENES[CREATE_AT_SCENE].cast.includes('panda'), 'the panda hands over the apron')
 })
 
 test('test_flow_new_game_starts_with_the_opening_as_the_default_protagonist', () => {

@@ -170,10 +170,10 @@
 .opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: pointer; user-select: none; }
 .scene { position: relative; height: 300px; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
 /* painted by tools/art/scene_office.py (384×152 art px, ~×2 here); bump ?v= when regenerating so caches refresh */
-.scene-office { background: #1e2c4c url("img/scene-office.png?v=5") center bottom / cover no-repeat; }
-.scene-regular { background: linear-gradient(#f7b267 0 55%, #b5651d 55% 100%); }
+.scene-office { background: #1e2c4c url("img/scene-office.png?v=6") center bottom / cover no-repeat; }
+/* painted by tools/art/scene_regular.py — the panda's old shop, in the scene's original warm browns */
+.scene-regular { background: #b5651d url("img/scene-regular.png?v=2") center bottom / cover no-repeat; }
 .scene-notice { background: linear-gradient(#8e9bb0 0 55%, #5b6475 55% 100%); }
-.scene-alley { background: linear-gradient(#ffd6e0 0 55%, #e8b98a 55% 100%); }
 .prop { position: absolute; }
 .prop-img { width: 48px; height: 48px; }
 .prop-0 { left: 12%; top: 18%; }

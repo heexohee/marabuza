@@ -13,39 +13,44 @@ export const OPENING_SCENES = [
     id: 'office', bg: 'scene-office', props: [], cast: ['me'], // painted background carries the moon and city
     lines: [
       { who: 'me', text: '새벽 2시… 오늘도 야근이다.' },
-      { who: 'me', text: '그래도 버틸 수 있는 건, 퇴근길 마라탕 한 그릇 덕분이야.' },
+      { who: 'me', text: '그래도 버틸 수 있는 건, 퇴근길 마라판다의 마라탕 한 그릇 덕분이야.' },
     ],
   },
   {
-    id: 'regular', bg: 'scene-regular', props: ['🍲', '🏮'], cast: ['me', 'panda'],
+    id: 'regular', bg: 'scene-regular', props: [], cast: ['me', 'panda'], // painted background carries bowls and lanterns
     lines: [
       { who: 'panda', text: '늦었네? 오늘도 3단계, 고수 듬뿍 맞지?' },
       { who: 'me', text: '사장님 마라탕이 제 하루의 유일한 낙이에요….' },
     ],
   },
   {
-    id: 'notice', bg: 'scene-notice', props: ['📜', '🌧️'], cast: ['me'],
+    id: 'notice', bg: 'scene-notice', props: ['📜', '🌧️'], cast: ['me', 'panda'],
     lines: [
       { who: 'me', text: '회사를 그만둔 날, 제일 먼저 달려온 곳인데….' },
-      { who: 'notice', text: '그동안 감사했습니다. 고향 동물 마을로 내려갑니다. — 판다' },
+      { who: 'notice', text: '그동안 감사했습니다. 고향으로 내려갑니다. 가게 넘깁니다. — 마라판다' },
       { who: 'me', text: '이 맛마저 없어지면… 난 뭘로 버티지?' },
+      { who: 'panda', text: '…자네가 해 볼 텐가? 권리금은 천천히 갚아도 돼.' },
+      { who: 'me', text: '퇴직금 전부 걸게요. 이 가게, 제가 지킬게요!' },
     ],
   },
   {
-    id: 'alley', bg: 'scene-alley', props: ['🏮', '🌸', '🐾'], cast: ['me'],
+    // same shop as the regular scene: she takes over the very place that kept her going
+    id: 'takeover', bg: 'scene-regular', props: [], cast: ['me', 'panda'],
     lines: [
-      { who: 'me', text: '퇴직금이랑 창업 대출, 전부 걸었다. 여기는 동물 마을 골목.' },
+      { who: 'panda', text: '내가 쓰던 앞치마야. 오늘부터 {name} 사장이네.' },
+      { who: 'me', text: '월세는 매주, 권리금은 조금씩… 꼭 다 갚을게요.' },
+      { who: 'panda', text: '천천히 해. 대신 손님 그릇은 꼭 뒤적여 봐.' },
       { who: 'me', text: '이번엔 내가 누군가의 "버티게 해주는 한 그릇"이 되어 줄 거야.' },
-      { who: 'me', text: '{name}네 마라탕, 오늘 첫 영업 시작!' },
+      { who: 'me', text: '{name} 사장의 마라판다, 첫 영업 시작!' },
     ],
   },
 ]
 
 /**
- * The protagonist is created right before this scene (the alley, where she opens her own shop):
+ * The protagonist is created right before this scene (the takeover day, when she puts on the apron):
  * the office-worker prologue plays first with the default look, then she picks name, hair and apron.
  */
-export const CREATE_AT_SCENE = OPENING_SCENES.findIndex((sc) => sc.id === 'alley')
+export const CREATE_AT_SCENE = OPENING_SCENES.findIndex((sc) => sc.id === 'takeover')
 
 /** Before creation the protagonist has no chosen name yet, so she is just "나". */
 export const storyName = (sceneIdx, name) => (sceneIdx < CREATE_AT_SCENE ? '나' : name)

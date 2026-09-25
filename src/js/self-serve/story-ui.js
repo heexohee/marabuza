@@ -31,7 +31,7 @@ export function createHtml(s) {
   return `
     <div class="create-screen">
       <h1 class="title-logo small">사장님 준비</h1>
-      <p class="create-sub">이제 내 마라탕집의 사장님! 이름과 모습을 정하고 앞치마를 골라요.</p>
+      <p class="create-sub">마라판다를 인수했다! 이름과 모습을 정하고, 사장님이 건넨 앞치마를 골라요.</p>
       <div class="create-body">
         <div class="create-preview">${heroImg(c, 'hero-big')}<span class="preview-note">앞치마 착용 완료!</span></div>
         <div class="create-options">

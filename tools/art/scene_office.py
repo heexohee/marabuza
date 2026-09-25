@@ -3,18 +3,17 @@
 Run: python3 tools/art/scene_office.py [--preview path]  -> writes src/img/scene-office.png
 
 Drawn procedurally at BG_W×BG_H art pixels (shown at ~×2 by .scene-office in src/self-serve.css), in the
-mood of night-city pixel references: moonlit skyline, one office floor still lit, the pink malatang shop
-"마라부자" glowing at street level (sign lettered with macOS Apple SD Gothic Neo Bold), a streetlight, and a wet road catching the lights. Deterministic (fixed seed).
+mood of night-city pixel references: moonlit skyline, one office floor still lit, the panda owner's old brown malatang shop
+"마라판다" glowing at street level (the regular place of scene 2; it only turns pink once the protagonist remodels it) (sign lettered with macOS Apple SD Gothic Neo Bold), a streetlight, and a wet road catching the lights. Deterministic (fixed seed).
 
 Scale: the protagonist is ~56 art px tall standing on the sidewalk (feet near row 143), so the street
 buildings are sized against her — the shop front is ~1.6× her height and the towers leave the frame.
 design/quick-specs/story-character-2026-09-25.md §B
 """
 import random
-import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw, ImageFont
+from pixel_scene import Canvas, mix
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'src/img/scene-office.png'
@@ -34,34 +33,16 @@ LIT_BLUE, LIT_WARM = (140, 190, 224), (244, 212, 140)
 NEAR_A, NEAR_B = (44, 44, 68), (58, 50, 76)
 TILE, GROUT, CURB, ROAD = (46, 54, 80), (36, 42, 64), (72, 82, 110), (16, 20, 34)
 INK = (12, 12, 22)
-SHOP_PINK, SHOP_DEEP = (236, 150, 178), (170, 76, 112)
-SHOP_GLOW = (255, 214, 200)
-SPILL = (255, 170, 200)
+# the panda's shop in scene 2's warm browns (tools/art/scene_regular.py), not the protagonist's pink
+SHOP_BODY, SHOP_DEEP = (168, 96, 58), (98, 52, 32)
+SHOP_GLOW = (255, 212, 160)
+SPILL = (255, 190, 130)
+AWNING_A, AWNING_B = (204, 62, 48), (250, 230, 200)
 
 rng = random.Random(SEED)
-img = Image.new('RGB', (BG_W, BG_H))
-px = img.load()
-
-
-def mix(a, b, t):
-    return tuple(round(p + (q - p) * t) for p, q in zip(a, b))
-
-
-def put(x, y, c):
-    if 0 <= x < BG_W and 0 <= y < BG_H:
-        px[x, y] = c
-
-
-def glow(x, y, c, t):
-    """Blends colour c over the pixel by t (0..1)."""
-    if 0 <= x < BG_W and 0 <= y < BG_H:
-        px[x, y] = mix(px[x, y], c, max(0.0, min(1.0, t)))
-
-
-def rect(x0, y0, x1, y1, c):
-    for y in range(max(0, y0), min(BG_H, y1)):
-        for x in range(max(0, x0), min(BG_W, x1)):
-            px[x, y] = c
+cv = Canvas(BG_W, BG_H)
+img, px = cv.img, cv.px
+put, glow, rect = cv.put, cv.glow, cv.rect
 
 
 def sky():
@@ -168,46 +149,7 @@ def near_row():
     rect(15, BASE - 24, 43, BASE - 21, (255, 214, 224))
 
 
-SIGN_FONT = ('/System/Library/Fonts/AppleSDGothicNeo.ttc', 6)  # macOS Apple SD Gothic Neo Bold
-SIGN_TEXT = '마라부자'
-SIGN_SIZE = 16
-
-
-def sign_text(s, cx, cy, c, halo):
-    """Pixel-crisp Hangul (no anti-aliasing) centred on (cx, cy), with a 1px neon halo."""
-    path, index = SIGN_FONT
-    try:
-        font = ImageFont.truetype(path, SIGN_SIZE, index=index)
-    except OSError as err:
-        raise SystemExit(f'sign font not found ({path}): {err}')
-    mask = Image.new('1', (BG_W, BG_H), 0)
-    draw = ImageDraw.Draw(mask)
-    draw.fontmode = '1'
-    l, t, r, b = draw.textbbox((0, 0), s, font=font)
-    draw.text((cx - (r - l) // 2 - l, cy - (b - t) // 2 - t), s, font=font, fill=1)
-    m = mask.load()
-    on = [(x, y) for y in range(BG_H) for x in range(BG_W) if m[x, y]]
-    for x, y in on:
-        for dx, dy in ((-1, 0), (1, 0), (0, -1), (0, 1), (-1, -1), (1, 1), (-1, 1), (1, -1)):
-            if not m[x + dx, y + dy] if 0 <= x + dx < BG_W and 0 <= y + dy < BG_H else False:
-                glow(x + dx, y + dy, halo, 0.55)
-    for x, y in on:
-        put(x, y, c)
-
-
-def lantern(cx, top):
-    """Red Chinese lantern hanging from a short cord."""
-    rect(cx, top, cx + 1, top + 3, (60, 30, 40))
-    for y in range(top + 3, top + 14):
-        for x in range(cx - 5, cx + 7):
-            if ((x + 0.5 - cx - 0.5) / 5.5) ** 2 + ((y + 0.5 - top - 8.5) / 5.5) ** 2 <= 1:
-                put(x, y, (246, 96, 96) if x < cx else (214, 54, 70))
-    rect(cx - 3, top + 3, cx + 5, top + 4, (250, 200, 90))
-    rect(cx - 3, top + 13, cx + 5, top + 14, (250, 200, 90))
-    rect(cx, top + 14, cx + 2, top + 18, (250, 200, 90))
-    for y in range(top + 1, top + 18):
-        for x in range(cx - 9, cx + 11):
-            glow(x, y, (255, 120, 120), 0.06)
+SIGN_TEXT = '마라판다'
 
 
 def bowl(x, y):
@@ -220,23 +162,23 @@ def bowl(x, y):
 
 
 def shop():
-    """Malatang restaurant "마라부자" in the app's strawberry-milk pinks — taller than the protagonist."""
+    """The panda owner's malatang shop "마라판다", an old brown place — taller than the protagonist."""
     x0, x1, top = 194, 312, 40
-    rect(x0, top, x1, BASE, SHOP_PINK)
-    rect(x0, top, x1, top + 2, (252, 206, 220))
+    rect(x0, top, x1, BASE, SHOP_BODY)
+    rect(x0, top, x1, top + 2, (196, 124, 78))
     rect(x0, top, x0 + 1, BASE, SHOP_DEEP)
     rect(x1 - 1, top, x1, BASE, SHOP_DEEP)
-    rect(x0 + 8, top + 5, x1 - 8, top + 27, (255, 190, 212))  # sign board with a neon rim
-    rect(x0 + 9, top + 6, x1 - 9, top + 26, (108, 32, 64))
-    sign_text(SIGN_TEXT, (x0 + x1) // 2, top + 16, (255, 238, 246), (255, 110, 170))
+    rect(x0 + 8, top + 5, x1 - 8, top + 27, (214, 72, 52))  # red-rimmed wooden sign board
+    rect(x0 + 9, top + 6, x1 - 9, top + 26, (78, 36, 24))
+    cv.sign_text(SIGN_TEXT, (x0 + x1) // 2, top + 16, (255, 232, 196), (255, 150, 80))
     for x in range(x0 - 3, x1 + 3):  # striped awning with a scalloped hem
-        c = (244, 120, 160) if (x - x0) // 6 % 2 == 0 else (255, 236, 242)
+        c = AWNING_A if (x - x0) // 6 % 2 == 0 else AWNING_B
         rect(x, top + 30, x + 1, top + 38, c)
         if ((x - x0) % 6 - 2.5) ** 2 <= 6:
             put(x, top + 38, c)
     rect(x0 - 3, top + 29, x1 + 3, top + 30, SHOP_DEEP)
     win0, win1, wtop = x0 + 6, x0 + 72, top + 44
-    rect(win0 - 1, wtop - 1, win1 + 1, BASE - 5, (150, 64, 96))
+    rect(win0 - 1, wtop - 1, win1 + 1, BASE - 5, SHOP_DEEP)
     rect(win0, wtop, win1, BASE - 6, SHOP_GLOW)
     for y in range(wtop, wtop + 3):
         rect(win0, y, win1, y + 1, (255, 236, 222))  # warm ceiling light
@@ -246,22 +188,22 @@ def shop():
         rect(tx + 18, BASE - 18, tx + 20, BASE - 6, (140, 80, 66))
         bowl(tx + 3, BASE - 24)
         bowl(tx + 12, BASE - 24)
-    rect((win0 + win1) // 2, wtop, (win0 + win1) // 2 + 1, BASE - 6, (150, 64, 96))  # mullion
-    rect(x0 + 2, BASE - 5, x1 - 2, BASE, (200, 110, 140))  # sill / base
+    rect((win0 + win1) // 2, wtop, (win0 + win1) // 2 + 1, BASE - 6, SHOP_DEEP)  # mullion
+    rect(x0 + 2, BASE - 5, x1 - 2, BASE, (130, 72, 44))  # sill / base
     d0, d1 = x0 + 80, x1 - 10
     rect(d0 - 1, top + 43, d1 + 1, BASE, (96, 44, 52))
     rect(d0, top + 44, d1, BASE, (150, 86, 70))  # wooden door
     rect(d0 + 3, top + 56, d1 - 3, top + 74, SHOP_GLOW)  # door glass
     rect(d1 - 6, top + 78, d1 - 4, top + 82, (250, 210, 110))  # handle
     for i, x in enumerate(range(d0, d1, 5)):  # noren curtain
-        rect(x, top + 44, x + 4, top + 54, (244, 120, 160) if i % 2 == 0 else (255, 190, 212))
-    lantern(x0 - 1, top + 38)
-    lantern(x1 - 1, top + 38)
+        rect(x, top + 44, x + 4, top + 54, AWNING_A if i % 2 == 0 else AWNING_B)
+    cv.lantern(x0 - 1, top + 38)
+    cv.lantern(x1 - 1, top + 38)
     menu = (176, BASE - 22)  # A-frame menu board
-    rect(menu[0], menu[1], menu[0] + 14, BASE, (120, 60, 80))
-    rect(menu[0] + 1, menu[1] + 1, menu[0] + 13, BASE - 4, (255, 226, 236))
+    rect(menu[0], menu[1], menu[0] + 14, BASE, SHOP_DEEP)
+    rect(menu[0] + 1, menu[1] + 1, menu[0] + 13, BASE - 4, (44, 56, 48))  # chalk board, like the one inside
     for y in range(menu[1] + 4, BASE - 6, 3):
-        rect(menu[0] + 3, y, menu[0] + 11, y + 1, (230, 110, 150))
+        rect(menu[0] + 3, y, menu[0] + 11, y + 1, (240, 236, 220))
 
 
 def streetlight(x=330):
@@ -311,11 +253,5 @@ def build():
 
 
 if __name__ == '__main__':
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    build().save(OUT)
-    print('wrote', OUT.relative_to(ROOT))
-    if '--preview' in sys.argv:
-        i = sys.argv.index('--preview')
-        path = sys.argv[i + 1] if len(sys.argv) > i + 1 else '/tmp/scene-office.png'
-        img.resize((BG_W * 3, BG_H * 3), Image.NEAREST).save(path)
-        print('preview ->', path)
+    build()
+    cv.save(OUT)
