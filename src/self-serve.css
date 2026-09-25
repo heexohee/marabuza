@@ -360,3 +360,34 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 /* Slots are flex columns: without flex:none the two-line name was squeezed to one line. */
 .ss .slot > * { flex: none; }
 :root { --ss-slot-h: 96px; }
+
+/* ---------- readability outside the game board ----------
+   Same rule as the board (feedback 2026-09-25): small text 12–14px in Galmuri11 Bold.
+   Covers the title, character creation, opening cutscene, modals (help / summary / pause) and shop. */
+.title-sub, .create-sub { font-size: 15px; font-weight: 700; }
+.variant-link { font-size: 13px; font-weight: 700; }
+.bubble-btn { font-weight: 700; }
+
+/* character creation */
+.opt-title { width: 84px; font-size: 15px; font-weight: 700; }
+.opt-btn { font-size: 14px; font-weight: 700; padding: 5px 10px; }
+.swatch { width: 14px; height: 14px; }
+.preview-note { font-size: 13px; font-weight: 700; }
+.name-input { font-size: 16px; font-weight: 700; }
+
+/* opening cutscene */
+.speaker { font-size: 15px; font-weight: 700; padding: 2px 10px; }
+.dialogue p { font-size: 18px; font-weight: 700; }
+.next-hint { font-size: 12px; font-weight: 700; }
+.skip-btn { font-size: 14px; font-weight: 700; }
+
+/* modals and shop */
+.modal h2 { font-weight: 700; }
+.help-list { font-size: 14px; line-height: 1.6; }
+.summary { font-size: 14px; font-weight: 700; }
+.end-line { font-size: 14px; font-weight: 700; }
+.shop-section h2 { font-weight: 700; }
+.card-name { font-size: 14px; font-weight: 700; }
+.card-sub, .card-desc { font-size: 12px; font-weight: 700; opacity: .85; }
+.btn.buy { font-size: 13px; font-weight: 700; }
+.price-title, .price-hint { font-size: 13px; font-weight: 700; }
