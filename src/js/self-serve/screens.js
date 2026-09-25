@@ -22,7 +22,7 @@ export function menuHtml(view) {
         <button class="bubble-btn" data-action="new">게임하기</button>
         <button class="bubble-btn alt" data-action="continue" ${view.hasSave ? '' : 'disabled'}>이어하기</button>
         <button class="bubble-btn alt2" data-action="help">게임방법</button>
-        <a class="variant-link" href="index.html">← 기존 흐름(사장이 담기)으로</a>
+        <a class="variant-link" href="index.html?classic">← 기존 흐름(사장이 담기)으로</a>
       </div>
     </div>`
 }
