@@ -62,6 +62,10 @@ export const WILT_WARN_RATIO = 0.3 // slot shows "곧 시듦" once its oldest ba
 export const WILT_FLASH_SEC = 1.5 // a slot flashes this long right after a batch wilts away
 export const FEEDBACK_TOAST_SEC = 5 // register result toast stays longer than the default 2.5s
 export const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
+
+// Story & protagonist (design/quick-specs/story-character-2026-09-25.md)
+export const NAME_MAX_LEN = 8 // fits the narrow counter panel
+export const DAY_LINE_SEC = 5 // opening-of-day line stays over the owner this long
 export const QUEUE_MAX = 3 // customers waiting at the counter
 export const MIN_BOWL_ITEMS = 2 // fewer scoops than this and the customer walks out
 export const SHANGUO_CHANCE = 0.3

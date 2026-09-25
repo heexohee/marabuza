@@ -1,0 +1,144 @@
+// Protagonist creation + opening story + daily lines for the self-serve variant.
+// design/quick-specs/story-character-2026-09-25.md
+import { test, beforeEach } from 'node:test'
+import assert from 'node:assert/strict'
+import {
+  APRON_COLORS, CHARACTER_H, CHARACTER_W, DEFAULT_CHARACTER, HAIR_COLORS, HAIR_STYLES, characterGrid, characterPalette,
+  normalizeCharacter, sanitizeName, withCharacterOption,
+} from '../../../src/js/self-serve/character.js'
+import { OPENING_SCENES, dayEndLine, dayStartLine, lineText, speakerName } from '../../../src/js/self-serve/story.js'
+import {
+  advanceStory, beginNewGame, finishCharacter, ownerLineText, setCharacterName, setCharacterOption, skipStory, tick,
+} from '../../../src/js/self-serve/logic.js'
+import { loadGame, saveGame } from '../../../src/js/self-serve/save.js'
+import { DAY_LINE_SEC, NAME_MAX_LEN, SAVE_KEY } from '../../../src/js/self-serve/data.js'
+
+function memoryStorage() {
+  const store = new Map()
+  return { getItem: (k) => store.get(k) ?? null, setItem: (k, v) => store.set(k, String(v)), removeItem: (k) => store.delete(k) }
+}
+beforeEach(() => { globalThis.localStorage = memoryStorage() })
+
+const totalLines = OPENING_SCENES.reduce((n, sc) => n + sc.lines.length, 0)
+const playThroughOpening = (s) => Array.from({ length: totalLines }).reduce((cur) => advanceStory(cur), s)
+
+// ---------- character ----------
+
+test('test_character_every_look_is_a_full_16x20_grid', () => {
+  for (const hair of HAIR_STYLES) {
+    const grid = characterGrid({ ...DEFAULT_CHARACTER, hair: hair.id })
+    assert.equal(grid.length, CHARACTER_H)
+    grid.forEach((row, y) => assert.equal([...row].length, CHARACTER_W, `${hair.id} row ${y}`))
+  }
+})
+
+test('test_character_hair_styles_draw_differently', () => {
+  const drawn = HAIR_STYLES.map((h) => characterGrid({ ...DEFAULT_CHARACTER, hair: h.id }).join('\n'))
+  assert.equal(new Set(drawn).size, HAIR_STYLES.length)
+})
+
+test('test_character_palette_follows_hair_and_apron_choice', () => {
+  const look = { ...DEFAULT_CHARACTER, hairColor: HAIR_COLORS[2].id, apron: APRON_COLORS[3].id }
+  const pal = characterPalette(look)
+  assert.equal(pal.h, HAIR_COLORS[2].hex)
+  assert.equal(pal.a, APRON_COLORS[3].hex)
+  const used = new Set(characterGrid(look).join('').replace(/\./g, ''))
+  used.forEach((ch) => assert.ok(pal[ch], `palette has colour for "${ch}"`))
+})
+
+test('test_character_option_rejects_unknown_keys_and_values', () => {
+  const c = DEFAULT_CHARACTER
+  assert.equal(withCharacterOption(c, 'hair', 'pony').hair, 'pony')
+  assert.equal(withCharacterOption(c, 'hair', 'mohawk'), c)
+  assert.equal(withCharacterOption(c, 'name', 'x'), c, 'name goes through sanitizeName, not options')
+})
+
+test('test_character_name_is_trimmed_capped_and_never_blank', () => {
+  assert.equal(sanitizeName('  하나  '), '하나')
+  assert.equal([...sanitizeName('가나다라마바사아자차')].length, NAME_MAX_LEN)
+  assert.equal(sanitizeName('   '), DEFAULT_CHARACTER.name)
+  assert.equal(sanitizeName(undefined), DEFAULT_CHARACTER.name)
+})
+
+test('test_character_normalize_repairs_bad_saved_data', () => {
+  assert.deepEqual(normalizeCharacter(undefined), DEFAULT_CHARACTER)
+  assert.deepEqual(normalizeCharacter({ name: '민지', hair: 'long', hairColor: 'nope', apron: 'mint' }),
+    { ...DEFAULT_CHARACTER, name: '민지', hair: 'long', apron: 'mint' })
+})
+
+// ---------- story data ----------
+
+test('test_story_opening_has_four_scenes_with_lines', () => {
+  assert.equal(OPENING_SCENES.length, 4)
+  OPENING_SCENES.forEach((sc) => assert.ok(sc.lines.length > 0 && sc.bg && sc.props.length > 0))
+})
+
+test('test_story_name_placeholder_and_speaker', () => {
+  assert.equal(lineText('{name}의 마라탕!', '하나'), '하나의 마라탕!')
+  assert.equal(speakerName('me', '하나'), '하나')
+  assert.equal(speakerName('panda', '하나'), '판다 사장님')
+  assert.ok(OPENING_SCENES.flatMap((sc) => sc.lines).some((l) => l.text.includes('{name}')))
+})
+
+test('test_story_day_lines_exist_for_any_day_and_result', () => {
+  ;[1, 2, 3, 4, 30].forEach((d) => assert.ok(dayStartLine(d).length > 0))
+  const base = { served: 5, left: 0, exactCharges: 5, overchargeCount: 0, undercharge: 0, wasted: 0 }
+  assert.match(dayEndLine(base), /완벽/)
+  assert.match(dayEndLine({ ...base, exactCharges: 3, undercharge: 800, wasted: 4 }), /시들/)
+  assert.notEqual(dayEndLine({ ...base, exactCharges: 3, left: 3 }), dayEndLine(base))
+})
+
+// ---------- flow ----------
+
+test('test_flow_new_game_starts_at_character_creation', () => {
+  const s = beginNewGame()
+  assert.equal(s.phase, 'create')
+  assert.deepEqual(s.character, DEFAULT_CHARACTER)
+})
+
+test('test_flow_character_options_only_apply_while_creating', () => {
+  const s = setCharacterName(setCharacterOption(beginNewGame(), 'apron', 'mint'), '  민지 ')
+  assert.equal(s.character.apron, 'mint')
+  const opening = finishCharacter(s)
+  assert.equal(opening.character.name, '민지')
+  assert.equal(opening.phase, 'opening')
+  assert.equal(setCharacterOption(opening, 'apron', 'pink').character.apron, 'mint')
+})
+
+test('test_flow_opening_plays_every_line_then_opens_day_one', () => {
+  const opening = finishCharacter(beginNewGame())
+  assert.deepEqual(opening.story, { scene: 0, line: 0 })
+  const oneShort = Array.from({ length: totalLines - 1 }).reduce((cur) => advanceStory(cur), opening)
+  assert.equal(oneShort.phase, 'opening')
+  const day = playThroughOpening(opening)
+  assert.equal(day.phase, 'day')
+  assert.equal(day.day, 1)
+  assert.equal(day.story, null)
+})
+
+test('test_flow_skip_goes_straight_to_day_one', () => {
+  const s = skipStory(finishCharacter(beginNewGame()))
+  assert.equal(s.phase, 'day')
+})
+
+test('test_flow_day_start_line_shows_then_fades', () => {
+  const day = skipStory(finishCharacter(beginNewGame()))
+  assert.equal(ownerLineText(day), dayStartLine(1))
+  const later = tick({ ...day, spawnTimer: 999 }, DAY_LINE_SEC + 0.1, () => 0.5)
+  assert.equal(ownerLineText(later), null)
+})
+
+// ---------- save ----------
+
+test('test_save_keeps_the_protagonist', () => {
+  const s = finishCharacter(setCharacterName(setCharacterOption(beginNewGame(), 'hair', 'long'), '하나'))
+  saveGame(s)
+  const loaded = loadGame()
+  assert.deepEqual(loaded.character, { ...DEFAULT_CHARACTER, name: '하나', hair: 'long' })
+})
+
+test('test_save_from_before_characters_loads_with_default_protagonist', () => {
+  const legacy = { version: 1, day: 2, money: 100, rating: 3, pricePer100g: 2200, stock: { noodle: 1 }, unlocked: ['noodle'], upgrades: { pots: 1 } }
+  localStorage.setItem(SAVE_KEY, JSON.stringify(legacy))
+  assert.deepEqual(loadGame().character, DEFAULT_CHARACTER)
+})

@@ -13,9 +13,11 @@ import {
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
+  ownerLineText,
 } from './logic.js'
 import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
 import { isWilting, shelfQty } from './shelf.js'
+import { createHtml, createKey, esc, heroImg, openingHtml, openingKey } from './story-ui.js'
 
 const LOW_SHELF = 2
 
@@ -152,9 +154,20 @@ function queueHtml(s) {
 const foundChip = (item) =>
   `<span class="chip found">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${hiddenItemLabel(item)}</span>`
 
+/** The protagonist behind the counter, with her start-of-day line in a speech bubble. */
+function ownerHtml(s) {
+  const line = ownerLineText(s)
+  return `
+    <div class="owner">
+      ${heroImg(s.character, 'hero-owner')}
+      <span class="owner-name">사장 ${esc(s.character.name)}</span>
+      ${line ? `<span class="owner-say">${esc(line)}</span>` : ''}
+    </div>`
+}
+
 function counterHtml(s) {
   const c = frontCustomer(s)
-  if (!c) return `<div class="bowl-title">계산대</div>${queueHtml(s)}<p class="hint center">손님이 재료를 담는 중이에요…</p>`
+  if (!c) return `${ownerHtml(s)}${queueHtml(s)}<p class="hint center">손님이 재료를 담는 중이에요…</p>`
   const { base, charged } = counterPrice(s)
   const hidden = hiddenItems(c.bowl)
   const found = hidden.slice(0, s.counter.revealed).map(foundChip).join('')
@@ -168,6 +181,7 @@ function counterHtml(s) {
   const plus = CHARGE_STEPS.map((v) => `<button class="btn key" data-action="charge" data-arg="${v}">+${v.toLocaleString()}</button>`).join('')
   const minus = CHARGE_STEPS.map((v) => `<button class="btn key ghost" data-action="charge" data-arg="-${v}">−${v.toLocaleString()}</button>`).join('')
   return `
+    ${ownerHtml(s)}
     ${queueHtml(s)}
     <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}</div>
     <div class="bowl-art small">
@@ -192,7 +206,7 @@ function counterHtml(s) {
     </div>`
 }
 
-const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringify(s.counter)}`
+const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringify(s.counter)}|${ownerLineText(s) ? 'say' : ''}`
 
 // ---------- shelf ----------
 
@@ -300,7 +314,7 @@ function updateBars(root, s) {
 
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
-  const screen = s.phase === 'menu' || s.phase === 'shop' ? s.phase : 'game'
+  const screen = ['menu', 'shop', 'create', 'opening'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
     root.__key = null
@@ -309,6 +323,8 @@ export function render(root, s, view) {
   if (screen === 'menu') {
     return patch(root, `menu|${view.hasSave}|${view.help}`, () => menuHtml(view) + (view.help ? helpHtml() : ''))
   }
+  if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
+  if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
   if (screen === 'shop') {
     const key = `shop|${s.money}|${s.pricePer100g}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
     return patch(root, key, () => shopHtml(s))

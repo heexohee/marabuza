@@ -136,3 +136,79 @@
     grid-template-areas: "top" "counter" "shelf" "center";
   }
 }
+
+/* ---------- protagonist & story (design/quick-specs/story-character-2026-09-25.md) ---------- */
+.hero-sprite { image-rendering: pixelated; display: block; }
+.hero-big { width: 128px; height: 160px; }
+.hero-scene { width: 80px; height: 100px; }
+.hero-owner { width: 32px; height: 40px; }
+.hero-small { width: 24px; height: 30px; }
+
+/* character creation */
+.create-screen { width: min(720px, 100%); display: flex; flex-direction: column; align-items: center; gap: 12px; color: #fff; }
+.create-sub { margin: 0; font-size: 13px; opacity: .85; text-align: center; }
+.create-body {
+  display: flex; gap: 20px; align-items: center; background: var(--paper); color: var(--ink);
+  border: 4px solid var(--ink); border-radius: var(--radius); padding: 16px; width: 100%;
+}
+.create-preview {
+  display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px;
+  background: linear-gradient(#ffe0b8, #f7c9a4); border: 3px solid var(--ink); border-radius: 12px;
+}
+.preview-note { font-size: 11px; }
+.create-options { display: flex; flex-direction: column; gap: 10px; flex: 1; min-width: 0; }
+.opt-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.opt-title { width: 64px; font-size: 13px; }
+.opt-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+.opt-btn { display: inline-flex; align-items: center; gap: 4px; border: 2px solid var(--ink); border-radius: 8px; background: #fff; font-size: 12px; padding: 4px 8px; }
+.opt-btn.on { background: var(--yellow); box-shadow: 0 3px 0 var(--ink); }
+.swatch { display: inline-block; width: 12px; height: 12px; border: 2px solid var(--ink); border-radius: 3px; }
+.name-input { flex: 1; min-width: 120px; font: inherit; font-size: 14px; border: 3px solid var(--ink); border-radius: 8px; padding: 4px 8px; }
+
+/* opening cutscene */
+.opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: pointer; user-select: none; }
+.scene { position: relative; height: 300px; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
+.scene-office { background: linear-gradient(#1c1f3a 0 55%, #2c2f4f 55% 100%); }
+.scene-regular { background: linear-gradient(#f7b267 0 55%, #b5651d 55% 100%); }
+.scene-notice { background: linear-gradient(#8e9bb0 0 55%, #5b6475 55% 100%); }
+.scene-alley { background: linear-gradient(#ffd6e0 0 55%, #e8b98a 55% 100%); }
+.prop { position: absolute; }
+.prop-img { width: 48px; height: 48px; }
+.prop-0 { left: 12%; top: 18%; }
+.prop-1 { right: 12%; top: 10%; }
+.prop-2 { left: 42%; top: 8%; }
+.cast { position: absolute; bottom: 18px; transition: transform .2s; }
+.cast-me { left: 34%; }
+.cast-panda { right: 26%; }
+.cast-panda .cast-panda, .cast .cast-panda { width: 88px; height: 88px; }
+.cast.talking { transform: translateY(-6px); }
+.dialogue { position: relative; background: var(--paper); border: 4px solid var(--ink); border-radius: var(--radius); padding: 12px 16px 22px; min-height: 86px; }
+.dialogue.is-notice { background: #fffbe8; font-style: italic; }
+.speaker { display: inline-block; background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: 6px; padding: 1px 8px; font-size: 13px; }
+.dialogue p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; animation: line-in .25s ease-out; }
+@keyframes line-in { from { opacity: 0; transform: translateY(4px); } }
+.next-hint { position: absolute; right: 12px; bottom: 6px; font-size: 11px; opacity: .6; animation: bob 1s infinite; }
+.opening-foot { display: flex; align-items: center; justify-content: space-between; }
+.scene-dots { display: flex; gap: 6px; }
+.scene-dots i { width: 10px; height: 10px; border: 2px solid var(--ink); border-radius: 50%; background: #fff; }
+.scene-dots i.on { background: var(--yellow); }
+.skip-btn { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) {
+  .dialogue p, .next-hint { animation: none; }
+  .cast.talking { transform: none; }
+}
+
+/* owner behind the counter + start-of-day line */
+.owner { position: relative; display: flex; align-items: center; gap: 6px; padding-bottom: 4px; border-bottom: 2px dashed #e0c9a6; }
+.owner-name { font-size: 12px; }
+.owner-say {
+  position: absolute; left: 44px; top: -6px; right: 0; z-index: 2; font-size: 11px; line-height: 1.35;
+  background: #fff; border: 2px solid var(--ink); border-radius: 8px; padding: 4px 6px; box-shadow: 0 3px 0 var(--ink);
+  animation: line-in .25s ease-out;
+}
+.end-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; font-size: 13px; background: #fffbd1; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 8px; }
+
+@media (max-width: 700px) {
+  .create-body { flex-direction: column; }
+  .scene { height: 220px; }
+}

@@ -5,6 +5,7 @@
 import { INGREDIENT_BY_ID, MAX_RATING, PRICE, UPGRADE_BY_ID } from '../data.js'
 import { DROPPED_INGREDIENT_IDS, SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
 import { createNewGame } from './logic.js'
+import { normalizeCharacter } from './character.js'
 
 const SAVE_VERSION = 1
 
@@ -42,6 +43,7 @@ export function saveGame(s) {
     stock: s.stock,
     unlocked: s.unlocked,
     upgrades: s.upgrades,
+    character: s.character,
   }
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data))
@@ -68,6 +70,7 @@ export function loadGame() {
       stock: { ...fresh.stock, ...withoutDropped(d.stock) },
       unlocked: d.unlocked.filter((id) => !isDropped(id)),
       upgrades: { ...fresh.upgrades, ...d.upgrades },
+      character: normalizeCharacter(d.character), // saves from before characters get the default
     }
   } catch {
     return null

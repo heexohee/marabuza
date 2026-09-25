@@ -5,6 +5,8 @@ import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
 import { demandFactor, upgradeCost } from './logic.js'
+import { dayEndLine } from './story.js'
+import { esc, heroImg } from './story-ui.js'
 
 /** Title screen, with a link back to the original flow for side-by-side playtests. */
 export function menuHtml(view) {
@@ -51,6 +53,7 @@ export function summaryHtml(s) {
   return `
     <div class="overlay"><div class="modal">
       <h2>DAY ${s.day} 마감!</h2>
+      <p class="end-line">${heroImg(s.character, 'hero-small')}<span><b>${esc(s.character.name)}</b> "${esc(dayEndLine(st))}"</span></p>
       <table class="summary">
         <tr><td>${spriteImg('😋', 16, 'stat-img')} 서빙한 손님</td><td>${st.served}명</td></tr>
         <tr><td>${spriteImg('😤', 16, 'stat-img')} 떠난 손님</td><td>${st.left}명</td></tr>

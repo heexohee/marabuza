@@ -13,11 +13,13 @@ import {
   maxPatience, round100, spawnInterval, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DIG_BUSY_SEC, EXTRA_IDS, FEEDBACK_TOAST_SEC, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  CILANTRO_CHANCE, DAY_LINE_SEC, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
   RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
+import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
+import { OPENING_SCENES, dayStartLine } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 export {
@@ -62,6 +64,8 @@ export function createNewGame() {
     upgrades: Object.fromEntries(UPGRADES.map((u) => [u.id, u.start])),
     toasts: [],
     nextToastId: 1,
+    character: DEFAULT_CHARACTER,
+    story: null, // { scene, line } while the opening cutscene plays
     ...emptyDay(UPGRADE_BY_ID.pots.start, UPGRADE_BY_ID.seats.start),
   }
 }
@@ -78,6 +82,7 @@ function emptyDay(potCount, seatCount) {
     heldPot: null,
     busy: 0,
     wiltedAt: {}, // shelf id → dayTime of its last wilt (drives the slot flash)
+    ownerLine: null, // { text, until } — the owner's line at the start of the day
     spawnTimer: SPAWN.firstDelaySec,
     nextCustomerId: 1,
     nextTicketNo: 1,
@@ -190,8 +195,43 @@ function whenFree(s, action) {
 /** Opens the shop for the day: fresh day state plus one box of every unlocked ingredient on the shelf. */
 export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
-  return { ...s, phase: 'day', ...day, ...openShelf(s.stock, shelfIds(s)) }
+  const ownerLine = { text: dayStartLine(s.day), until: DAY_LINE_SEC }
+  return { ...s, phase: 'day', story: null, ...day, ownerLine, ...openShelf(s.stock, shelfIds(s)) }
 }
+
+/** The owner's start-of-day line while it is still showing, else null. */
+export const ownerLineText = (s) => (s.ownerLine && s.dayTime < s.ownerLine.until ? s.ownerLine.text : null)
+
+// ---------- protagonist & opening story (design/quick-specs/story-character-2026-09-25.md) ----------
+
+/** New game begins at character creation. */
+export const beginNewGame = () => ({ ...createNewGame(), phase: 'create' })
+
+/** Changes one appearance option (hair / hairColor / apron) while creating the character. */
+export const setCharacterOption = (s, key, value) =>
+  (s.phase === 'create' ? { ...s, character: withCharacterOption(s.character, key, value) } : s)
+
+/** Updates the name as typed (capped; trimmed and defaulted when creation finishes). */
+export const setCharacterName = (s, raw) =>
+  (s.phase === 'create' ? { ...s, character: { ...s.character, name: [...String(raw ?? '')].slice(0, NAME_MAX_LEN).join('') } } : s)
+
+/** Confirms the character and starts the opening cutscene. */
+export const finishCharacter = (s) =>
+  (s.phase === 'create'
+    ? { ...s, phase: 'opening', story: { scene: 0, line: 0 }, character: { ...s.character, name: sanitizeName(s.character.name) } }
+    : s)
+
+/** Next line of the opening; after the last line of the last scene, day 1 opens. */
+export function advanceStory(s) {
+  if (s.phase !== 'opening' || !s.story) return s
+  const { scene, line } = s.story
+  if (line + 1 < OPENING_SCENES[scene].lines.length) return { ...s, story: { scene, line: line + 1 } }
+  if (scene + 1 < OPENING_SCENES.length) return { ...s, story: { scene: scene + 1, line: 0 } }
+  return startDay(s)
+}
+
+/** Skips the rest of the opening straight into day 1. */
+export const skipStory = (s) => (s.phase === 'opening' ? startDay(s) : s)
 export const startNextDay = (s) => startDay({ ...s, day: s.day + 1 })
 
 /** Picks the ingredients a new customer would like: distinct unlocked ids × 1..maxQty. */

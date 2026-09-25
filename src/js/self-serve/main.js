@@ -1,8 +1,9 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, buyPack, buyUpgrade, confirmCharge, createNewGame, dig, fadeToasts, openShop, pickPot,
-  resetCharge, restock, serveTable, setPrice, setTicketMode, setTicketSpice, startCooking, startDay, startNextDay,
-  tick, unlockIngredient,
+  addToast, adjustCharge, advanceStory, beginNewGame, buyPack, buyUpgrade, confirmCharge, createNewGame, dig,
+  fadeToasts, finishCharacter, openShop, pickPot, resetCharge, restock, serveTable, setCharacterName,
+  setCharacterOption, setPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
+  unlockIngredient,
 } from './logic.js'
 import { hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
@@ -34,7 +35,14 @@ const gameActions = {
   upgrade: (s, arg) => persist(buyUpgrade(s, arg)),
   price: (s, arg) => persist(setPrice(s, s.pricePer100g + Number(arg))),
   nextDay: (s) => startNextDay(persist(s)),
-  new: () => startDay(createNewGame()),
+  new: () => beginNewGame(),
+  charOpt: (s, arg) => {
+    const [key, value] = String(arg).split(':')
+    return setCharacterOption(s, key, value)
+  },
+  charDone: (s) => finishCharacter(s),
+  storyNext: (s) => advanceStory(s),
+  storySkip: (s) => skipStory(s),
   continue: (s) => {
     const loaded = loadGame()
     return loaded ? openShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
@@ -67,18 +75,27 @@ root.addEventListener('click', (e) => {
   if (target && !target.disabled) run(target.dataset.action, target.dataset.arg)
 })
 
+// The name field updates state directly; the creation screen does not re-render on typing.
+root.addEventListener('input', (e) => {
+  if (e.target.dataset.input === 'name') state = setCharacterName(state, e.target.value)
+})
+
 root.addEventListener('mouseover', (e) => {
   const target = e.target.closest('[data-hover]')
   const hover = target ? target.dataset.hover : null
   if (hover !== view.hover) view = { ...view, hover }
 })
 
-const KEY_ACTIONS = { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause' }
+const KEY_ACTIONS = {
+  day: { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause' },
+  opening: { Enter: 'storyNext', Space: 'storyNext', Escape: 'storySkip' },
+}
 
 window.addEventListener('keydown', (e) => {
-  if (state.phase !== 'day' || !KEY_ACTIONS[e.code]) return
+  const action = KEY_ACTIONS[state.phase]?.[e.code]
+  if (!action) return
   e.preventDefault()
-  run(KEY_ACTIONS[e.code])
+  run(action)
 })
 
 document.addEventListener('visibilitychange', () => {
