@@ -83,7 +83,16 @@
 .busy.on { visibility: visible; }
 .busy i { display: block; width: 80px; height: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 4px; }
 .busy em { font-style: normal; }
-.slot.low { background: #ffe9c9; }
+/* Restock alerts: low slots pulse orange, empty slots pulse red, so the owner can spot
+   what to refill at a glance during a rush (playtest 2026-09-25). */
+.ss .slot.low { background: #ffe9c9; animation: restock-low 1s ease-in-out infinite alternate; }
+.ss .slot.out { background: #ffd0c9; animation: restock-out .6s ease-in-out infinite alternate; }
+@keyframes restock-low { to { box-shadow: 0 0 0 3px var(--orange); } }
+@keyframes restock-out { to { box-shadow: 0 0 0 4px var(--red); } }
+@media (prefers-reduced-motion: reduce) {
+  .ss .slot.low { animation: none; box-shadow: 0 0 0 3px var(--orange); }
+  .ss .slot.out { animation: none; box-shadow: 0 0 0 4px var(--red); }
+}
 .wh { font-size: 10px; opacity: .75; }
 .fresh { position: absolute; top: 3px; left: 3px; width: 34px; height: 6px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
 .fresh b { display: block; height: 100%; background: var(--green); }

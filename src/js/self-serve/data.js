@@ -41,7 +41,10 @@ export const RATING_DELTA = {
 export const START_WAREHOUSE_STOCK = 30
 export const BOX_SIZE = 5 // units moved warehouse → shelf per restock click
 export const SHELF_CAPACITY = 12 // max units per shelf slot
-export const RESTOCK_BUSY_SEC = 1.2 // owner is away from the counter while restocking
+// Owner is away from the counter while restocking. Was 1.2s: in the first playtest the rush left
+// no time to restock at all (production/qa/playtests/playtest-2026-09-25-dev.md), so it is cut
+// to keep "restock or serve?" a decision rather than a lost cause.
+export const RESTOCK_BUSY_SEC = 0.5
 export const DIG_BUSY_SEC = 0.3 // one dig through the customer's bowl
 export const WILT_SEC = 55 // perishable batches older than this are thrown away
 export const PERISHABLE_IDS = new Set(['bokchoy', 'sprout', 'enoki', 'woodear', 'cilantro'])

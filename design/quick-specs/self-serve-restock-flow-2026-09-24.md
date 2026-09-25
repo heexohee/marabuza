@@ -61,7 +61,7 @@
 | `START_WAREHOUSE_STOCK` | 30 | 25–40 | gate | 기본 재료당 시작 창고 재고. 첫날 실측 출고 15–25개 + 1박스 여유. 10이면 영업 30–48초에 바닥남 (`warehouse-balance_test`) |
 | `BOX_SIZE` | 5 | 3–10 | gate | 한 번 보충할 때 옮기는 양 |
 | `SHELF_CAPACITY` | 12 | 6–20 | gate | 진열대 칸 최대치 |
-| `RESTOCK_BUSY_SEC` | 1.2 | 0.5–3 | feel | 보충 중 계산대를 비우는 비용 |
+| `RESTOCK_BUSY_SEC` | 0.5 | 0.3–3 | feel | 보충 중 계산대를 비우는 비용. 1.2초였으나 첫 플레이테스트에서 러시 때 보충을 아예 못 해 단축 (`production/qa/playtests/playtest-2026-09-25-dev.md`) |
 | `DIG_BUSY_SEC` | 0.3 | 0–1 | feel | 뒤적이기 한 번에 드는 시간 |
 | `WILT_SEC` | 55 | 30–120 | curve | 하루 절반쯤 지나면 시들어서 과다 보충이 손해가 됨 |
 | `QUEUE_MAX` | 3 | 2–5 | gate | 계산대 줄 길이 |
