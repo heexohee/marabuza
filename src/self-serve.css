@@ -327,3 +327,36 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 /* Toasts of kind "info" carry class "info", which the shared styles.css also uses for the shelf
    description panel (min-height, margin, background). Keep info toasts looking like toasts. */
 .ss .toast.info { min-height: 0; margin-top: 0; padding: 6px 14px; font-size: 13px; background: var(--paper); border: 3px solid var(--ink); }
+
+/* ---------- readability: larger, bolder text (Galmuri11 has a real 700 weight) ----------
+   Small labels were 9–11px regular and hard to read (feedback 2026-09-25). Key labels move to
+   12–13px bold; the shelf column and slots grow to keep two-line names whole. */
+.game.ss { grid-template-columns: 276px minmax(0, 1fr) 300px; }
+:root { --ss-slot-h: 92px; }
+.ss .slot { padding: 14px 3px 5px; gap: 2px; }
+.ss .slot-img { width: 28px; height: 28px; }
+.ss .slot-name { font-size: 12px; font-weight: 700; line-height: 1.2; height: 2.4em; }
+.ss .slot .stock { font-size: 11px; font-weight: 700; }
+.ss .wh { font-size: 11px; font-weight: 700; opacity: .85; }
+.ss .panel-title { font-size: 15px; font-weight: 700; }
+.ss .panel-title small { font-size: 11px; font-weight: 400; }
+.ss-shelf .info { font-size: 12px; line-height: 1.35; }
+/* "곧 시듦" sits on the slot's bottom edge so it never covers the stock badge */
+.wilt-tag { top: auto; bottom: -9px; transform: translateX(-50%); font-size: 10px; font-weight: 700; }
+
+.ss .counter .chip { font-size: 11px; font-weight: 700; padding: 0 3px; }
+.ss .ticket { font-size: 12px; font-weight: 700; }
+.ss .rail-title { font-size: 13px; font-weight: 700; }
+.ss .seat-tag, .ss .owner-name { font-size: 12px; font-weight: 700; }
+.ss .hall-sign small { font-size: 12px; }
+.ss .bubble.say { font-size: 13px; font-weight: 700; }
+.ss .ticket-row, .ss .spice-pick, .ss .counter .receipt { font-size: 13px; font-weight: 700; }
+.ss .counter .keys .btn.key { font-size: 13px; font-weight: 700; }
+.ss .ss-stats .stat { font-size: 14px; font-weight: 700; }
+.ss .toast, .ss .toast.info { font-size: 14px; font-weight: 700; }
+/* Measured fits for the larger text (1512×860, all ingredients unlocked, fullest counter). */
+:root { --ss-counter-h: 654px; --ss-info-h: 106px; }
+.ss .slot-name { line-height: 15px; height: 30px; }
+/* Slots are flex columns: without flex:none the two-line name was squeezed to one line. */
+.ss .slot > * { flex: none; }
+:root { --ss-slot-h: 96px; }
