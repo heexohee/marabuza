@@ -72,6 +72,50 @@ export const MENU_PRICE = {
   shanguo: { min: 2000, max: 4400 },
 }
 
+// ---------- economy (design/game-brief.md §경제 레벨링, production/epics/economy/story-002) ----------
+// D = average daily profit (charges + tips − ingredients used) of a week-1 day: 2 tables, 1 pot, default menu
+// prices, the dev bot with realistic register slips. Measured by `node tools/sim/baseline_day.mjs` (40 seeded
+// days, 2026-09-27: perfect 97,507 · realistic 96,516). Every price below is a multiple of D — when menu
+// prices or the day's pace change, re-run the sim and update BASELINE_D only.
+export const BASELINE_D = 97000
+/** A D multiple in won, rounded to 100원. */
+export const priceOf = (multiple, d = BASELINE_D) => Math.round((multiple * d) / 100) * 100
+export const ECONOMY_MULTIPLE = {
+  rent: 2, // weekly 임대료, paid on Sunday (economy story E003)
+  premium: 30, // 권리금 total (economy story E004)
+  premiumMinWeekly: 0.5, // minimum 권리금 instalment each Sunday
+}
+
+// Shop upgrades for this flow (the original flow keeps ../data.js UPGRADES). The old "인테리어 +15%"
+// upgrade is replaced by the 6 interior stages below; tables go 2 → 4.
+export const SELF_UPGRADES = [
+  { id: 'pots', name: '냄비 추가', emoji: '🍲', desc: '동시에 끓일 수 있는 냄비 +1', start: 1, multiples: [1.5, 3, 6] },
+  { id: 'fire', name: '화력 강화', emoji: '🔥', desc: '조리 시간 -1초', start: 0, multiples: [1, 2, 4] },
+  { id: 'seats', name: '좌석 확장', emoji: '🪑', desc: '식탁 +1 (최대 4개)', start: 2, multiples: [2, 4] },
+]
+export const SELF_UPGRADE_BY_ID = Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, u]))
+
+// Interior stages (design/game-brief.md §인테리어 6단계, production/epics/shop-growth/story-005): bought in order,
+// each from its unlock day (business days). Atmosphere effects only — tables and cooking speed stay with the
+// seat and fire upgrades. Background art: tools/art/scene_shop.py --stage N → img/scene-shop-N.png.
+export const INTERIOR_STAGES = [
+  { id: 'wallpaper', name: '벽지', emoji: '🎀', desc: '핑크 줄무늬 벽지 · 매일 아침 평판 소폭 ↑', unlockDay: 1, multiple: 1 },
+  { id: 'floor', name: '바닥', emoji: '🧩', desc: '크림·핑크 체크 바닥 · 손님 인내심 ↑', unlockDay: 3, multiple: 1.5 },
+  { id: 'lighting', name: '조명', emoji: '💡', desc: '핑크 펜던트 조명 · 식사 후 팁 ↑', unlockDay: 5, multiple: 2 },
+  { id: 'door', name: '문·포토존', emoji: '💗', desc: '핑크 문과 네온 하트 · 손님 방문 ↑', unlockDay: 7, multiple: 3 },
+  { id: 'furniture', name: '의자·식탁', emoji: '🪑', desc: '흰 식탁 + 민트 의자 · 식사 후 평판 ↑', unlockDay: 9, multiple: 4 },
+  { id: 'kitchen', name: '주방', emoji: '🍳', desc: '핑크 주방 · 새 냉장 설비 · 채소 시듦 느리게', unlockDay: 12, multiple: 5 },
+]
+/** Effect sizes (tuning): each applies once the stage with that number is bought. */
+export const INTERIOR_EFFECT = {
+  morningRating: 0.1, // 1 벽지: rating + this at the start of every day
+  patience: 1.1, // 2 바닥: customer patience ×
+  tip: 1.15, // 3 조명: tips ×
+  visits: 1.1, // 4 문·포토존: customers arrive this much more often
+  serveRating: 1.25, // 5 의자·식탁: rating gained from a good serve ×
+  wilt: 0.8, // 6 주방: shelf vegetables age at this speed
+}
+
 // Story & protagonist (design/quick-specs/story-character-2026-09-25.md)
 export const NAME_MAX_LEN = 8 // fits the narrow counter panel
 export const DAY_LINE_SEC = 5 // opening-of-day line stays over the owner this long

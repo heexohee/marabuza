@@ -50,6 +50,8 @@ test('day ends only after closing time once everyone is gone', () => {
   assert.equal(tick(waiting, 0.1, () => 0.5).phase, 'day')
 })
 
+const RICH = 10_000_000 // enough for any upgrade (prices are D multiples, economy E002)
+
 test('shop actions spend money and respect limits', () => {
   const s = createNewGame()
   const bought = buyPack(s, 'noodle')
@@ -58,13 +60,13 @@ test('shop actions spend money and respect limits', () => {
   const unlocked = unlockIngredient(s, 'bunmoja')
   assert.ok(unlocked.unlocked.includes('bunmoja'))
   assert.equal(unlocked.stock.bunmoja, PACK_SIZE)
-  assert.equal(buyUpgrade(s, 'pots').upgrades.pots, 2)
+  assert.equal(buyUpgrade({ ...s, money: RICH }, 'pots').upgrades.pots, 2)
   assert.equal(buyUpgrade({ ...s, money: 0 }, 'pots').upgrades.pots, 1)
   assert.equal(setMenuPrice(s, 'maratang', 99999).prices.maratang, MENU_PRICE.maratang.max)
   assert.equal(setMenuPrice(s, 'shanguo', 3249).prices.shanguo, 3200)
 })
 
 test('seat upgrades add tables on the next day', () => {
-  const s = startDay(buyUpgrade(createNewGame(), 'seats'))
+  const s = startDay(buyUpgrade({ ...createNewGame(), money: RICH }, 'seats'))
   assert.equal(s.tables.length, 3)
 })

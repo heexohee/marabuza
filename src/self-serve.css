@@ -443,7 +443,7 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 }
 .shop-stage {
   position: relative; aspect-ratio: var(--art-w) / 150;
-  background: #d99a5a url("img/scene-shop.png?v=3") left top / auto 100% no-repeat;
+  background: #d99a5a url("img/scene-shop.png?v=4") left top / auto 100% no-repeat;
   image-rendering: pixelated;
 }
 .shop-hint { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: var(--on-pastel); }
@@ -542,3 +542,33 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .price-boxes { display: flex; flex-wrap: wrap; gap: 10px; }
 .price-boxes .price-box { flex: 1 1 200px; }
 .price-section .price-hint { margin-top: 8px; text-align: center; font-size: 14px; font-weight: 700; }
+
+/* dev mode bar (src/js/self-serve/dev.js) — localhost or ?dev only, never in the shipped game */
+.dev-bar {
+  position: fixed; left: 12px; bottom: 12px; z-index: 50; display: flex; align-items: center; gap: 6px;
+  padding: 6px 8px; background: rgba(40, 30, 40, .88); border: 2px solid #111; border-radius: 10px;
+  font-size: 13px; font-weight: 700; color: #fff;
+}
+.dev-bar .dev-tag { padding: 1px 6px; border-radius: 4px; background: #ffd23f; color: #222; font-size: 11px; }
+.dev-bar button {
+  font: inherit; font-size: 13px; padding: 4px 8px; border: 2px solid #111; border-radius: 6px;
+  background: #fff; color: #222; cursor: pointer;
+}
+.dev-bar button:hover, .dev-bar button:focus-visible { background: #ffe9a8; }
+
+/* shop: interior stages (shop-growth story 005) — done cards soft, the next one highlighted, later ones faded */
+.interior-card.done { background: #ffe6ec; }
+.interior-card.next { outline: 3px solid var(--red); outline-offset: -3px; }
+.interior-card.later { opacity: .55; }
+
+/* interior stages on the shop cross-section (shop-growth 005): painted by tools/art/scene_shop.py --stage N */
+.shop-scene[data-interior="1"] .shop-stage { background-image: url("img/scene-shop-1.png?v=2"); }
+.shop-scene[data-interior="2"] .shop-stage { background-image: url("img/scene-shop-2.png?v=2"); }
+.shop-scene[data-interior="3"] .shop-stage { background-image: url("img/scene-shop-3.png?v=2"); }
+.shop-scene[data-interior="4"] .shop-stage { background-image: url("img/scene-shop-4.png?v=2"); }
+.shop-scene[data-interior="5"] .shop-stage { background-image: url("img/scene-shop-5.png?v=2"); }
+.shop-scene[data-interior="6"] .shop-stage { background-image: url("img/scene-shop-6.png?v=2"); }
+.shop-scene:is([data-interior="5"], [data-interior="6"]) .table-top { background: #fff6f0; }
+.shop-scene:is([data-interior="5"], [data-interior="6"]) .table-leg { background: #ec96b0; }
+.shop-scene:is([data-interior="5"], [data-interior="6"]) .chair,
+.shop-scene:is([data-interior="5"], [data-interior="6"]) .chair::after { background: #8fd9b6; }

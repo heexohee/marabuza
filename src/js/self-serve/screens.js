@@ -1,10 +1,12 @@
 // Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
 // The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
-import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE, UPGRADES } from '../data.js'
+import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
-import { BOX_SIZE, MENU_PRICE, MODE_LABEL, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
-import { demandFactor, upgradeCost } from './logic.js'
+import {
+  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC,
+} from './data.js'
+import { demandFactor, nextInterior, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
 import { esc, heroImg } from './story-ui.js'
 
@@ -117,7 +119,7 @@ function stockCard(s, item) {
 function upgradeCard(s, u) {
   const level = s.upgrades[u.id] - u.start
   const cost = upgradeCost(s, u.id)
-  const pips = u.costs.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('')
+  const pips = u.multiples.map((_, i) => `<i class="${i < level ? 'on' : ''}"></i>`).join('')
   const btn = cost === null
     ? '<button class="btn buy" disabled>MAX</button>'
     : `<button class="btn buy" data-action="upgrade" data-arg="${u.id}" ${s.money < cost ? 'disabled' : ''}>${won(cost)}</button>`
@@ -146,6 +148,36 @@ function modePriceBox(s, mode) {
     </div>`
 }
 
+// Interior (shop-growth story 005): the 6 stages as a row of cards — done ✓, the next one to buy (price, or
+// the day it opens), and the later ones greyed out with their unlock day.
+function interiorCard(s, stage, i) {
+  const number = i + 1
+  const next = nextInterior(s)
+  const isDone = (s.interior ?? 0) >= number
+  const isNext = next && next.number === number
+  const action = isDone
+    ? '<button class="btn buy" disabled>완료 ✓</button>'
+    : isNext && next.isOpen
+      ? `<button class="btn buy" data-action="interior" ${s.money < next.cost ? 'disabled' : ''}>${won(next.cost)}</button>`
+      : `<button class="btn buy" disabled>${stage.unlockDay}일차에 열림</button>`
+  return `
+    <div class="card up-card interior-card ${isDone ? 'done' : isNext ? 'next' : 'later'}">
+      <div class="card-art big">${spriteImg(stage.emoji, 20, 'card-img')}</div>
+      <div class="card-name">${number}. ${stage.name}</div>
+      <div class="card-desc">${stage.desc}</div>
+      ${action}
+    </div>`
+}
+
+function interiorSection(s) {
+  const done = s.interior ?? 0
+  return `
+      <section class="shop-section interior-section">
+        <h2>인테리어 <small>(${done}/${INTERIOR_STAGES.length} · 순서대로 · 오늘은 ${s.day}일차)</small></h2>
+        <div class="cards">${INTERIOR_STAGES.map((stage, i) => interiorCard(s, stage, i)).join('')}</div>
+      </section>`
+}
+
 // Menu prices get their own shop section (they are not upgrades): both modes side by side, then the
 // combined, mode-mix-weighted demand hint from demandFactor(s) underneath.
 function priceSection(s) {
@@ -170,8 +202,8 @@ export function shopHtml(s) {
       </header>
       <section class="shop-section">
         <h2>가게 업그레이드</h2>
-        <div class="cards">${UPGRADES.map((u) => upgradeCard(s, u)).join('')}</div>
-      </section>${priceSection(s)}
+        <div class="cards">${SELF_UPGRADES.map((u) => upgradeCard(s, u)).join('')}</div>
+      </section>${interiorSection(s)}${priceSection(s)}
       <section class="shop-section orange">
         <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
         <div class="cards ing">${VARIANT_INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>

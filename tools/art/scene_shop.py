@@ -1,10 +1,13 @@
 """Pixel-art cross-section of the shop for the self-serve business screen (`.shop-scene`).
 
-Run: python3 tools/art/scene_shop.py [--stage N] [--mockup] [--out PATH] [--preview [PATH]]
+Run: python3 tools/art/scene_shop.py [--stage N] [--old-sign] [--mockup] [--out PATH] [--preview [PATH]]
   default                -> src/img/scene-shop.png (interior stage 0, the game's background)
-  --stage N              interior stage 0-6 (Story 005): 0 갈색 노포 → 6 핑크 마라부자
-  --renamed              the pink "마라부자" sign (hung at the end of the opening, Story 007); without it the
-                         sign still reads "마라판다" — the game uses that until the sign-swap opening exists
+  --stage N              interior stage 0-6 (Story 005): 0 갈색 노포 → 6 핑크 마라부자; the game uses
+                         src/img/scene-shop-N.png for N ≥ 1 (see `python3 tools/art/scene_shop.py --all`)
+  --all                  writes the game's backgrounds for every stage (scene-shop.png, scene-shop-1..6.png)
+  --old-sign             the brown "마라판다" sign. The game never shows it: the sign is swapped to pink
+                         "마라부자" on takeover day, at the end of the opening (Story 007), so every business
+                         day — interior stage 0 included — has the new sign
   --mockup               also paints the tables, chairs and open board that the game draws as DOM, so a
                          stage can be judged as a whole picture (design drafts; not used by the game)
 
@@ -282,6 +285,10 @@ def arg(name, default):
 
 
 if __name__ == '__main__':
-    stage = int(arg('--stage', 0))
-    out = Path(arg('--out', OUT)).resolve()
-    build(stage, '--mockup' in sys.argv, '--renamed' in sys.argv).save(out, sys.argv)
+    renamed = '--old-sign' not in sys.argv
+    if '--all' in sys.argv:
+        for n in range(len(STAGE_CHANGES)):
+            build(n, False, renamed).save(OUT if n == 0 else OUT.with_name(f'scene-shop-{n}.png'), [])
+    else:
+        stage = int(arg('--stage', 0))
+        build(stage, '--mockup' in sys.argv, renamed).save(Path(arg('--out', OUT)).resolve(), sys.argv)

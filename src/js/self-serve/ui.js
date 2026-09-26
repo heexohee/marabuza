@@ -368,7 +368,7 @@ export function render(root, s, view) {
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
   if (screen === 'shop') {
-    const key = `shop|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
+    const key = `shop|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`
     return patch(root, key, () => shopHtml(s))
   }
   patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day}`)
@@ -376,6 +376,9 @@ export function render(root, s, view) {
   patch(slot(root, 'rail'), s.rail.map((o) => o.ticketNo).join(','), () => railHtml(s))
   patch(slot(root, 'pots'), potsKey(s), () => potsHtml(s))
   fitPots(slot(root, 'pots'), s.pots.length)
+  // interior stage → background layer and furniture colours (.shop-scene[data-interior], shop-growth 005)
+  const scene = root.querySelector('.shop-scene')
+  if (scene && scene.dataset.interior !== String(s.interior ?? 0)) scene.dataset.interior = String(s.interior ?? 0)
   patch(slot(root, 'open-board'), `${!isClosing(s)}`, () => openBoardHtml(!isClosing(s)))
   patch(slot(root, 'counter'), counterKey(s), () => counterHtml(s))
   patch(slot(root, 'shelf'), shelfKey(s, view), () => shelfHtml(s, view))

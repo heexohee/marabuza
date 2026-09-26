@@ -6,16 +6,16 @@
 // Pricing, shop and timing helpers are shared by import — never duplicated or modified here.
 import {
   CHECKOUT_PRICE, CUSTOMER_FACES, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
-  SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
+  SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING,
 } from '../data.js'
 import {
   addToast, checkoutBasePrice, checkoutBowlPrice, checkoutBowlWeight, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
-  maxPatience, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
+  maxPatience as sharedMaxPatience, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DAY_LINE_SEC, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
-  RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
-  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID,
+  CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
@@ -25,7 +25,7 @@ import { CREATE_AT_SCENE, OPENING_SCENES, dayStartLine } from './story.js'
 // `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
 // below (story-001: menu-prices) so shop price adjustments actually drive the register.
 export {
-  addToast, buyUpgrade, checkoutBowlWeight, cookTime, fadeToasts, isClosing, openShop, upgradeCost,
+  addToast, checkoutBowlWeight, cookTime, fadeToasts, isClosing, openShop,
 } from '../logic.js'
 
 const SEATED_PATIENCE_RATE = 0.5
@@ -62,12 +62,13 @@ export function createNewGame() {
       ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i.startStock])),
     },
     unlocked: starters,
-    upgrades: Object.fromEntries(UPGRADES.map((u) => [u.id, u.start])),
+    upgrades: Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, u.start])),
+    interior: 0, // interior stages bought, 0–6 (INTERIOR_STAGES)
     toasts: [],
     nextToastId: 1,
     character: DEFAULT_CHARACTER,
     story: null, // { scene, line } while the opening cutscene plays
-    ...emptyDay(UPGRADE_BY_ID.pots.start, UPGRADE_BY_ID.seats.start),
+    ...emptyDay(SELF_UPGRADE_BY_ID.pots.start, SELF_UPGRADE_BY_ID.seats.start),
   }
 }
 
@@ -146,13 +147,21 @@ export function demandFactor(s) {
   return clamp(combined, SPAWN.demandMin, SPAWN.demandMax)
 }
 
-/** Mirrors ../logic.js's spawnInterval but against this variant's own two-mode demandFactor. */
+/** True once interior stage `n` (1 = 벽지 … 6 = 주방) is bought. */
+export const hasInterior = (s, n) => (s.interior ?? 0) >= n
+const interiorFactor = (s, n, factor) => (hasInterior(s, n) ? factor : 1)
+
+/** Mirrors ../logic.js's spawnInterval against this variant's two-mode demand (+ the 문·포토존 stage). */
 function spawnInterval(s) {
   return Math.max(
     SPAWN.minIntervalSec,
     SPAWN.baseIntervalSec - (s.day - 1) * SPAWN.perDay - s.rating * SPAWN.perRating,
-  ) / demandFactor(s)
+  ) / (demandFactor(s) * interiorFactor(s, 4, INTERIOR_EFFECT.visits))
 }
+
+/** Customer patience: the shared day curve (without the old interior upgrade) × the 바닥 stage. */
+export const maxPatience = (s) =>
+  sharedMaxPatience({ ...s, upgrades: { ...s.upgrades, interior: 0 } }) * interiorFactor(s, 2, INTERIOR_EFFECT.patience)
 
 /** True for a short moment after a shelf slot lost a batch to wilting (UI flash). */
 export const isJustWilted = (s, id) =>
@@ -229,7 +238,8 @@ function whenFree(s, action) {
 export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
   const ownerLine = { text: dayStartLine(s.day), until: DAY_LINE_SEC }
-  return { ...s, phase: 'day', story: null, ...day, ownerLine, ...openShelf(s.stock, shelfIds(s)) }
+  const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
+  return { ...s, phase: 'day', story: null, rating, ...day, ownerLine, ...openShelf(s.stock, shelfIds(s)) }
 }
 
 /** The owner's start-of-day line while it is still showing, else null. */
@@ -345,7 +355,7 @@ function advanceSpawn(s, dt, rng) {
 }
 
 function wiltShelf(s, dt) {
-  const { shelf, wilted } = ageShelf(s.shelf, dt)
+  const { shelf, wilted } = ageShelf(s.shelf, dt * interiorFactor(s, 6, INTERIOR_EFFECT.wilt))
   const entries = Object.entries(wilted)
   if (entries.length === 0) return { ...s, shelf }
   const count = sum(entries.map(([, q]) => q))
@@ -418,6 +428,39 @@ export function restock(s, id) {
 }
 
 // ---------- shop ----------
+
+/** Price of the next level of a shop upgrade, or null at max level. */
+export function upgradeCost(s, id) {
+  const u = SELF_UPGRADE_BY_ID[id]
+  if (!u) return null
+  const multiple = u.multiples[s.upgrades[id] - u.start]
+  return multiple === undefined ? null : priceOf(multiple)
+}
+
+/** Buys the next level of a shop upgrade (pots, fire, seats). */
+export function buyUpgrade(s, id) {
+  const cost = upgradeCost(s, id)
+  if (cost === null) return addToast(s, '이미 최대 레벨이에요', 'info')
+  if (s.money < cost) return addToast(s, '돈이 부족해요 💸', 'bad')
+  const bought = { ...s, money: s.money - cost, upgrades: { ...s.upgrades, [id]: s.upgrades[id] + 1 } }
+  return addToast(bought, `${SELF_UPGRADE_BY_ID[id].name} 완료!`, 'good')
+}
+
+/** The next interior stage to buy with its price and whether it is open yet; null once all 6 are done. */
+export function nextInterior(s) {
+  const stage = INTERIOR_STAGES[s.interior ?? 0]
+  if (!stage) return null
+  return { ...stage, number: (s.interior ?? 0) + 1, cost: priceOf(stage.multiple), isOpen: s.day >= stage.unlockDay }
+}
+
+/** Buys the next interior stage: in order, from its unlock day, if the money is there. */
+export function buyInterior(s) {
+  const next = nextInterior(s)
+  if (!next) return addToast(s, '인테리어를 모두 마쳤어요 🎀', 'info')
+  if (!next.isOpen) return addToast(s, `${next.name}는 ${next.unlockDay}일차에 열려요`, 'info')
+  if (s.money < next.cost) return addToast(s, '돈이 부족해요 💸', 'bad')
+  return addToast({ ...s, money: s.money - next.cost, interior: next.number }, `인테리어 ${next.name} 완료! ${next.emoji}`, 'good')
+}
 
 /** Unlocks a new ingredient; ingredients this variant does not sell (weighed shrimp) are refused. */
 export const unlockIngredient = (s, id) => (VARIANT_INGREDIENT_BY_ID[id] ? unlockSharedIngredient(s, id) : s)
@@ -552,9 +595,10 @@ export function serveTable(s, tableIdx) {
     }
     const isRight = pot.order.mode === table.mode && pot.order.spice === table.spice
     const patienceRatio = clamp(table.patience / table.maxPatience, 0, 1)
-    const tip = isRight ? round100(table.correctPrice * MAX_TIP_RATIO * patienceRatio) : 0
+    const tip = isRight ? round100(table.correctPrice * MAX_TIP_RATIO * patienceRatio * interiorFactor(free, 3, INTERIOR_EFFECT.tip)) : 0
     const ratingDelta = isRight
-      ? RATING_DELTA.serveGood + (patienceRatio > FAST_SERVICE_RATIO ? RATING_DELTA.fastBonus : 0)
+      ? (RATING_DELTA.serveGood + (patienceRatio > FAST_SERVICE_RATIO ? RATING_DELTA.fastBonus : 0)) *
+        interiorFactor(free, 5, INTERIOR_EFFECT.serveRating)
       : RATING_DELTA.serveWrong
     const cleared = {
       ...free,

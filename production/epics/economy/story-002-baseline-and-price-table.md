@@ -1,7 +1,7 @@
 # Story E002: 기준 D 측정 + 가격표 재정렬
 
 > **Epic**: economy (경제 레벨링)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M
@@ -59,7 +59,7 @@
 
 **Story Type**: Logic
 **Required evidence**: `tests/unit/economy/price_table_test.mjs` + 시뮬레이션 출력 기록
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/unit/economy/price_table_test.mjs` (6) + `tools/sim/baseline_day.mjs` 출력(브리프 경제 레벨링 §측정값)
 
 ---
 

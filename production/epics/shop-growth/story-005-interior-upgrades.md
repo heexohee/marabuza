@@ -1,7 +1,7 @@
 # Story 005: 인테리어 1–6단계 — 해금일·구매·단면·분위기 효과
 
 > **Epic**: shop-growth (영업 화면 — 가게 단면)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: L
@@ -64,7 +64,7 @@
 
 **Story Type**: Integration
 **Required evidence**: `tests/integration/shop-growth/interior_upgrades_test.mjs` + 단계별 단면 스크린샷 `production/qa/evidence/interior-upgrades/`
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/integration/shop-growth/interior_upgrades_test.mjs` (14) + `production/qa/evidence/interior-upgrades-evidence.md`
 
 ---
 

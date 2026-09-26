@@ -3,7 +3,7 @@
 // Has its own validator: the warehouse here also holds skewer/cilantro stock, which the
 // original flow's validator (../save.js) does not know about.
 import { INGREDIENT_BY_ID, MAX_RATING, UPGRADE_BY_ID } from '../data.js'
-import { DROPPED_INGREDIENT_IDS, MENU_PRICE, SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
+import { DROPPED_INGREDIENT_IDS, INTERIOR_STAGES, MENU_PRICE, SAVE_KEY, SELF_UPGRADES, SHELF_ITEM_BY_ID } from './data.js'
 import { createNewGame, setMenuPrice } from './logic.js'
 import { normalizeCharacter } from './character.js'
 
@@ -21,6 +21,12 @@ const isPriceMap = (p) => p === undefined ||
   (p !== null && typeof p === 'object' && Object.keys(MENU_PRICE).filter((k) => k !== 'step').every((m) => Number.isInteger(p[m])))
 const loadPrices = (fresh, p) => (p === undefined ? fresh : Object.keys(fresh.prices).reduce((s, m) => setMenuPrice(s, m, p[m]), fresh)).prices
 
+// Upgrades (economy E002, shop-growth 005): saves may still carry the old `interior` upgrade level — accepted,
+// then dropped (interior stages start at 0). Levels are clamped into this flow's ranges (tables 2–4).
+const clampLevel = (u, level) => Math.min(u.start + u.multiples.length, Math.max(u.start, level ?? u.start))
+const loadUpgrades = (d) => Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, clampLevel(u, d[u.id])]))
+const isInterior = (v) => v === undefined || (Number.isInteger(v) && v >= 0 && v <= INTERIOR_STAGES.length)
+
 const isNumberMap = (obj, validKeys, check) =>
   obj !== null && typeof obj === 'object' &&
   Object.entries(obj).every(([k, v]) => validKeys[k] !== undefined && check(v))
@@ -35,7 +41,8 @@ export function isValidSave(d) {
     isPriceMap(d.prices) &&
     isNumberMap(d.stock, SAVEABLE_STOCK_IDS, isNonNegInt) &&
     Array.isArray(d.unlocked) && d.unlocked.every((id) => INGREDIENT_BY_ID[id] !== undefined) &&
-    isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt)
+    isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt) &&
+    isInterior(d.interior)
 }
 
 /** Saves between-days progress; returns false when storage is unavailable. */
@@ -49,6 +56,7 @@ export function saveGame(s) {
     stock: s.stock,
     unlocked: s.unlocked,
     upgrades: s.upgrades,
+    interior: s.interior,
     character: s.character,
   }
   try {
@@ -75,7 +83,8 @@ export function loadGame() {
       prices: loadPrices(fresh, d.prices),
       stock: { ...fresh.stock, ...withoutDropped(d.stock) },
       unlocked: d.unlocked.filter((id) => !isDropped(id)),
-      upgrades: { ...fresh.upgrades, ...d.upgrades },
+      upgrades: loadUpgrades(d.upgrades),
+      interior: d.interior ?? 0,
       character: normalizeCharacter(d.character), // saves from before characters get the default
     }
   } catch {

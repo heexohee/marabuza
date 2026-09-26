@@ -27,7 +27,7 @@
 | 002 | 손님 입장·착석·퇴장 | Integration | Ready | N/A (minimal) |
 | 003 | 서빙 비행 + 식사 | Integration | Ready | N/A (minimal) |
 | 004 | 하루 시간대 연출 (오전→점심 러시→노을→밤) | Visual/Feel | Ready | N/A (minimal) |
-| 005 | 인테리어 1–6단계 — 해금일·구매·단면·분위기 효과 | Integration | Ready | N/A (minimal) |
+| 005 | 인테리어 1–6단계 — 해금일·구매·단면·분위기 효과 | Integration | In Progress | N/A (minimal) |
 | 006 | 점심 러시 손님 곡선 + 창밖 대기줄 | Integration | Ready | N/A (minimal) |
 | 007 | 오프닝 5장 — 간판 교체 + 타이틀 드롭 | Visual/Feel | Ready | N/A (minimal) |
 
