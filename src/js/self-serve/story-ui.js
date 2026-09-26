@@ -4,7 +4,7 @@
 import { spriteImg } from '../sprites.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
 import { NAME_MAX_LEN } from './data.js'
-import { OPENING_SCENES, STAGE, castSpot, lineText, sceneCast, speakerName, storyName } from './story.js'
+import { OPENING_SCENES, STAGE, castSpot, lineText, sceneBg, sceneCast, speakerName, storyName } from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
@@ -74,7 +74,7 @@ export function openingHtml(s) {
   const dots = OPENING_SCENES.map((_, i) => `<i class="${i === sceneIdx ? 'on' : ''}"></i>`).join('')
   return `
     <div class="opening-screen" data-action="storyNext">
-      <div class="scene ${scene.bg}">${props}${cast}</div>
+      <div class="scene ${sceneBg(sceneIdx, lineIdx)}">${props}${cast}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>

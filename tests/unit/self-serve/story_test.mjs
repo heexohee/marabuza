@@ -8,7 +8,8 @@ import {
 } from '../../../src/js/self-serve/character.js'
 import { HERO_BODY, HERO_HAIR, HERO_NECK_Y } from '../../../src/js/self-serve/hero-art.js'
 import {
-  CREATE_AT_SCENE, OPENING_SCENES, STAGE, castSpot, dayEndLine, dayStartLine, lineText, sceneCast, speakerName, storyName,
+  CREATE_AT_SCENE, OPENING_SCENES, STAGE, castSpot, dayEndLine, dayStartLine, lineText, sceneBg, sceneCast, speakerName,
+  storyName,
 } from '../../../src/js/self-serve/story.js'
 import {
   advanceStory, beginNewGame, finishCharacter, ownerLineText, setCharacterName, setCharacterOption, skipStory, tick,
@@ -168,7 +169,7 @@ const toCreation = () => advance(beginNewGame(), linesBeforeCreate)
 
 test('test_flow_character_is_created_right_before_the_takeover_day', () => {
   assert.equal(OPENING_SCENES[CREATE_AT_SCENE].id, 'takeover', 'creation sits between the notice and the takeover')
-  assert.equal(OPENING_SCENES[CREATE_AT_SCENE].bg, 'scene-regular', 'she takes over the same shop she used to eat at')
+  assert.match(OPENING_SCENES[CREATE_AT_SCENE].bg, /^scene-takeover/, 'she takes over the same shop (its morning version)')
 })
 
 test('test_story_opening_tells_the_takeover_of_mara_panda', () => {
@@ -262,6 +263,25 @@ test('test_story_panda_walks_in_after_she_finds_the_notice', () => {
   assert.equal(lines[enter].who, 'panda')
   assert.ok(lines.slice(0, enter).some((l) => l.who === 'notice'), 'the notice is read before he comes')
   assert.deepEqual(OPENING_SCENES[i].props, [], 'painted background, no emoji props')
+})
+
+test('test_story_takeover_day_panda_hands_over_then_leaves_her_alone', () => {
+  const i = CREATE_AT_SCENE
+  const sc = OPENING_SCENES[i]
+  const leave = sc.leave.panda
+  assert.ok(sceneCast(i, 1).includes('panda') && sceneCast(i, 1).includes('me'), 'both there for the apron')
+  assert.equal(sc.lines[leave - 1].who, 'panda', 'his goodbye is the last thing he says')
+  assert.deepEqual(sceneCast(i, leave), ['me'], 'then she is alone')
+  sc.lines.slice(leave).forEach((l) => assert.notEqual(l.who, 'panda', 'no lines after he left'))
+})
+
+test('test_story_takeover_opens_the_shop_on_the_last_line', () => {
+  const i = CREATE_AT_SCENE
+  const last = OPENING_SCENES[i].lines.length - 1
+  assert.equal(sceneBg(i, 0), 'scene-takeover', 'morning, sign says 준비중')
+  assert.equal(sceneBg(i, last - 1), 'scene-takeover')
+  assert.equal(sceneBg(i, last), 'scene-takeover-open', 'the sign flips to 영업중 as she opens')
+  assert.equal(sceneBg(1, 0), 'scene-regular', 'scenes without changes keep their bg')
 })
 
 test('test_flow_protagonist_is_called_me_until_created', () => {

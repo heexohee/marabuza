@@ -1,6 +1,9 @@
 """Pixel-art background for opening scene 2 (late-night stop at the panda owner's old malatang shop).
 
-Run: python3 tools/art/scene_regular.py [--preview path]  -> writes src/img/scene-regular.png
+Run: python3 tools/art/scene_regular.py [--preview]  -> writes the shop in three moods (MODES):
+  night   -> src/img/scene-regular.png         scene 2, the late-night regular visit (영업중 neon)
+  morning -> src/img/scene-takeover.png        scene 4, the takeover morning (준비중 board, sunlight)
+  open    -> src/img/scene-takeover-open.png   scene 4's last line: 영업중 neon and lanterns lit
 
 Inside the panda's shop in the scene's original warm browns (orange wall / brown floor, as the old
 .scene-regular gradient was) — an old, well-loved place, unlike the protagonist's pink shop to come:
@@ -16,7 +19,9 @@ from pathlib import Path
 from pixel_scene import Canvas, mix
 
 ROOT = Path(__file__).resolve().parents[2]
-OUT = ROOT / 'src/img/scene-regular.png'
+MODES = {'night': 'scene-regular', 'morning': 'scene-takeover', 'open': 'scene-takeover-open'}
+DAYLIGHT = {'morning', 'open'}
+SUN = (255, 244, 210)
 
 BG_W, BG_H = 384, 152
 SEED = 20260927
@@ -31,6 +36,7 @@ BROTH, CREAM, INK = (212, 62, 42), (255, 238, 206), (40, 22, 16)
 WARM_LIGHT = (255, 214, 150)
 LANTERN_X = (30, 94, 185, 299)  # in the gaps between window, fridge and the two boards
 
+MODE = 'night'
 rng = random.Random(SEED)
 cv = Canvas(BG_W, BG_H)
 put, glow, rect = cv.put, cv.glow, cv.rect
@@ -48,10 +54,61 @@ def wall():
         rect(x, 98, x + 1, FLOOR_Y, WOOD_DARK)
 
 
+WINDOW = (10, 30, 90, 94)  # x0, y0, x1, y1
+
+
 def window():
-    """Night street outside: dark sky, far towers with lit windows, a wet road glint."""
-    x0, y0, x1, y1 = 10, 30, 90, 94
+    """The street outside (night or day), mullions, glass sheen and the sign in the window."""
+    x0, y0, x1, y1 = WINDOW
     rect(x0 - 3, y0 - 3, x1 + 3, y1 + 3, WOOD_DARK)
+    if MODE in DAYLIGHT:
+        day_street()
+    else:
+        night_street()
+    rect((x0 + x1) // 2, y0, (x0 + x1) // 2 + 2, y1, WOOD_DARK)  # mullions
+    rect(x0, (y0 + y1) // 2, x1, (y0 + y1) // 2 + 2, WOOD_DARK)
+    for y in range(y0, y1):  # glass sheen
+        for x in range(x0, x1):
+            if (x - y) % 23 < 2:
+                glow(x, y, (255, 255, 255), 0.10)
+    if MODE == 'morning':  # hanging wooden board: not open yet
+        bx0, by0, bx1, by1 = x0 + 20, y1 - 19, x1 - 20, y1 - 5
+        rect(bx0 + 10, y0 + 30, bx0 + 11, by0, INK)
+        rect(bx1 - 11, y0 + 30, bx1 - 10, by0, INK)
+        rect(bx0 - 1, by0 - 1, bx1 + 1, by1 + 1, WOOD_DARK)
+        rect(bx0, by0, bx1, by1, (232, 210, 166))
+        cv.sign_text('준비중', (x0 + x1) // 2, (by0 + by1) // 2, (110, 66, 44), None, size=10)
+    else:
+        cv.sign_text('영업중', (x0 + x1) // 2, y1 - 12, (255, 120, 110), (150, 50, 60), size=10)
+    rect(x0 - 5, y1 + 3, x1 + 5, y1 + 5, WOOD_LIGHT)  # sill
+
+
+def day_street():
+    """Morning outside: blue sky, two clouds, pale towers, a bright road."""
+    x0, y0, x1, y1 = WINDOW
+    for y in range(y0, y1):
+        rect(x0, y, x1, y + 1, mix((132, 190, 236), (208, 230, 248), (y - y0) / (y1 - y0)))
+    for cx, cy, rx in ((30, y0 + 8, 9), (66, y0 + 13, 7)):
+        for y in range(cy - 4, cy + 4):
+            for x in range(cx - rx, cx + rx + 1):
+                if ((x - cx) / rx) ** 2 + ((y - cy) / 3.5) ** 2 <= 1:
+                    put(x, y, (250, 252, 255))
+    x = x0
+    while x < x1:
+        w, top = rng.randrange(8, 16), rng.randrange(y0 + 16, y0 + 38)
+        rect(x, top, min(x + w, x1), y1, (156, 172, 198))
+        rect(min(x + w, x1) - 1, top, min(x + w, x1), y1, (184, 198, 220))
+        for wy in range(top + 3, y1 - 4, 4):
+            for wx in range(x + 2, min(x + w, x1) - 1, 3):
+                if rng.random() < 0.25:
+                    put(wx, wy, (206, 222, 240))
+        x += w + 1
+    rect(x0, y1 - 6, x1, y1, (150, 146, 150))  # street
+
+
+def night_street():
+    """Night street outside: dark sky, far towers with lit windows, a wet road glint."""
+    x0, y0, x1, y1 = WINDOW
     for y in range(y0, y1):
         rect(x0, y, x1, y + 1, mix((14, 20, 40), (40, 52, 86), (y - y0) / (y1 - y0)))
     for _ in range(14):
@@ -68,14 +125,6 @@ def window():
     rect(x0, y1 - 6, x1, y1, (22, 26, 42))  # street
     for gx in range(x0, x1, 3):
         glow(gx, y1 - 3, (244, 212, 140), 0.35)
-    rect((x0 + x1) // 2, y0, (x0 + x1) // 2 + 2, y1, WOOD_DARK)  # mullions
-    rect(x0, (y0 + y1) // 2, x1, (y0 + y1) // 2 + 2, WOOD_DARK)
-    for y in range(y0, y1):  # glass sheen
-        for x in range(x0, x1):
-            if (x - y) % 23 < 2:
-                glow(x, y, (255, 255, 255), 0.10)
-    cv.sign_text('영업중', (x0 + x1) // 2, y1 - 12, (255, 120, 110), (150, 50, 60), size=10)
-    rect(x0 - 5, y1 + 3, x1 + 5, y1 + 5, WOOD_LIGHT)  # sill
 
 
 INGREDIENTS = (
@@ -177,8 +226,11 @@ def floor():
 
 
 def lights():
+    """Lanterns; lit ones pool warm light on the floor (not in the morning, before opening)."""
     for cx in LANTERN_X:
         cv.lantern(cx, BEAM_H + 1, cord=10)
+        if MODE == 'morning':
+            continue
         for y in range(FLOOR_Y, BG_H):  # warm pools on the floor
             for x in range(cx - 40, cx + 42):
                 d = ((x - cx) / 40) ** 2 + ((y - FLOOR_Y - 12) / 16) ** 2
@@ -186,12 +238,30 @@ def lights():
                     glow(x, y, WARM_LIGHT, 0.18 * (1 - d))
 
 
-def build():
-    for step in (wall, window, fridge, shop_board, menu_board, counter, floor, lights):
+def sunlight():
+    """Morning sun through the window: a slanted patch on the floor and a faint shaft in the air."""
+    x0, y0, x1, y1 = WINDOW
+    for y in range(y1 + 5, BG_H):
+        t = (y - y0) * 0.9
+        for x in range(int(x0 + t), int(x1 + t)):
+            glow(x, y, SUN, 0.07 if y < FLOOR_Y else 0.2)
+
+
+def build(mode='night'):
+    """Paints one mood from a fresh canvas and seed, so each output is deterministic on its own."""
+    global MODE, rng, cv, put, glow, rect
+    MODE, rng, cv = mode, random.Random(SEED), Canvas(BG_W, BG_H)
+    put, glow, rect = cv.put, cv.glow, cv.rect
+    steps = [wall, window, fridge, shop_board, menu_board, counter, floor, lights]
+    if MODE in DAYLIGHT:
+        steps.append(sunlight)
+    for step in steps:
         step()
-    return cv.img
+    return cv
 
 
 if __name__ == '__main__':
-    build()
-    cv.save(OUT)
+    import sys
+    argv = ['--preview'] if '--preview' in sys.argv else []  # each mood previews to /tmp/<name>.png
+    for mode, name in MODES.items():
+        build(mode).save(ROOT / f'src/img/{name}.png', argv)

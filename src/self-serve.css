@@ -177,6 +177,9 @@
 .scene-office { background: #1e2c4c url("img/scene-office.png?v=6") center / 100% 100% no-repeat; }
 /* painted by tools/art/scene_regular.py — the panda's old shop, in the scene's original warm browns */
 .scene-regular { background: #b5651d url("img/scene-regular.png?v=2") center / 100% 100% no-repeat; }
+/* scene 4: the same shop the takeover morning (준비중), then opened on the last line (영업중) */
+.scene-takeover { background: #d99a5a url("img/scene-takeover.png?v=1") center / 100% 100% no-repeat; }
+.scene-takeover-open { background: #d99a5a url("img/scene-takeover-open.png?v=1") center / 100% 100% no-repeat; }
 /* painted by tools/art/scene_notice.py — the closed shop door in the rain */
 .scene-notice { background: #1e2230 url("img/scene-notice.png?v=1") center / 100% 100% no-repeat; }
 .prop { position: absolute; }

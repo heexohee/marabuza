@@ -6,7 +6,8 @@ const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문' }
 
 /**
  * Opening scenes in order. bg = CSS scene class, props = emoji sprites drawn in the scene,
- * cast = who stands in it ('me' = protagonist, 'panda'), enter = { who: line index they appear from }.
+ * cast = who stands in it ('me' = protagonist, 'panda'), enter / leave = { who: line index they appear
+ * from / are gone from }, bgAt = { line index: bg class from that line on }.
  * who = speaker of each line; 'caption' is untagged narration (time skips).
  */
 export const OPENING_SCENES = [
@@ -38,13 +39,17 @@ export const OPENING_SCENES = [
     ],
   },
   {
-    // same shop as the regular scene: she takes over the very place that kept her going
-    id: 'takeover', bg: 'scene-regular', props: [], cast: ['me', 'panda'],
+    // same shop as the regular scene, the morning she takes it over: he hands her the apron and leaves,
+    // and on the last line the sign in the window flips from 준비중 to 영업중
+    id: 'takeover', bg: 'scene-takeover', bgAt: { 7: 'scene-takeover-open' }, props: [], cast: ['me', 'panda'],
+    leave: { panda: 5 },
     lines: [
-      { who: 'caption', text: '그리고, 인수 첫날.' },
+      { who: 'caption', text: '그리고, 인수 첫날 아침.' },
       { who: 'panda', text: '내가 쓰던 앞치마야. 오늘부터 {name} 사장이네.' },
       { who: 'me', text: '월세는 매주, 권리금은 조금씩… 꼭 다 갚을게요.' },
-      { who: 'panda', text: '천천히 해. 대신 손님 그릇은 꼭 뒤적여 봐.' },
+      { who: 'panda', text: '천천히 해. 대신 손님 그릇은 꼭 뒤적여 봐. 고기랑 꼬치가 숨어 있거든.' },
+      { who: 'panda', text: '난 이만 간다. 가끔 손님으로 올게.' },
+      { who: 'me', text: '…이제 진짜 혼자네.' },
       { who: 'me', text: '이번엔 내가 누군가의 "버티게 해주는 한 그릇"이 되어 줄 거야.' },
       { who: 'me', text: '{name} 사장의 마라판다, 첫 영업 시작!' },
     ],
@@ -72,13 +77,22 @@ const CAST_SPOTS = {
 export const castSpot = (who) => CAST_SPOTS[who]
 
 /**
- * Who is drawn at a line of a scene (default: once everyone has entered). Before creation the scenes are
+ * Who is drawn at a line of a scene (no line: everyone who appears in the scene at some point). Before creation the scenes are
  * first-person ("나" speaks off-screen), so the protagonist first appears on the takeover day, in the apron;
- * others appear from their `enter` line.
+ * others appear from their `enter` line and are gone from their `leave` line.
  */
-export function sceneCast(sceneIdx, lineIdx = Infinity) {
+export function sceneCast(sceneIdx, lineIdx) {
   const scene = OPENING_SCENES[sceneIdx]
-  return scene.cast.filter((who) => (who !== 'me' || sceneIdx >= CREATE_AT_SCENE) && lineIdx >= (scene.enter?.[who] ?? 0))
+  const onStage = (who) => lineIdx === undefined
+    || (lineIdx >= (scene.enter?.[who] ?? 0) && lineIdx < (scene.leave?.[who] ?? scene.lines.length))
+  return scene.cast.filter((who) => (who !== 'me' || sceneIdx >= CREATE_AT_SCENE) && onStage(who))
+}
+
+/** Background class at a line: the scene's bg, or the latest bgAt change at or before that line. */
+export function sceneBg(sceneIdx, lineIdx) {
+  const { bg, bgAt = {} } = OPENING_SCENES[sceneIdx]
+  const from = Object.keys(bgAt).map(Number).filter((i) => i <= lineIdx).sort((a, b) => b - a)[0]
+  return from === undefined ? bg : bgAt[from]
 }
 
 /** Before creation the protagonist has no chosen name yet, so she is just "나". */
