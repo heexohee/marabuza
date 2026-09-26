@@ -387,6 +387,18 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 .speaker { font-size: 15px; font-weight: 700; padding: 2px 10px; }
 .dialogue p { font-size: 18px; font-weight: 700; }
 .next-hint { font-size: 12px; font-weight: 700; }
+
+/* ---------- opening: the scene and the dialogue box never move or resize between lines ----------
+   Same width (both fill .opening-screen), fixed dialogue height (fits two lines + speaker on desktop,
+   three on phones) for every kind of line — speaker, notice, caption — and a reserved scrollbar gutter
+   so the centred screen cannot shift sideways. */
+html { scrollbar-gutter: stable; }
+:root { --dialogue-h: 128px; }
+.scene, .dialogue { box-sizing: border-box; width: 100%; }
+.dialogue { height: var(--dialogue-h); min-height: 0; overflow: hidden; }
+@media (max-width: 700px) {
+  :root { --dialogue-h: 156px; }
+}
 .skip-btn { font-size: 14px; font-weight: 700; }
 
 /* modals and shop */
