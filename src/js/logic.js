@@ -389,13 +389,18 @@ export const checkoutBowlWeight = (bowl) =>
     .filter(([id]) => !MEAT_IDS.has(id))
     .reduce((sum, [id, qty]) => sum + INGREDIENT_BY_ID[id].grams * qty, 0)
 
-/** Weight-only price (what the register prints on its own): weighed grams × mode rate, rounded to 100. */
-export const checkoutBasePrice = (bowl) =>
-  round100((checkoutBowlWeight(bowl) / 100) * CHECKOUT_PRICE.ratePer100g[bowl.mode])
+/**
+ * Weight-only price (what the register prints on its own): weighed grams × mode rate, rounded to 100.
+ * `rates` defaults to the fixed register rate (classic flow); self-serve passes its own adjustable
+ * per-mode prices (story-001: menu-prices) so the register always charges against the same numbers
+ * shown in its shop.
+ */
+export const checkoutBasePrice = (bowl, rates = CHECKOUT_PRICE.ratePer100g) =>
+  round100((checkoutBowlWeight(bowl) / 100) * rates[bowl.mode])
 
 /** Full checkout price: weight price plus per-portion meat, per-skewer and cilantro surcharges. */
-export function checkoutBowlPrice(bowl) {
-  const base = checkoutBasePrice(bowl)
+export function checkoutBowlPrice(bowl, rates = CHECKOUT_PRICE.ratePer100g) {
+  const base = checkoutBasePrice(bowl, rates)
   const meat = meatPortions(bowl.beef) * CHECKOUT_PRICE.beefSurcharge +
     meatPortions(bowl.lamb) * CHECKOUT_PRICE.lambSurcharge
   const skewerCount = Object.values(bowl.skewers).reduce((a, b) => a + b, 0)

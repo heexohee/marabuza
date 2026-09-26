@@ -63,6 +63,15 @@ export const WILT_FLASH_SEC = 1.5 // a slot flashes this long right after a batc
 export const FEEDBACK_TOAST_SEC = 5 // register result toast stays longer than the default 2.5s
 export const MODE_LABEL = { maratang: '마라탕', shanguo: '샹궈' }
 
+// Adjustable per-mode menu prices (story-001: menu-prices). Defaults match CHECKOUT_PRICE.ratePer100g
+// (1,800 / 3,000); bounds keep the shop from ever going below cost or absurdly high, roughly
+// 0.67x–1.44x the default, same shape for both modes.
+export const MENU_PRICE = {
+  step: 100,
+  maratang: { min: 1200, max: 2600 },
+  shanguo: { min: 2000, max: 4400 },
+}
+
 // Story & protagonist (design/quick-specs/story-character-2026-09-25.md)
 export const NAME_MAX_LEN = 8 // fits the narrow counter panel
 export const DAY_LINE_SEC = 5 // opening-of-day line stays over the owner this long

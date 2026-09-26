@@ -1,12 +1,12 @@
 # Story E001: 메뉴 단가 두 가지 — 상점 조정 → 계산기 반영
 
 > **Epic**: economy (경제 레벨링)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Core
 > **Type**: Integration
 > **Estimate**: M
 > **Manifest Version**: N/A (minimal — no control manifest)
-> **Last Updated**: 2026-09-26
+> **Last Updated**: 2026-09-27
 > **Performance**: 정산·상점 화면에서만 계산 — 영업 루프 영향 없음
 
 ## Context
@@ -62,7 +62,7 @@
 
 **Story Type**: Integration
 **Required evidence**: `tests/integration/economy/menu_prices_test.mjs` + 상점·계산대 스크린샷
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/integration/economy/menu_prices_test.mjs` (16) + `production/qa/evidence/menu-prices-evidence.md`
 
 ---
 

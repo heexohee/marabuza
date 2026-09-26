@@ -2,7 +2,7 @@
 import {
   addToast, adjustCharge, advanceStory, beginNewGame, buyPack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
   fadeToasts, finishCharacter, openShop, pickPot, resetCharge, restock, serveTable, setCharacterName,
-  setCharacterOption, setPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
+  setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
 import { hasSave, loadGame, saveGame } from './save.js'
@@ -34,7 +34,10 @@ const gameActions = {
   buy: (s, arg) => persist(buyPack(s, arg)),
   unlock: (s, arg) => persist(unlockIngredient(s, arg)),
   upgrade: (s, arg) => persist(buyUpgrade(s, arg)),
-  price: (s, arg) => persist(setPrice(s, s.pricePer100g + Number(arg))),
+  price: (s, arg) => {
+    const [mode, delta] = String(arg).split(':')
+    return persist(setMenuPrice(s, mode, s.prices[mode] + Number(delta)))
+  },
   nextDay: (s) => startNextDay(persist(s)),
   new: () => beginNewGame(),
   charOpt: (s, arg) => {

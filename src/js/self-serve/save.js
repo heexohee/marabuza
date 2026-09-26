@@ -2,9 +2,9 @@
 // touches the original flow's save. Only the between-days progress is saved.
 // Has its own validator: the warehouse here also holds skewer/cilantro stock, which the
 // original flow's validator (../save.js) does not know about.
-import { INGREDIENT_BY_ID, MAX_RATING, PRICE, UPGRADE_BY_ID } from '../data.js'
-import { DROPPED_INGREDIENT_IDS, SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
-import { createNewGame } from './logic.js'
+import { INGREDIENT_BY_ID, MAX_RATING, UPGRADE_BY_ID } from '../data.js'
+import { DROPPED_INGREDIENT_IDS, MENU_PRICE, SAVE_KEY, SHELF_ITEM_BY_ID } from './data.js'
+import { createNewGame, setMenuPrice } from './logic.js'
 import { normalizeCharacter } from './character.js'
 
 const SAVE_VERSION = 1
@@ -15,6 +15,12 @@ const isNonNegInt = (v) => Number.isInteger(v) && v >= 0
 const SAVEABLE_STOCK_IDS = { ...SHELF_ITEM_BY_ID, ...Object.fromEntries(DROPPED_INGREDIENT_IDS.map((id) => [id, true])) }
 const isDropped = (id) => DROPPED_INGREDIENT_IDS.includes(id)
 const withoutDropped = (map) => Object.fromEntries(Object.entries(map).filter(([id]) => !isDropped(id)))
+// Menu prices (story-001: menu-prices). Saves from before carry a single `pricePer100g` and no `prices`:
+// they stay valid and load with the default prices; out-of-range prices are clamped on load, not rejected.
+const isPriceMap = (p) => p === undefined ||
+  (p !== null && typeof p === 'object' && Object.keys(MENU_PRICE).filter((k) => k !== 'step').every((m) => Number.isInteger(p[m])))
+const loadPrices = (fresh, p) => (p === undefined ? fresh : Object.keys(fresh.prices).reduce((s, m) => setMenuPrice(s, m, p[m]), fresh)).prices
+
 const isNumberMap = (obj, validKeys, check) =>
   obj !== null && typeof obj === 'object' &&
   Object.entries(obj).every(([k, v]) => validKeys[k] !== undefined && check(v))
@@ -26,7 +32,7 @@ export function isValidSave(d) {
     Number.isInteger(d.day) && d.day >= 1 &&
     isNonNegInt(d.money) &&
     typeof d.rating === 'number' && d.rating >= 0 && d.rating <= MAX_RATING &&
-    Number.isInteger(d.pricePer100g) && d.pricePer100g >= PRICE.min && d.pricePer100g <= PRICE.max &&
+    isPriceMap(d.prices) &&
     isNumberMap(d.stock, SAVEABLE_STOCK_IDS, isNonNegInt) &&
     Array.isArray(d.unlocked) && d.unlocked.every((id) => INGREDIENT_BY_ID[id] !== undefined) &&
     isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt)
@@ -39,7 +45,7 @@ export function saveGame(s) {
     day: s.day,
     money: s.money,
     rating: s.rating,
-    pricePer100g: s.pricePer100g,
+    prices: s.prices,
     stock: s.stock,
     unlocked: s.unlocked,
     upgrades: s.upgrades,
@@ -66,7 +72,7 @@ export function loadGame() {
       day: d.day,
       money: d.money,
       rating: d.rating,
-      pricePer100g: d.pricePer100g,
+      prices: loadPrices(fresh, d.prices),
       stock: { ...fresh.stock, ...withoutDropped(d.stock) },
       unlocked: d.unlocked.filter((id) => !isDropped(id)),
       upgrades: { ...fresh.upgrades, ...d.upgrades },

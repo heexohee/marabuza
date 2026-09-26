@@ -1,7 +1,7 @@
 # 에픽: economy (경제 레벨링)
 
 > **단계**: minimal — `design/game-brief.md` "경제 레벨링" 섹션(2026-09-26)에서 만든 에픽
-> **상태**: Not Started
+> **상태**: In Progress
 
 ## 목표
 
@@ -11,7 +11,7 @@
 
 | # | 스토리 | 유형 | 상태 | ADR |
 |---|-------|------|--------|-----|
-| E001 | 메뉴 단가 두 가지 — 상점 조정 → 계산기 반영 | Integration | Ready | N/A (minimal) |
+| E001 | 메뉴 단가 두 가지 — 상점 조정 → 계산기 반영 | Integration | In Progress | N/A (minimal) |
 | E002 | 기준 D 측정 + 가격표 재정렬 | Logic | Ready | N/A (minimal) |
 | E003 | 주간 임대료 + 일요일 휴일 — 연체 1회, 2주 연속 폐업 | Integration | Ready | N/A (minimal) |
 | E004 | 권리금 할부 + 엔딩 "이제 네 가게구나" | Integration | Ready | N/A (minimal) |

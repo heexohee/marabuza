@@ -1,10 +1,10 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  buyPack, buyUpgrade, createNewGame, generateWish, hiddenItemLabel, hiddenItems, setPrice, startDay, tick, unlockIngredient,
+  buyPack, buyUpgrade, createNewGame, generateWish, hiddenItemLabel, hiddenItems, setMenuPrice, startDay, tick, unlockIngredient,
 } from '../../../src/js/self-serve/logic.js'
-import { DAY_LENGTH_SEC, PACK_SIZE, PRICE } from '../../../src/js/data.js'
-import { START_WAREHOUSE_STOCK } from '../../../src/js/self-serve/data.js'
+import { DAY_LENGTH_SEC, PACK_SIZE } from '../../../src/js/data.js'
+import { MENU_PRICE, START_WAREHOUSE_STOCK } from '../../../src/js/self-serve/data.js'
 
 const seq = (...values) => { let i = 0; return () => values[i++ % values.length] }
 
@@ -60,8 +60,8 @@ test('shop actions spend money and respect limits', () => {
   assert.equal(unlocked.stock.bunmoja, PACK_SIZE)
   assert.equal(buyUpgrade(s, 'pots').upgrades.pots, 2)
   assert.equal(buyUpgrade({ ...s, money: 0 }, 'pots').upgrades.pots, 1)
-  assert.equal(setPrice(s, 99999).pricePer100g, PRICE.max)
-  assert.equal(setPrice(s, 2249).pricePer100g, 2200)
+  assert.equal(setMenuPrice(s, 'maratang', 99999).prices.maratang, MENU_PRICE.maratang.max)
+  assert.equal(setMenuPrice(s, 'shanguo', 3249).prices.shanguo, 3200)
 })
 
 test('seat upgrades add tables on the next day', () => {

@@ -6,14 +6,14 @@
 // Pricing, shop and timing helpers are shared by import — never duplicated or modified here.
 import {
   CHECKOUT_PRICE, CUSTOMER_FACES, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
-  PRICE, SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
+  SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING, UPGRADES, UPGRADE_BY_ID,
 } from '../data.js'
 import {
   addToast, checkoutBasePrice, checkoutBowlPrice, checkoutBowlWeight, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
-  maxPatience, round100, spawnInterval, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
+  maxPatience, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DAY_LINE_SEC, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  CILANTRO_CHANCE, DAY_LINE_SEC, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
   RESTOCK_BUSY_SEC, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID,
 } from './data.js'
@@ -22,9 +22,10 @@ import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './characte
 import { CREATE_AT_SCENE, OPENING_SCENES, dayStartLine } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
+// `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
+// below (story-001: menu-prices) so shop price adjustments actually drive the register.
 export {
-  addToast, buyUpgrade, checkoutBowlWeight, cookTime, demandFactor, fadeToasts, isClosing, openShop,
-  setPrice, upgradeCost,
+  addToast, buyUpgrade, checkoutBowlWeight, cookTime, fadeToasts, isClosing, openShop, upgradeCost,
 } from '../logic.js'
 
 const SEATED_PATIENCE_RATE = 0.5
@@ -55,7 +56,7 @@ export function createNewGame() {
     day: 1,
     money: START_MONEY,
     rating: START_RATING,
-    pricePer100g: PRICE.base,
+    prices: { maratang: CHECKOUT_PRICE.ratePer100g.maratang, shanguo: CHECKOUT_PRICE.ratePer100g.shanguo },
     stock: {
       ...Object.fromEntries(VARIANT_INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
       ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i.startStock])),
@@ -113,12 +114,44 @@ export function hiddenItems(bowl) {
 /** Counter label for a dug-out item, always in charge units: "새우 꼬치 ×2", "소고기 ×2". */
 export const hiddenItemLabel = (item) => `${SHELF_ITEM_BY_ID[item.id].name} ×${item.count}`
 
-/** Register numbers for the front customer: POS base (ticket mode), charged, and the correct price (real mode). */
+/**
+ * Register numbers for the front customer: POS base (ticket mode), charged, and the correct
+ * price (real mode). Both prices come from the shop-adjustable `s.prices` (story-001:
+ * menu-prices) so the receipt and the correct-price check always agree on the same rate.
+ */
 export function counterPrice(s) {
   const c = frontCustomer(s)
   if (!c) return { base: 0, charged: 0, correct: 0 }
-  const base = checkoutBasePrice({ ...c.bowl, mode: s.counter.mode })
-  return { base, charged: Math.max(0, base + s.counter.extra), correct: checkoutBowlPrice(c.bowl) }
+  const base = checkoutBasePrice({ ...c.bowl, mode: s.counter.mode }, s.prices)
+  return { base, charged: Math.max(0, base + s.counter.extra), correct: checkoutBowlPrice(c.bowl, s.prices) }
+}
+
+/** Sets a menu price (100g rate for one mode), clamped and rounded to MENU_PRICE's bounds/step. */
+export function setMenuPrice(s, mode, price) {
+  if (!MENU_PRICE[mode]) return s
+  const { min, max } = MENU_PRICE[mode]
+  const clamped = clamp(Math.round(price / MENU_PRICE.step) * MENU_PRICE.step, min, max)
+  return { ...s, prices: { ...s.prices, [mode]: clamped } }
+}
+
+/**
+ * This variant's own demand curve (the shared `demandFactor` takes one price; here there are
+ * two). Each mode's factor mirrors the shared formula against its own default rate, then the two
+ * are combined weighted by how often each mode is ordered (SHANGUO_CHANCE).
+ */
+export function demandFactor(s) {
+  const modeFactor = (mode) =>
+    clamp((CHECKOUT_PRICE.ratePer100g[mode] / s.prices[mode]) ** 1.5, SPAWN.demandMin, SPAWN.demandMax)
+  const combined = modeFactor('maratang') * (1 - SHANGUO_CHANCE) + modeFactor('shanguo') * SHANGUO_CHANCE
+  return clamp(combined, SPAWN.demandMin, SPAWN.demandMax)
+}
+
+/** Mirrors ../logic.js's spawnInterval but against this variant's own two-mode demandFactor. */
+function spawnInterval(s) {
+  return Math.max(
+    SPAWN.minIntervalSec,
+    SPAWN.baseIntervalSec - (s.day - 1) * SPAWN.perDay - s.rating * SPAWN.perRating,
+  ) / demandFactor(s)
 }
 
 /** True for a short moment after a shelf slot lost a batch to wilting (UI flash). */
@@ -126,12 +159,12 @@ export const isJustWilted = (s, id) =>
   s.wiltedAt?.[id] !== undefined && s.dayTime - s.wiltedAt[id] < WILT_FLASH_SEC
 
 /** The correct price of a bowl, line by line: scale, meat, skewers, cilantro. */
-export function chargeBreakdown(bowl) {
+export function chargeBreakdown(bowl, prices) {
   const skewers = sum(Object.values(bowl.skewers))
   const beef = meatCount(bowl, 'beef')
   const lamb = meatCount(bowl, 'lamb')
   return [
-    { label: `저울 ${MODE_LABEL[bowl.mode]} ${checkoutBowlWeight(bowl)}g`, amount: checkoutBasePrice(bowl) },
+    { label: `저울 ${MODE_LABEL[bowl.mode]} ${checkoutBowlWeight(bowl)}g`, amount: checkoutBasePrice(bowl, prices) },
     ...(beef > 0 ? [{ label: `소고기 ×${beef}`, amount: beef * CHECKOUT_PRICE.beefSurcharge }] : []),
     ...(lamb > 0 ? [{ label: `양고기 ×${lamb}`, amount: lamb * CHECKOUT_PRICE.lambSurcharge }] : []),
     ...(skewers > 0 ? [{ label: `꼬치 ×${skewers}`, amount: skewers * CHECKOUT_PRICE.skewerPrice }] : []),
@@ -160,9 +193,9 @@ const MISTAKE_TEXT = {
 }
 
 /** Register result line shown right after prepay: praise, or how much was off and why. */
-function chargeFeedback(c, type, difference, mistake, correct, ticketNo) {
+function chargeFeedback(c, type, difference, mistake, correct, ticketNo, prices) {
   if (type === 'exact') return `🎫 ${ticketNo}번 ${correct.toLocaleString()}원 — 딱 맞게 받았어요 👍`
-  const breakdown = chargeBreakdown(c.bowl).map((l) => `${l.label} ${l.amount.toLocaleString()}`).join(' + ')
+  const breakdown = chargeBreakdown(c.bowl, prices).map((l) => `${l.label} ${l.amount.toLocaleString()}`).join(' + ')
   const head = type === 'undercharge'
     ? `💸 ${difference.toLocaleString()}원 덜 받았어요`
     : `😠 ${difference.toLocaleString()}원 더 받았어요 — 손님 컴플레인!`
@@ -467,7 +500,7 @@ export function confirmCharge(s) {
       rail: [...free.rail, order],
       nextTicketNo: ticketNo + 1,
     })
-    const text = chargeFeedback(c, type, difference, mistake, correct, ticketNo)
+    const text = chargeFeedback(c, type, difference, mistake, correct, ticketNo, free.prices)
     return lingerLastToast(addToast(seated, text, type === 'exact' ? 'good' : 'bad'), FEEDBACK_TOAST_SEC)
   })
 }

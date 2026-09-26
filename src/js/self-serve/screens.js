@@ -1,9 +1,9 @@
 // Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
 // The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
-import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
+import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE, UPGRADES } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
-import { BOX_SIZE, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
+import { BOX_SIZE, MENU_PRICE, MODE_LABEL, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
 import { demandFactor, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
 import { esc, heroImg } from './story-ui.js'
@@ -131,19 +131,32 @@ function upgradeCard(s, u) {
     </div>`
 }
 
-function priceBox(s) {
-  const demand = demandFactor(s.pricePer100g)
-  const mood = demand >= 1.15 ? '손님 폭주! 💨' : demand >= 0.9 ? '적당해요 🙂' : demand >= 0.7 ? '조금 비싸요 😕' : '너무 비싸요 😱'
+// One mode's price control: its own −/+, bounds from MENU_PRICE, current value.
+function modePriceBox(s, mode) {
+  const { min, max } = MENU_PRICE[mode]
+  const price = s.prices[mode]
   return `
     <div class="price-box">
-      <div class="price-title">100g당 가격</div>
+      <div class="price-title">${MODE_LABEL[mode]} 100g당 가격</div>
       <div class="price-row">
-        <button class="btn round" data-action="price" data-arg="-${PRICE.step}" ${s.pricePer100g <= PRICE.min ? 'disabled' : ''}>−</button>
-        <span class="price-value">${won(s.pricePer100g)}</span>
-        <button class="btn round" data-action="price" data-arg="${PRICE.step}" ${s.pricePer100g >= PRICE.max ? 'disabled' : ''}>+</button>
+        <button class="btn round" data-action="price" data-arg="${mode}:-${MENU_PRICE.step}" ${price <= min ? 'disabled' : ''}>−</button>
+        <span class="price-value">${won(price)}</span>
+        <button class="btn round" data-action="price" data-arg="${mode}:${MENU_PRICE.step}" ${price >= max ? 'disabled' : ''}>+</button>
       </div>
-      <div class="price-hint">손님 방문 ×${demand.toFixed(2)} · ${mood}</div>
     </div>`
+}
+
+// Menu prices get their own shop section (they are not upgrades): both modes side by side, then the
+// combined, mode-mix-weighted demand hint from demandFactor(s) underneath.
+function priceSection(s) {
+  const demand = demandFactor(s)
+  const mood = demand >= 1.15 ? '손님 폭주! 💨' : demand >= 0.9 ? '적당해요 🙂' : demand >= 0.7 ? '조금 비싸요 😕' : '너무 비싸요 😱'
+  return `
+      <section class="shop-section price-section">
+        <h2>메뉴 가격 <small>(100g당 · 계산대에 바로 반영)</small></h2>
+        <div class="price-boxes">${modePriceBox(s, 'maratang')}${modePriceBox(s, 'shanguo')}</div>
+        <div class="price-hint">손님 방문 ×${demand.toFixed(2)} · ${mood}</div>
+      </section>`
 }
 
 /** Between-days shop: upgrades, ingredient orders and skewer/cilantro orders into the warehouse. */
@@ -157,8 +170,8 @@ export function shopHtml(s) {
       </header>
       <section class="shop-section">
         <h2>가게 업그레이드</h2>
-        <div class="cards">${UPGRADES.map((u) => upgradeCard(s, u)).join('')}${priceBox(s)}</div>
-      </section>
+        <div class="cards">${UPGRADES.map((u) => upgradeCard(s, u)).join('')}</div>
+      </section>${priceSection(s)}
       <section class="shop-section orange">
         <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
         <div class="cards ing">${VARIANT_INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>

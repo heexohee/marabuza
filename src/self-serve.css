@@ -537,3 +537,8 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
   .shop-scene .pot { grid-template-rows: auto auto; }
   .shop-scene .pot-meta { padding-top: 4px; }
 }
+
+/* shop: menu prices section (economy story E001) — both 100g prices side by side, demand hint under them */
+.price-boxes { display: flex; flex-wrap: wrap; gap: 10px; }
+.price-boxes .price-box { flex: 1 1 200px; }
+.price-section .price-hint { margin-top: 8px; text-align: center; font-size: 14px; font-weight: 700; }

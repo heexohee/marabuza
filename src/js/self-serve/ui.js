@@ -238,7 +238,7 @@ function counterHtml(s) {
     </div>
     <div class="ticket-row"><span>주문표</span>${modes}</div>
     <div class="spice-pick"><span>맵기</span>${spice}</div>
-    <div class="receipt"><span>저울 (${MODE_LABEL[s.counter.mode]} ${won(CHECKOUT_PRICE.ratePer100g[s.counter.mode])}/100g)</span><b>${won(base)}</b></div>
+    <div class="receipt"><span>저울 (${MODE_LABEL[s.counter.mode]} ${won(s.prices[s.counter.mode])}/100g)</span><b>${won(base)}</b></div>
     <div class="till"><small>청구 금액</small> ${won(charged)}</div>
     <div class="keys">${plus}</div>
     <div class="keys">${minus}</div>
@@ -368,7 +368,7 @@ export function render(root, s, view) {
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
   if (screen === 'shop') {
-    const key = `shop|${s.money}|${s.pricePer100g}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
+    const key = `shop|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
     return patch(root, key, () => shopHtml(s))
   }
   patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day}`)
