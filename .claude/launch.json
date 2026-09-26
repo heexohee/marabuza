@@ -4,13 +4,23 @@
     {
       "name": "maratang",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8123", "--directory", "src"],
-      "port": 8123
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8123",
+        "--directory",
+        "src"
+      ],
+      "port": 8123,
+      "autoPort": false
     },
     {
       "name": "maratang-selfserve",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8124", "--directory", "src"],
+      "runtimeArgs": [
+        "tools/dev/serve.py",
+        "8124"
+      ],
       "port": 8124
     }
   ]
