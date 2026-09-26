@@ -1,6 +1,6 @@
 // Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
 // The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
-import { CUSTOMER_FACES, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
+import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
@@ -27,22 +27,45 @@ export function menuHtml(view) {
     </div>`
 }
 
+// How-to-play: short "title — one line" steps in groups, prices from CHECKOUT_PRICE so they never drift.
+const STEP = (key, title, text) =>
+  `<li><span class="help-title">${title}${key ? ` <kbd>${key}</kbd>` : ''}</span><span class="help-text">${text}</span></li>`
+
 /** How-to-play modal for the self-serve flow. */
 export function helpHtml() {
+  const p = CHECKOUT_PRICE
+  const extras = [
+    ['소고기', won(p.beefSurcharge)], ['양고기', won(p.lambSurcharge)],
+    ['꼬치 1개', won(p.skewerPrice)], ['고수', won(p.cilantroSurcharge)],
+  ].map(([name, price]) => `<span class="help-price"><b>${name}</b> +${price}</span>`).join('')
   return `
-    <div class="overlay"><div class="modal">
+    <div class="overlay"><div class="modal help">
       <h2>게임방법 · 셀프 담기</h2>
-      <ol class="help-list">
-        <li>손님이 <b>진열대</b>에서 직접 재료를 담아 <b>계산대</b>에 줄을 서요.</li>
-        <li>그릇을 <b>🥢 뒤적이기</b>(Space)로 확인하세요. 고기·꼬치는 채소 밑에 숨어 있어요!</li>
-        <li>손님 말대로 <b>주문표</b>에 조리 방식(마라탕/샹궈)과 맵기를 적어요. 조리 방식에 따라 저울 단가가 바뀌어요.</li>
-        <li>저울 금액에 <b>소고기 3,000 / 양고기 4,000 / 꼬치·고수 1,000</b>을 더해 <b>선결제</b>(Enter). 꼬치는 종류 상관없이 1개당 1,000원!</li>
-        <li>결제하면 <b>번호표</b>를 받고 테이블에 앉아요. 주문표를 누르거나 <b>C</b>키로 가장 오래 기다린 주문을 냄비에 넣고, 완성되면 냄비를 집어 <b>같은 번호 테이블</b>에 서빙!</li>
-        <li>틈틈이 진열대 칸을 눌러 창고에서 <b>${BOX_SIZE}개씩 보충</b>하세요. 꼬치·고수도 진열대에 있어요. 보충하는 동안은 손이 묶여요.</li>
-        <li>채소·버섯·고수는 진열대에 <b>${WILT_SEC}초</b> 넘게 두면 시들어 버려요. 너무 많이 채우지 마세요!</li>
-        <li>창고가 비면 마감 후 <b>상점</b>에서 재료·꼬치·고수를 발주하세요.</li>
-        <li>영업 중 <b>P</b>(또는 Esc)로 일시정지 · 다시 누르면 계속.</li>
-      </ol>
+      <section class="help-sec">
+        <h3>영업 순서</h3>
+        <ol class="help-steps">
+          ${STEP('', '손님 받기', '손님이 진열대에서 직접 담아 계산대에 줄을 서요')}
+          ${STEP('Space', '뒤적이기', '고기·꼬치는 채소 밑에 숨어 있어요')}
+          ${STEP('', '주문표 적기', '마라탕/샹궈 · 맵기 (방식마다 단가가 달라요)')}
+          ${STEP('Enter', '선결제', '저울 금액에 아래 추가금을 더해서 받아요')}
+          ${STEP('C', '조리 · 서빙', '주문표를 냄비에 넣고, 완성되면 같은 번호 테이블로')}
+        </ol>
+        <div class="help-prices">${extras}</div>
+      </section>
+      <section class="help-sec">
+        <h3>진열대</h3>
+        <ul class="help-steps">
+          ${STEP('', '보충', `칸을 누르면 창고에서 ${BOX_SIZE}개씩 (그동안 손이 묶여요)`)}
+          ${STEP('', '시듦', `채소·버섯·고수는 ${WILT_SEC}초 지나면 버려져요`)}
+        </ul>
+      </section>
+      <section class="help-sec">
+        <h3>마감</h3>
+        <ul class="help-steps">
+          ${STEP('', '발주', '창고가 비면 마감 후 상점에서 사요')}
+          ${STEP('P', '일시정지', '영업 중 P 또는 Esc — 다시 누르면 계속')}
+        </ul>
+      </section>
       <button class="btn big" data-action="closeHelp">알겠어요!</button>
     </div></div>`
 }

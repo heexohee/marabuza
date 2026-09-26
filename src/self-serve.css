@@ -409,7 +409,25 @@ html { scrollbar-gutter: stable; }
 
 /* modals and shop */
 .modal h2 { font-weight: 700; }
-.help-list { font-size: 14px; line-height: 1.6; }
+/* how-to-play (feedback 2026-09-26: long mixed-weight sentences were hard to read) — grouped, one bold
+   title + one short line per step, one weight throughout; the line underneath is told apart by colour */
+.modal.help { max-width: 560px; text-align: left; }
+.modal.help h2 { text-align: center; }
+.modal.help > .btn { display: block; margin: 4px auto 0; }
+.help-sec { margin: 0 0 14px; }
+.help-sec h3 { margin: 0 0 6px; font-size: 15px; font-weight: 700; color: var(--red-dark); }
+.help-steps { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; counter-reset: step; }
+.help-steps li { position: relative; display: grid; grid-template-columns: 7.5em 1fr; gap: 10px; align-items: baseline; font-size: 15px; font-weight: 700; line-height: 1.45; }
+ol.help-steps li::before { counter-increment: step; content: counter(step); position: absolute; margin-left: -1.6em; opacity: .5; }
+.help-steps { padding-left: 1.6em; }  /* numbered or not, the columns line up */
+.help-title { color: var(--ink); white-space: nowrap; }
+.help-title kbd { font-size: 11px; font-weight: 700; margin-left: 2px; }
+.help-text { color: var(--ink); opacity: .78; }
+.help-prices { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 1.6em; }
+.help-price { font-size: 14px; font-weight: 700; padding: 3px 8px; border: 2px solid var(--ink); border-radius: 8px; background: #fff5f7; }
+@media (max-width: 480px) {
+  .help-steps li { grid-template-columns: 1fr; gap: 0; }
+}
 .summary { font-size: 14px; font-weight: 700; }
 .end-line { font-size: 14px; font-weight: 700; }
 .shop-section h2 { font-weight: 700; }
