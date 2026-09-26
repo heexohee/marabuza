@@ -3,7 +3,7 @@
 import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE, PRICE, UPGRADES } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
-import { BOX_SIZE, PERISHABLE_IDS, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
+import { BOX_SIZE, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC } from './data.js'
 import { demandFactor, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
 import { esc, heroImg } from './story-ui.js'
@@ -109,7 +109,7 @@ function stockCard(s, item) {
     <div class="card ing-card ${isLocked ? 'locked' : ''}">
       <div class="card-art">${spriteImg(item.emoji, 16, 'card-img')}</div>
       <div class="card-name">${item.name}</div>
-      <div class="card-sub">${sub} · ${tag}${PERISHABLE_IDS.has(item.id) ? ' · ⏳' : ''}</div>
+      <div class="card-sub">${sub} · ${tag}</div>
       ${action}
     </div>`
 }
