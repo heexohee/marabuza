@@ -6,7 +6,8 @@ const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문' }
 
 /**
  * Opening scenes in order. bg = CSS scene class, props = emoji sprites drawn in the scene,
- * cast = who stands in it ('me' = protagonist, 'panda'). who = speaker of each line.
+ * cast = who stands in it ('me' = protagonist, 'panda'), enter = { who: line index they appear from }.
+ * who = speaker of each line; 'caption' is untagged narration (time skips).
  */
 export const OPENING_SCENES = [
   {
@@ -24,12 +25,15 @@ export const OPENING_SCENES = [
     ],
   },
   {
-    id: 'notice', bg: 'scene-notice', props: ['📜', '🌧️'], cast: ['me', 'panda'],
+    // first-person at the dark, rainy shop door; the panda only walks in once she has read the notice
+    id: 'notice', bg: 'scene-notice', props: [], cast: ['me', 'panda'], enter: { panda: 4 },
     lines: [
-      { who: 'me', text: '회사를 그만둔 날, 제일 먼저 달려온 곳인데….' },
+      { who: 'caption', text: '며칠 뒤, 회사를 그만둔 날.' },
+      { who: 'me', text: '퇴사하고 제일 먼저 달려온 곳인데… 불이 꺼져 있네.' },
       { who: 'notice', text: '그동안 감사했습니다. 고향으로 내려갑니다. 가게 넘깁니다. — 마라판다' },
       { who: 'me', text: '이 맛마저 없어지면… 난 뭘로 버티지?' },
-      { who: 'panda', text: '…자네가 해 볼 텐가? 권리금은 천천히 갚아도 돼.' },
+      { who: 'panda', text: '…왔구나, 우리 단골.' },
+      { who: 'panda', text: '자네가 해 볼 텐가? 권리금은 천천히 갚아도 돼.' },
       { who: 'me', text: '퇴직금 전부 걸게요. 이 가게, 제가 지킬게요!' },
     ],
   },
@@ -37,6 +41,7 @@ export const OPENING_SCENES = [
     // same shop as the regular scene: she takes over the very place that kept her going
     id: 'takeover', bg: 'scene-regular', props: [], cast: ['me', 'panda'],
     lines: [
+      { who: 'caption', text: '그리고, 인수 첫날.' },
       { who: 'panda', text: '내가 쓰던 앞치마야. 오늘부터 {name} 사장이네.' },
       { who: 'me', text: '월세는 매주, 권리금은 조금씩… 꼭 다 갚을게요.' },
       { who: 'panda', text: '천천히 해. 대신 손님 그릇은 꼭 뒤적여 봐.' },
@@ -52,10 +57,34 @@ export const OPENING_SCENES = [
  */
 export const CREATE_AT_SCENE = OPENING_SCENES.findIndex((sc) => sc.id === 'takeover')
 
+/**
+ * The scene is a fixed-ratio stage: background art 384×152 shown at ×2 = STAGE (w×h) in stage px.
+ * Backgrounds, cast spots and cast sizes are all stage px, so everything scales together and a character
+ * stands on the same painted spot (her by the fridge, him by the counter) on any screen size.
+ */
+export const STAGE = { w: 768, h: 304, floor: 18 }
+const CAST_SPOTS = {
+  me: { x: 236, w: 64, h: 112 }, // protagonist sprite ×1, in front of the ingredient fridge
+  panda: { x: 408, w: 96, h: 160 }, // panda owner sprite ×1, in front of the kitchen counter
+}
+
+/** Where a cast member stands (stage px) — one spot for every scene, so nobody jumps around. */
+export const castSpot = (who) => CAST_SPOTS[who]
+
+/**
+ * Who is drawn at a line of a scene (default: once everyone has entered). Before creation the scenes are
+ * first-person ("나" speaks off-screen), so the protagonist first appears on the takeover day, in the apron;
+ * others appear from their `enter` line.
+ */
+export function sceneCast(sceneIdx, lineIdx = Infinity) {
+  const scene = OPENING_SCENES[sceneIdx]
+  return scene.cast.filter((who) => (who !== 'me' || sceneIdx >= CREATE_AT_SCENE) && lineIdx >= (scene.enter?.[who] ?? 0))
+}
+
 /** Before creation the protagonist has no chosen name yet, so she is just "나". */
 export const storyName = (sceneIdx, name) => (sceneIdx < CREATE_AT_SCENE ? '나' : name)
 
-/** Display name of a line's speaker ('me' is the protagonist). */
+/** Display name of a line's speaker ('me' is the protagonist; captions have none). */
 export const speakerName = (who, name) => (who === 'me' ? name : SPEAKERS[who] ?? '')
 
 /** Line text with the protagonist's name filled in. */

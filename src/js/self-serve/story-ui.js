@@ -4,7 +4,7 @@
 import { spriteImg } from '../sprites.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
 import { NAME_MAX_LEN } from './data.js'
-import { OPENING_SCENES, lineText, speakerName, storyName } from './story.js'
+import { OPENING_SCENES, STAGE, castSpot, lineText, sceneCast, speakerName, storyName } from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
@@ -51,7 +51,17 @@ export const createKey = (s) => `create|${s.character.hair}|${s.character.hairCo
 
 // ---------- opening cutscene ----------
 
-const castSprite = (who, look) => (who === 'me' ? heroImg(look, 'hero-scene') : spriteImg('🐼', 24, 'cast-panda'))
+// panda owner: 96×160 pixel sprite painted by tools/art/panda_sprite.py; bump ?v= when regenerating
+const PANDA_IMG = '<img class="panda-sprite" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+const pct = (v, of) => `${((v / of) * 100).toFixed(3)}%`
+/** Stage px → % of the scene, so the cast scales with the background and keeps its painted spot. */
+const castStyle = (who) => {
+  const { x, w } = castSpot(who)
+  return `left:${pct(x, STAGE.w)};width:${pct(w, STAGE.w)};bottom:${pct(STAGE.floor, STAGE.h)}`
+}
+const castSprite = (who, look) => (who === 'me' ? heroImg(look, 'hero-scene') : PANDA_IMG)
+
+const DIALOGUE_KIND = { notice: 'is-notice', caption: 'is-caption' }
 
 /** One line of the opening: scene art on top, dialogue box below. Clicking anywhere advances. */
 export function openingHtml(s) {
@@ -59,14 +69,14 @@ export function openingHtml(s) {
   const scene = OPENING_SCENES[sceneIdx]
   const line = scene.lines[lineIdx]
   const props = scene.props.map((p, i) => `<span class="prop prop-${i}">${spriteImg(p, 20, 'prop-img')}</span>`).join('')
-  const cast = scene.cast.map((who) =>
-    `<span class="cast cast-${who} ${line.who === who ? 'talking' : ''}">${castSprite(who, s.character)}</span>`).join('')
+  const cast = sceneCast(sceneIdx, lineIdx).map((who) =>
+    `<span class="cast cast-${who} ${line.who === who ? 'talking' : ''}" style="${castStyle(who)}">${castSprite(who, s.character)}</span>`).join('')
   const dots = OPENING_SCENES.map((_, i) => `<i class="${i === sceneIdx ? 'on' : ''}"></i>`).join('')
   return `
     <div class="opening-screen" data-action="storyNext">
       <div class="scene ${scene.bg}">${props}${cast}</div>
-      <div class="dialogue ${line.who === 'notice' ? 'is-notice' : ''}">
-        <b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>
+      <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
+        ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>
         <span class="next-hint">▶ 클릭 / Space</span>
       </div>

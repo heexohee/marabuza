@@ -168,24 +168,29 @@
 
 /* opening cutscene */
 .opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: pointer; user-select: none; }
-.scene { position: relative; height: 300px; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
+/* fixed-ratio stage (story.js STAGE 768×304 = 384×152 art ×2): background, cast spots and sizes scale together */
+.scene { position: relative; aspect-ratio: 768 / 304; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
 /* painted by tools/art/scene_office.py (384×152 art px, ~×2 here); bump ?v= when regenerating so caches refresh */
-.scene-office { background: #1e2c4c url("img/scene-office.png?v=6") center bottom / cover no-repeat; }
+.scene-office { background: #1e2c4c url("img/scene-office.png?v=6") center / 100% 100% no-repeat; }
 /* painted by tools/art/scene_regular.py — the panda's old shop, in the scene's original warm browns */
-.scene-regular { background: #b5651d url("img/scene-regular.png?v=2") center bottom / cover no-repeat; }
-.scene-notice { background: linear-gradient(#8e9bb0 0 55%, #5b6475 55% 100%); }
+.scene-regular { background: #b5651d url("img/scene-regular.png?v=2") center / 100% 100% no-repeat; }
+/* painted by tools/art/scene_notice.py — the closed shop door in the rain */
+.scene-notice { background: #1e2230 url("img/scene-notice.png?v=1") center / 100% 100% no-repeat; }
 .prop { position: absolute; }
 .prop-img { width: 48px; height: 48px; }
 .prop-0 { left: 12%; top: 18%; }
 .prop-1 { right: 12%; top: 10%; }
 .prop-2 { left: 42%; top: 8%; }
-.cast { position: absolute; bottom: 18px; transition: transform .2s; }
-.cast-me { left: 34%; }
-.cast-panda { right: 26%; }
-.cast-panda .cast-panda, .cast .cast-panda { width: 88px; height: 88px; }
-.cast.talking { transform: translateY(-6px); }
+/* left / width / bottom come from story.js castSpot as % of the stage; speaking never moves anyone */
+.cast { position: absolute; }
+.cast .hero-sprite, .cast .panda-sprite { width: 100%; height: auto; }
+/* 96×160 art at ×1, like the protagonist's 64×112 (he towers over her) */
+.panda-sprite { display: block; width: 96px; height: 160px; image-rendering: pixelated; }
 .dialogue { position: relative; background: var(--paper); border: 4px solid var(--ink); border-radius: var(--radius); padding: 12px 16px 22px; min-height: 86px; }
 .dialogue.is-notice { background: #fffbe8; font-style: italic; }
+/* time-skip narration: no speaker tag, centred, dimmed */
+.dialogue.is-caption { display: flex; align-items: center; justify-content: center; background: #3a2a33; color: #fbe9ef; }
+.dialogue.is-caption p { margin: 0; letter-spacing: .08em; }
 .speaker { display: inline-block; background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: 6px; padding: 1px 8px; font-size: 13px; }
 .dialogue p { margin: 8px 0 0; font-size: 16px; line-height: 1.5; animation: line-in .25s ease-out; }
 @keyframes line-in { from { opacity: 0; transform: translateY(4px); } }
@@ -197,7 +202,6 @@
 .skip-btn { font-size: 12px; }
 @media (prefers-reduced-motion: reduce) {
   .dialogue p, .next-hint { animation: none; }
-  .cast.talking { transform: none; }
 }
 
 /* owner behind the counter + start-of-day line */
@@ -212,7 +216,6 @@
 
 @media (max-width: 700px) {
   .create-body { flex-direction: column; }
-  .scene { height: 220px; }
 }
 
 /* ---------- fixed panel sizes ----------

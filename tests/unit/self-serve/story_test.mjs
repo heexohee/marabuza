@@ -8,7 +8,7 @@ import {
 } from '../../../src/js/self-serve/character.js'
 import { HERO_BODY, HERO_HAIR, HERO_NECK_Y } from '../../../src/js/self-serve/hero-art.js'
 import {
-  CREATE_AT_SCENE, OPENING_SCENES, dayEndLine, dayStartLine, lineText, speakerName, storyName,
+  CREATE_AT_SCENE, OPENING_SCENES, STAGE, castSpot, dayEndLine, dayStartLine, lineText, sceneCast, speakerName, storyName,
 } from '../../../src/js/self-serve/story.js'
 import {
   advanceStory, beginNewGame, finishCharacter, ownerLineText, setCharacterName, setCharacterOption, skipStory, tick,
@@ -220,6 +220,48 @@ test('test_flow_skip_before_creation_goes_to_creation_after_it_to_day_one', () =
   assert.equal(skipped.phase, 'create', 'the protagonist is always created')
   assert.deepEqual(skipped.story, { scene: CREATE_AT_SCENE, line: 0 })
   assert.equal(skipStory(finishCharacter(skipped)).phase, 'day')
+})
+
+test('test_flow_protagonist_is_off_screen_until_created', () => {
+  // 1–3: first-person — only the background and the panda; she first appears on the takeover day
+  for (let i = 0; i < CREATE_AT_SCENE; i++) assert.ok(!sceneCast(i).includes('me'), `scene ${i} hides her`)
+  assert.ok(sceneCast(CREATE_AT_SCENE).includes('me'))
+  assert.deepEqual(sceneCast(1), ['panda'])
+})
+
+test('test_story_cast_stands_on_the_same_stage_spot_in_every_scene', () => {
+  const seen = {}
+  OPENING_SCENES.forEach((_, i) => sceneCast(i).forEach((who) => {
+    const spot = castSpot(who)
+    assert.ok(spot.x >= 0 && spot.x + spot.w <= STAGE.w, `${who} inside the stage in scene ${i}`)
+    seen[who] ??= spot
+    assert.deepEqual(spot, seen[who], `${who} does not move between scenes`)
+  }))
+  const me = castSpot('me')
+  const panda = castSpot('panda')
+  assert.ok(me.x + me.w <= panda.x, 'side by side, never overlapping')
+})
+
+test('test_story_time_skips_open_with_a_caption', () => {
+  const notice = OPENING_SCENES.findIndex((sc) => sc.id === 'notice')
+  for (const i of [notice, CREATE_AT_SCENE]) {
+    const first = OPENING_SCENES[i].lines[0]
+    assert.equal(first.who, 'caption', `${OPENING_SCENES[i].id} opens with a caption`)
+    assert.equal(speakerName(first.who, '초아'), '', 'captions have no speaker tag')
+  }
+  assert.match(OPENING_SCENES[notice].lines[0].text, /며칠 뒤/)
+})
+
+test('test_story_panda_walks_in_after_she_finds_the_notice', () => {
+  const i = OPENING_SCENES.findIndex((sc) => sc.id === 'notice')
+  const lines = OPENING_SCENES[i].lines
+  const enter = OPENING_SCENES[i].enter.panda
+  assert.ok(!sceneCast(i, 0).includes('panda'), 'nobody at the closed shop at first')
+  assert.ok(!sceneCast(i, enter - 1).includes('panda'))
+  assert.ok(sceneCast(i, enter).includes('panda'), 'he appears from his first line')
+  assert.equal(lines[enter].who, 'panda')
+  assert.ok(lines.slice(0, enter).some((l) => l.who === 'notice'), 'the notice is read before he comes')
+  assert.deepEqual(OPENING_SCENES[i].props, [], 'painted background, no emoji props')
 })
 
 test('test_flow_protagonist_is_called_me_until_created', () => {
