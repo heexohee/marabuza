@@ -16,6 +16,7 @@ import {
   ownerLineText,
 } from './logic.js'
 import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
+import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import { createHtml, createKey, esc, heroImg, openingHtml, openingKey } from './story-ui.js'
 
@@ -63,14 +64,15 @@ const GAME_SKELETON = `
     <div class="info" data-slot="info"></div>
   </section>
   <main class="ss-center">
-    <section class="hall">
-      <div class="hall-sign">麻辣烫 · 테이블 <small>냄비를 들고 같은 번호 테이블을 누르세요</small></div>
-      <div class="seats" data-slot="tables"></div>
-    </section>
-    <section class="ss-kitchen">
-      <div class="rail" data-slot="rail"></div>
+    <section class="shop-scene" aria-label="마라판다 가게 — 식탁과 주방">
+      <div class="shop-stage">
+        <div class="open-board" data-slot="open-board"></div>
+        <div class="seats" data-slot="tables"></div>
+      </div>
       <div class="pots" data-slot="pots"></div>
     </section>
+    <p class="shop-hint">완성된 냄비를 눌러 들고 → 같은 🎫 번호 식탁을 누르세요</p>
+    <div class="rail" data-slot="rail"></div>
   </main>
   <section class="bowl-panel counter ss-counter" data-slot="counter"></section>
   <div class="toasts" data-slot="toasts"></div>
@@ -79,16 +81,25 @@ const GAME_SKELETON = `
 
 // ---------- hall: tables ----------
 
+// Side-view table on the shop floor: chair, customer seated behind the table top, number stand on the table.
+// Spots come from tableSpots (art px); CSS multiplies by one art px (--apx) so they scale with the stage.
+const TABLE_FURNITURE = '<i class="chair"></i><i class="table-top"></i><i class="table-leg"></i>'
+
 function tablesHtml(s) {
   const isHolding = s.heldPot !== null
+  const spots = tableSpots(s.tables.length)
   return s.tables.map((t, i) => {
-    if (!t) return '<div class="seat empty"><div class="stool"></div><span class="seat-tag">빈 테이블</span></div>'
+    const spot = `style="--x:${spots[i].x};--w:${spots[i].w}"`
+    const plate = `<b class="table-no">${i + 1}</b>`
+    if (!t) return `<div class="seat empty" ${spot}>${TABLE_FURNITURE}${plate}</div>`
     return `
-      <button class="seat ss-table ${isHolding ? 'can-serve' : ''}" data-action="table" data-arg="${i}">
-        <div class="ticket-badge">🎫 ${t.ticketNo}</div>
-        <div class="animal">${spriteImg(t.face, 20, 'animal-img')}</div>
+      <button class="seat ss-table ${isHolding ? 'can-serve' : ''}" data-action="table" data-arg="${i}" ${spot}
+        aria-label="${i + 1}번 식탁 · 주문표 ${t.ticketNo}${isHolding ? ' · 여기로 서빙' : ''}">
         <div class="patience"><div class="patience-fill" data-bar="table-${t.ticketNo}"></div></div>
-        <span class="seat-tag">${isHolding ? '여기로 서빙?' : '음식 기다리는 중'}</span>
+        <div class="ticket-badge">🎫${t.ticketNo}</div>
+        ${TABLE_FURNITURE}
+        <div class="animal">${spriteImg(t.face, 20, 'animal-img')}</div>
+        ${plate}
       </button>`
   }).join('')
 }
@@ -127,23 +138,49 @@ function potArt(p) {
     </div>`
 }
 
+// Each pot stands on the kitchen counter (.pot-stand, art scaled by --pot-zoom) with its cooking bar and label
+// on the counter front (.pot-meta). A finished pot is itself the pick button, so the whole pot is the target.
 function potsHtml(s) {
   return s.pots.map((p, i) => {
-    if (!p) return `<div class="pot empty"><div class="steam"></div>${potArt(null)}<div class="pot-label">빈 냄비</div></div>`
+    if (!p) return `<div class="pot empty"><div class="pot-stand"><div class="steam"></div>${potArt(null)}</div><div class="pot-meta"><div class="pot-label">빈 냄비</div></div></div>`
     const isDone = p.remaining <= 0
     const isHeld = s.heldPot === i
     const label = isDone
-      ? `<button class="btn serve ${isHeld ? 'held' : ''}" data-action="pick" data-arg="${i}">${isHeld ? '✋ 들고 있어요' : `🎫${p.ticketNo} 완성! 집기`}</button>`
-      : `<span>🎫${p.ticketNo} 보글보글…</span>`
+      ? `<span>🎫${p.ticketNo}</span><span class="btn serve ${isHeld ? 'held' : ''}">${isHeld ? '들었음' : '집기'}</span>`
+      : `<span>🎫${p.ticketNo}</span>`
+    const tag = isDone ? 'button' : 'div'
+    const action = isDone ? `data-action="pick" data-arg="${i}" aria-label="${p.ticketNo}번 냄비 ${isHeld ? '들고 있음' : '집기'}"` : ''
     return `
-      <div class="pot ${isDone ? 'done' : 'cooking'} ${isHeld ? 'is-held' : ''}">
-        <div class="steam">${isDone ? '♨' : ''}</div>
-        ${potArt(p)}
-        <div class="pot-bar"><div class="pot-fill" data-bar="pot-${i}"></div></div>
-        <div class="pot-label">${label}</div>
-      </div>`
+      <${tag} class="pot ${isDone ? 'done' : 'cooking'} ${isHeld ? 'is-held' : ''}" ${action}>
+        <div class="pot-stand"><div class="steam">${isDone ? '♨' : ''}</div>${potArt(p)}</div>
+        <div class="pot-meta">
+          <div class="pot-bar"><div class="pot-fill" data-bar="pot-${i}"></div></div>
+          <div class="pot-label">${label}</div>
+        </div>
+      </${tag}>`
   }).join('')
 }
+
+/** Keeps the pots side by side on the counter: --pot-zoom follows the counter width and the pot count. */
+function fitPots(el, count) {
+  if (!el) return
+  // width comes from the observer, not a layout read each frame
+  if (el.__width === undefined) {
+    el.__width = el.clientWidth
+    if (typeof ResizeObserver !== 'undefined') {
+      el.__resize = new ResizeObserver(([entry]) => { el.__width = entry.contentRect.width })
+      el.__resize.observe(el)
+    }
+  }
+  const width = Math.round(el.__width)
+  const key = `${width}|${count}`
+  if (el.__zoomKey === key) return
+  el.__zoomKey = key
+  el.style.setProperty('--pot-zoom', String(potZoom(width, count)))
+}
+
+/** 준비중 / 영업중 board on the back wall; it flips to 준비중 once the day is closing. */
+const openBoardHtml = (isOpen) => `<span class="${isOpen ? 'on' : 'off'}">${isOpen ? '영업중' : '준비중'}</span>`
 
 const potsKey = (s) => `${s.pots.map((p) => (p ? `${p.ticketNo}:${p.remaining <= 0}` : '-')).join('|')}|${s.heldPot}`
 
@@ -338,6 +375,8 @@ export function render(root, s, view) {
   patch(slot(root, 'tables'), tablesKey(s), () => tablesHtml(s))
   patch(slot(root, 'rail'), s.rail.map((o) => o.ticketNo).join(','), () => railHtml(s))
   patch(slot(root, 'pots'), potsKey(s), () => potsHtml(s))
+  fitPots(slot(root, 'pots'), s.pots.length)
+  patch(slot(root, 'open-board'), `${!isClosing(s)}`, () => openBoardHtml(!isClosing(s)))
   patch(slot(root, 'counter'), counterKey(s), () => counterHtml(s))
   patch(slot(root, 'shelf'), shelfKey(s, view), () => shelfHtml(s, view))
   patch(slot(root, 'info'), `${view.hover}|${shelfKey(s, view)}`, () => infoHtml(s, view))

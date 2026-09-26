@@ -1,7 +1,7 @@
 # Story 001: 가게 단면 배치 — 문·식탁·주방 한 장면
 
 > **Epic**: shop-growth (영업 화면 — 가게 단면)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: L
@@ -63,7 +63,7 @@
 
 **Story Type**: Visual/Feel
 **Required evidence**: `production/qa/evidence/shop-cross-section/` 데스크톱·태블릿·모바일 스크린샷 + 조작 확인 메모
-**Status**: [ ] Not yet created
+**Status**: [x] `production/qa/evidence/shop-cross-section-evidence.md` + `shop-cross-section/*.png`
 
 ---
 

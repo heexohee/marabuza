@@ -1,7 +1,7 @@
 # 에픽: shop-growth (영업 화면 — 가게 단면)
 
 > **단계**: minimal — `design/game-brief.md` "영업 화면 — 가게 단면" 섹션(2026-09-26 개정)에서 만든 에픽
-> **상태**: Not Started
+> **상태**: In Progress
 
 ## 목표
 
@@ -23,7 +23,7 @@
 
 | # | 스토리 | 유형 | 상태 | ADR |
 |---|-------|------|--------|-----|
-| 001 | 가게 단면 배치 — 문·식탁·주방 한 장면 | Visual/Feel | Ready | N/A (minimal) |
+| 001 | 가게 단면 배치 — 문·식탁·주방 한 장면 | Visual/Feel | In Progress | N/A (minimal) |
 | 002 | 손님 입장·착석·퇴장 | Integration | Ready | N/A (minimal) |
 | 003 | 서빙 비행 + 식사 | Integration | Ready | N/A (minimal) |
 | 004 | 하루 시간대 연출 (오전→점심 러시→노을→밤) | Visual/Feel | Ready | N/A (minimal) |

@@ -19,9 +19,6 @@
 .ss-shelf { grid-area: shelf; }
 .ss-center { grid-area: center; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .ss-counter { grid-area: counter; }
-.ss-kitchen { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
-.ss .hall-sign small { display: block; font-size: 11px; color: var(--ink); opacity: .7; }
-.ss .seat { min-height: 110px; }
 .hint.center { text-align: center; }
 
 /* stats strip in the top bar (replaces the side column) */
@@ -233,7 +230,6 @@
   --ss-info-h: 96px;
   --ss-slot-h: 80px;
   --ss-rail-h: 46px;
-  --ss-seat-h: 118px;
   --ss-chips-h: 84px; /* fits the largest bowl: 5 found meat/skewers + cilantro + every vegetable kind */
 }
 .ss-shelf .info { height: var(--ss-info-h); overflow-y: auto; box-sizing: border-box; }
@@ -246,7 +242,6 @@
   flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden;
 }
 .ss .ticket { flex: none; }
-.ss .seat { height: var(--ss-seat-h); min-height: 0; box-sizing: border-box; }
 
 .ss-counter { height: var(--ss-counter-h); box-sizing: border-box; overflow: hidden; }
 .ss-counter > * { flex: none; }
@@ -318,8 +313,6 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 .ss-stats .stat .star.half { color: #ffb3c6; }
 
 /* surfaces */
-.hall { background: #ffe6ec; }
-.pots { background: #e8a9b9; }
 .pot { color: var(--on-pastel); }
 .panel-title, .busy { color: var(--on-pastel); }
 .rail { background: #fff5f7; }
@@ -362,7 +355,6 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 .ss .ticket { font-size: 12px; font-weight: 700; }
 .ss .rail-title { font-size: 13px; font-weight: 700; }
 .ss .seat-tag, .ss .owner-name { font-size: 12px; font-weight: 700; }
-.ss .hall-sign small { font-size: 12px; }
 .ss .bubble.say { font-size: 13px; font-weight: 700; }
 .ss .ticket-row, .ss .spice-pick, .ss .counter .receipt { font-size: 13px; font-weight: 700; }
 .ss .counter .keys .btn.key { font-size: 13px; font-weight: 700; }
@@ -435,3 +427,113 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .card-sub, .card-desc { font-size: 12px; font-weight: 700; opacity: .85; }
 .btn.buy { font-size: 13px; font-weight: 700; }
 .price-title, .price-hint { font-size: 13px; font-weight: 700; }
+
+/* ---------- shop cross-section: the business screen's centre is 마라판다 seen side-on
+   (production/epics/shop-growth/story-001-shop-cross-section.md). The stage is the background art's own grid —
+   tools/art/scene_shop.py, 320×150 art px, bump ?v= when regenerating — and every spot on it is written in art
+   px times --apx (one art px, from the stage width), matching src/js/self-serve/shop-stage.js. The door, wall,
+   floor and kitchen are painted; tables, customers, pots and the open board are DOM so they stay clickable
+   and follow the upgrades. If the image does not load the colours below remain and every control still works. */
+.ss-center { gap: 8px; }
+.shop-scene {
+  --art-w: 320;
+  --apx: calc(100cqw / var(--art-w));
+  position: relative; container-type: inline-size; overflow: hidden;
+  border: 4px solid var(--ink); border-radius: var(--radius); background: #9aa1ae;
+}
+.shop-stage {
+  position: relative; aspect-ratio: var(--art-w) / 150;
+  background: #d99a5a url("img/scene-shop.png?v=3") left top / auto 100% no-repeat;
+  image-rendering: pixelated;
+}
+.shop-hint { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: var(--on-pastel); }
+
+/* 준비중 / 영업중 board, hung on the wall between the window and the menu */
+.open-board {
+  position: absolute; left: calc(var(--apx) * 102); top: calc(var(--apx) * 42);
+  width: calc(var(--apx) * 42); height: calc(var(--apx) * 16);
+}
+.open-board span {
+  display: grid; place-items: center; width: 100%; height: 100%; box-sizing: border-box;
+  border: 3px solid var(--ink); border-radius: 4px; font-size: max(11px, calc(var(--apx) * 7)); font-weight: 700;
+}
+.open-board .on { background: #d9443a; color: #fff3d6; box-shadow: 0 0 calc(var(--apx) * 4) rgba(255, 190, 120, .8); }
+.open-board .off { background: #6d6570; color: #e7dfe3; }
+
+/* tables: one cell per table (tableSpots), standing on the floor; customer seated behind the table top */
+.shop-scene .seats { display: block; position: absolute; inset: 0; pointer-events: none; }
+.shop-scene .seat {
+  position: absolute; left: calc(var(--apx) * var(--x)); width: calc(var(--apx) * var(--w));
+  bottom: calc(var(--apx) * 8); height: calc(var(--apx) * 64);
+  display: block; min-height: 0; padding: 0; margin: 0; background: none; border: 0; border-radius: 6px;
+  opacity: 1; pointer-events: auto; font: inherit; color: var(--on-pastel);
+}
+.shop-scene .seat.empty { pointer-events: none; }
+.shop-scene .seat > * { position: absolute; left: 50%; transform: translateX(-50%); }
+.shop-scene .chair {
+  bottom: 0; margin-left: calc(var(--apx) * -9); width: calc(var(--apx) * 4); height: calc(var(--apx) * 36);
+  background: #7a4428; border: 2px solid var(--ink); box-sizing: border-box;
+}
+.shop-scene .chair::after {
+  content: ""; position: absolute; left: 0; bottom: calc(var(--apx) * 12); width: calc(var(--apx) * 12); height: calc(var(--apx) * 3);
+  background: #7a4428; border: 2px solid var(--ink); box-sizing: border-box;
+}
+.shop-scene .animal { bottom: calc(var(--apx) * 20); width: calc(var(--apx) * 24); height: calc(var(--apx) * 24); }
+.shop-scene .animal-img { width: 100%; height: 100%; }
+.shop-scene .table-top {
+  z-index: 1; bottom: calc(var(--apx) * 20); width: calc(var(--apx) * 30); height: calc(var(--apx) * 4);
+  background: #c98a52; border: 2px solid var(--ink); box-sizing: border-box;
+}
+.shop-scene .table-leg {
+  bottom: 0; width: calc(var(--apx) * 4); height: calc(var(--apx) * 20);
+  background: #8a5230; border: 2px solid var(--ink); border-top: 0; box-sizing: border-box;
+}
+/* number stand on the table (the table's own number, not the ticket) */
+.shop-scene .table-no {
+  z-index: 2; bottom: calc(var(--apx) * 23); margin-left: calc(var(--apx) * 10);
+  min-width: calc(var(--apx) * 8); padding: 0 2px; box-sizing: border-box; text-align: center;
+  font-size: max(10px, calc(var(--apx) * 5)); line-height: 1.25; background: #fff3d6; border: 2px solid var(--ink); border-radius: 3px;
+}
+.shop-scene .seat.empty .table-no { opacity: .75; }
+.shop-scene .ticket-badge { bottom: calc(var(--apx) * 46); white-space: nowrap; font-size: max(11px, calc(var(--apx) * 6)); font-weight: 700; padding: 0 5px; }
+.shop-scene .patience { bottom: calc(var(--apx) * 58); width: calc(var(--apx) * 26); height: max(6px, calc(var(--apx) * 3)); box-sizing: border-box; }
+.shop-scene .ss-table { cursor: pointer; }
+.shop-scene .ss-table:hover, .shop-scene .ss-table:focus-visible { background: rgba(255, 243, 201, .35); }
+.shop-scene .ss-table.can-serve { outline: 3px dashed var(--green-dark); outline-offset: -3px; background: rgba(143, 217, 182, .25); }
+
+/* kitchen: pots stand on the painted steel counter (top at art y 100), bar + label on its front */
+.shop-scene .pots {
+  position: absolute; left: calc(var(--apx) * 216); width: calc(var(--apx) * 102); top: calc(var(--apx) * 38); bottom: 0;
+  display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0;
+  padding: 0; background: none; border: 0; border-radius: 0; align-items: stretch;
+}
+.shop-scene .pot {
+  display: grid; grid-template-rows: minmax(0, 1fr) calc(var(--apx) * 50); justify-items: center; gap: 0;
+  min-width: 0; padding: 0; margin: 0; background: none; border: 0; border-radius: 6px; font: inherit; color: var(--on-pastel);
+}
+.shop-scene .pot-stand { align-self: end; display: flex; flex-direction: column; align-items: center; }
+.shop-scene .pot-art { zoom: var(--pot-zoom, 1); }
+.shop-scene .steam { height: auto; min-height: 14px; font-size: 14px; line-height: 1; }
+.shop-scene .pot-meta { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding-top: calc(var(--apx) * 6); }
+.shop-scene .pot-bar { width: 86%; max-width: 120px; height: 7px; box-sizing: border-box; }
+/* labels stay short (🎫N, 집기, 빈 냄비) and may wrap to two lines inside a narrow pot cell rather than overlap */
+.shop-scene .pot-label {
+  flex-direction: column; gap: 2px; min-height: 0; max-width: 100%; font-size: max(11px, calc(var(--apx) * 5.5)); font-weight: 700;
+  line-height: 1.2; text-align: center; overflow-wrap: anywhere;
+}
+.shop-scene .pot-label .btn.serve { display: inline-block; width: auto; max-width: 100%; box-sizing: border-box; margin: 0; padding: 2px 4px; font-size: inherit; }
+.shop-scene .pot.done { cursor: pointer; }
+.shop-scene .pot.done:hover, .shop-scene .pot.done:focus-visible { background: rgba(255, 243, 201, .45); }
+
+/* narrow (≤700px, one column): the stage shows the door and dining room only (left 214 art px, same scale),
+   and the kitchen counter drops underneath as a full-width steel strip, so every table and pot stays big
+   enough to press */
+@media (max-width: 700px) {
+  .shop-scene { --art-w: 214; }
+  .shop-scene .pots {
+    position: static; width: auto; padding: 6px 4px 8px; border-top: 4px solid var(--ink);
+    background: linear-gradient(#d6dbe3 0 6px, #b0b6c2 6px);
+  }
+  .shop-scene .pot { grid-template-rows: auto auto; }
+  .shop-scene .pot-meta { padding-top: 4px; }
+}
