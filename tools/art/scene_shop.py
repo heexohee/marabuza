@@ -12,9 +12,11 @@ Run: python3 tools/art/scene_shop.py [--stage N] [--old-sign] [--mockup] [--out 
                          stage can be judged as a whole picture (design drafts; not used by the game)
 
 Story: production/epics/shop-growth/story-001-shop-cross-section.md (layout), story-005 (interior stages).
-The shop seen side-on in the warm browns of tools/art/scene_regular.py. Left to right: the door, the dining
-floor, and the kitchen at the right end (tiled wall, hood, steel counter the pots stand on). The back wall
-carries a window (Story 004 changes the view), the shop sign, a chalk menu and lanterns.
+The hall seen side-on in the warm browns of tools/art/scene_regular.py: the door on the left, the dining
+floor across the whole width (tables and chairs are DOM, drawn over it), and the back wall with two windows
+(Story 004 changes the view), the shop sign, a chalk menu and lanterns. The kitchen is not in this picture:
+since the 2026-09-27 layout it is its own strip under the ticket rail (CSS .ss-kitchen: tiled wall, steel
+counter, pots, wok).
 
 Interior stages are cumulative (design/game-brief.md §인테리어 6단계, 2026-09-26):
   1 벽지        pink striped wallpaper and wainscot
@@ -22,7 +24,7 @@ Interior stages are cumulative (design/game-brief.md §인테리어 6단계, 202
   3 조명        red lanterns → pink pendant lamps, pinker light
   4 문·포토존   pink awning and door, pink menu board, neon heart photo spot on the wall
   5 의자·식탁   white table tops, mint chairs
-  6 주방        pink kitchen tiles and hood trim
+  6 주방        pink kitchen tiles (the CSS kitchen strip; nothing changes in this picture)
 
 The stage is STAGE_W×STAGE_H art px and is always shown at that aspect ratio, so the layout constants below
 are also the positions in src/js/self-serve/shop-stage.js and src/self-serve.css — keep the three in step.
@@ -37,14 +39,14 @@ from pixel_scene import Canvas, mix
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'src/img/scene-shop.png'
 
-STAGE_W, STAGE_H = 320, 150
-FLOOR_Y = 112  # wall meets floor
+# Hall-only stage (layout 2026-09-27): the kitchen moved out to its own strip under the ticket rail (CSS
+# .ss-kitchen), so the dining room now spans the whole width and the stage is a little shorter.
+STAGE_W, STAGE_H = 320, 120
+FLOOR_Y = 92  # wall meets floor
 BEAM_H = 5
 DOOR = (6, 30)  # x span; the door's bottom is FLOOR_Y
-DINING = (34, 212)  # x span the tables are laid out in (CSS .shop-scene .seats)
-KITCHEN = (214, 320)  # x span of the kitchen (CSS .shop-scene .pots)
-COUNTER_Y = 100  # top of the kitchen counter the pots stand on
-LIGHT_XS = (106, 204)
+DINING = (34, 316)  # x span the tables are laid out in (CSS .shop-scene .seats, shop-stage.js)
+LIGHT_XS = (106, 204, 306)
 SEED = 20260926
 
 INK = (40, 22, 16)
@@ -109,9 +111,9 @@ class Painter:
                 self.cv.px[x, y] = t['wall_stripe'] if x % 8 in (0, 1) else t['wall']
         rect(0, 0, STAGE_W, BEAM_H, t['wood_dark'])  # ceiling beam
         rect(0, BEAM_H, STAGE_W, BEAM_H + 1, INK)
-        rect(0, FLOOR_Y - 14, KITCHEN[0], FLOOR_Y, t['wood'])  # wainscot along the dining wall
-        rect(0, FLOOR_Y - 14, KITCHEN[0], FLOOR_Y - 12, t['wood_light'])
-        for x in range(0, KITCHEN[0], 12):
+        rect(0, FLOOR_Y - 14, STAGE_W, FLOOR_Y, t['wood'])  # wainscot along the wall
+        rect(0, FLOOR_Y - 14, STAGE_W, FLOOR_Y - 12, t['wood_light'])
+        for x in range(0, STAGE_W, 12):
             rect(x, FLOOR_Y - 12, x + 1, FLOOR_Y, t['wood_dark'])
 
     def floor(self):
@@ -139,10 +141,10 @@ class Painter:
         rect(x1 - 6, top + 40, x1 - 4, top + 46, (250, 210, 110))  # handle
         rect(x0 - 4, top - 6, x1 + 4, top - 2, t['awning'])  # little awning over the door
 
-    def window(self):
+    def window(self, x0=42, x1=96):
         """Back-wall window; Story 004 swaps this view for the time of day."""
         t, rect = self.t, self.rect
-        x0, y0, x1, y1 = 42, 22, 96, 70
+        y0, y1 = 22, 66
         rect(x0 - 3, y0 - 3, x1 + 3, y1 + 3, t['wood_dark'])
         for y in range(y0, y1):
             rect(x0, y, x1, y + 1, mix((132, 190, 236), (208, 230, 248), (y - y0) / (y1 - y0)))
@@ -154,6 +156,10 @@ class Painter:
         rect((x0 + x1) // 2, y0, (x0 + x1) // 2 + 2, y1, t['wood_dark'])
         rect(x0, (y0 + y1) // 2, x1, (y0 + y1) // 2 + 2, t['wood_dark'])
         rect(x0 - 5, y1 + 3, x1 + 5, y1 + 5, t['wood_light'])  # sill
+
+    def window_right(self):
+        """A second window where the kitchen used to be (the hall now spans the whole wall)."""
+        self.window(236, 290)
 
     def signboard(self):
         t, rect = self.t, self.rect
@@ -199,40 +205,17 @@ class Painter:
                 if d < 1:
                     glow(x, y, (255, 214, 226), 0.22 * (1 - d))
 
-    def kitchen(self):
-        t, rect = self.t, self.rect
-        x0, x1 = KITCHEN
-        for y in range(BEAM_H + 1, COUNTER_Y):  # tile splashback
-            for x in range(x0, x1):
-                self.cv.px[x, y] = t['kgrout'] if (y - BEAM_H) % 8 == 7 or (x - x0) % 10 == 9 else t['ktile']
-        rect(x0, BEAM_H + 1, x0 + 2, FLOOR_Y, t['wood_dark'])  # kitchen partition edge
-        hx0, hx1 = x0 + 10, x1 - 6  # extractor hood
-        rect(hx0 + 18, BEAM_H + 1, hx1 - 18, 20, STEEL_DARK)
-        for i, y in enumerate(range(20, 34)):
-            rect(hx0 + 8 - i // 2, y, hx1 - 8 + i // 2, y + 1, STEEL_LIGHT if i < 2 else t['hood'])
-        rect(hx0, 34, hx1, 36, t['hood_trim'])
-        rect(x0 + 8, 52, x0 + 40, 54, t['wood_dark'])  # spice shelf
-        for i, sx in enumerate(range(x0 + 10, x0 + 40, 6)):
-            rect(sx, 44, sx + 4, 52, ((208, 60, 50), (240, 200, 90), (96, 150, 80), (230, 120, 60), (180, 60, 90))[i % 5])
-        rect(x0, COUNTER_Y, x1, STAGE_H, STEEL)  # counter the pots stand on
-        rect(x0, COUNTER_Y, x1, COUNTER_Y + 3, STEEL_LIGHT)
-        rect(x0, COUNTER_Y + 3, x1, COUNTER_Y + 4, STEEL_DARK)
-        for x in range(x0 + 8, x1 - 4, 26):  # cabinet doors
-            rect(x, COUNTER_Y + 10, x + 20, STAGE_H - 6, STEEL_DARK)
-            rect(x + 1, COUNTER_Y + 11, x + 19, STAGE_H - 7, t['cabinet'])
-            rect(x + 16, COUNTER_Y + 24, x + 18, COUNTER_Y + 30, STEEL_LIGHT)
-
     def light_pool(self):
         for cx in LIGHT_XS:
             for y in range(FLOOR_Y, STAGE_H):
                 for x in range(cx - 40, cx + 42):
                     d = ((x - cx) / 40) ** 2 + ((y - FLOOR_Y - 12) / 14) ** 2
-                    if d < 1 and x < KITCHEN[0]:
+                    if d < 1:
                         self.glow(x, y, self.t['light'], 0.14 * (1 - d))
 
     def photo_spot(self):
         """Stage 4: a pink neon heart on the wall under the open board — the shop's photo spot."""
-        cx, cy = 123, 78
+        cx, cy = 216, 54  # between the menu board and the right window
         for y in range(cy - 14, cy + 14):
             for x in range(cx - 18, cx + 18):
                 self.glow(x, y, (255, 150, 190), 0.10)
@@ -270,7 +253,7 @@ class Painter:
 
 def build(stage=0, mockup=False, renamed=False):
     p = Painter(stage, renamed)
-    steps = [p.wall, p.floor, p.door, p.window, p.signboard, p.menu_board, p.lights, p.kitchen, p.light_pool]
+    steps = [p.wall, p.floor, p.door, p.window, p.window_right, p.signboard, p.menu_board, p.lights, p.light_pool]
     if p.t['photo_spot']:
         steps.append(p.photo_spot)
     if mockup:

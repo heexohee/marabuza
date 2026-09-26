@@ -3,7 +3,8 @@
 Run: python3 tools/art/scene_regular.py [--preview]  -> writes the shop in three moods (MODES):
   night   -> src/img/scene-regular.png         scene 2, the late-night regular visit (영업중 neon)
   morning -> src/img/scene-takeover.png        scene 4, the takeover morning (준비중 board, sunlight)
-  open    -> src/img/scene-takeover-open.png   scene 4's last line: 영업중 neon and lanterns lit
+  open    -> src/img/scene-takeover-open.png   scene 4's last line: 영업중 neon and lanterns lit, and the
+                                               board swapped to her pink "마라부자" (the title drop)
 
 Inside the panda's shop in the scene's original warm browns (orange wall / brown floor, as the old
 .scene-regular gradient was) — an old, well-loved place, unlike the protagonist's pink shop to come:
@@ -166,6 +167,14 @@ def fridge():
 
 def shop_board():
     x0, y0, x1, y1 = 190, 12, 296, 36
+    if MODE == 'open':  # first opening under her name: pink neon "마라부자" (same colours as tools/art/scene_shop.py)
+        for y in range(y0 - 7, y1 + 7):
+            for x in range(x0 - 8, x1 + 8):
+                glow(x, y, (255, 120, 170), 0.12)
+        rect(x0 - 2, y0 - 2, x1 + 2, y1 + 2, (255, 127, 160))
+        rect(x0, y0, x1, y1, (122, 58, 84))
+        cv.sign_text('마라부자', (x0 + x1) // 2, (y0 + y1) // 2, (255, 240, 246), (255, 120, 170), size=14)
+        return
     rect(x0 - 2, y0 - 2, x1 + 2, y1 + 2, (200, 60, 50))
     rect(x0, y0, x1, y1, (112, 44, 30))
     cv.sign_text('마라판다', (x0 + x1) // 2, (y0 + y1) // 2, CREAM, (255, 170, 120), size=14)

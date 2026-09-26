@@ -22,7 +22,7 @@ const SKEWER_PACK_COST = { skewer_shrimp: 3000, skewer_fishcake_deluxe: 2500, sk
 const SKEWER_START_STOCK = 10
 export const SHELF_EXTRAS = [
   ...SKEWER_ITEMS.map((sk) => ({
-    id: sk.id, kind: 'skewer', name: `${sk.name} 꼬치`, emoji: sk.emoji,
+    id: sk.id, kind: 'skewer', name: `${sk.name} 꼬치`, shortName: sk.name, emoji: sk.emoji, // shortName: the narrow shelf slot
     packCost: SKEWER_PACK_COST[sk.id], startStock: SKEWER_START_STOCK,
     desc: `${sk.name} 꼬치! 꼬치 1개당 1,000원이에요`,
   })),
@@ -115,6 +115,22 @@ export const INTERIOR_EFFECT = {
   serveRating: 1.25, // 5 의자·식탁: rating gained from a good serve ×
   wilt: 0.8, // 6 주방: shelf vegetables age at this speed
 }
+
+// ---------- side menu (design/game-brief.md §사이드 메뉴, production/epics/side-menu/story-001) ----------
+// Open on business days 8 / 10 / 12; prices are reachable with the register keys (3,000 ×1 · 4,000 ×2 · 4,000 ×3).
+// Stock lives in the warehouse under `side_<id>` and never goes on the shelf. `cooked` sides are made in the wok
+// automatically while their order's pot cooks and go out with the main pot; drinks go out at the counter.
+export const SIDE_ITEMS = [
+  { id: 'drink', name: '중국음료', emoji: '🥤', price: 3000, unlockDay: 8, cooked: false, packCost: 9000 },
+  { id: 'friedrice', name: '달걀볶음밥', emoji: '🍳', price: 8000, unlockDay: 10, cooked: true, packCost: 24000 },
+  { id: 'guobao', name: '꿔바로우', emoji: '🍖', price: 12000, unlockDay: 12, cooked: true, packCost: 36000 },
+]
+export const SIDE_BY_ID = Object.fromEntries(SIDE_ITEMS.map((i) => [i.id, i]))
+export const sideStockId = (id) => `side_${id}`
+export const SIDE_STOCK_IDS = SIDE_ITEMS.map((i) => sideStockId(i.id))
+export const SIDE_CHANCE = 0.35 // share of customers who add one open side (tuning)
+export const SIDE_GIFT = 10 // first box of each side, from the panda, on its opening day
+export const WOK_DAY = Math.min(...SIDE_ITEMS.filter((i) => i.cooked).map((i) => i.unlockDay)) // the wok appears
 
 // Story & protagonist (design/quick-specs/story-character-2026-09-25.md)
 export const NAME_MAX_LEN = 8 // fits the narrow counter panel

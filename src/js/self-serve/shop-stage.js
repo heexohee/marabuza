@@ -1,18 +1,16 @@
 // Business-screen centre: 마라판다 seen side-on (production/epics/shop-growth/story-001-shop-cross-section.md).
-// The stage is the background art's own grid (tools/art/scene_shop.py, 320×150 art px) shown at a fixed
+// The stage is the background art's own grid (tools/art/scene_shop.py, 320×120 art px — the hall; the kitchen is its own strip) shown at a fixed
 // ratio, so every spot here is art px; the page multiplies by one art px (CSS --apx) and it scales with the column.
 
 /** Stage size and the painted landmarks the DOM lines up with (keep in step with scene_shop.py). */
 export const SHOP_STAGE = {
   w: 320,
-  h: 150,
-  floorY: 112, // wall meets floor
-  dining: { x0: 34, x1: 212 }, // floor span the tables share (right of the door)
-  kitchen: { x0: 214, x1: 320 }, // right end: tiled wall, hood, steel counter
-  counterY: 100, // top of the kitchen counter the pots stand on
+  h: 120,
+  floorY: 92, // wall meets floor
+  dining: { x0: 34, x1: 316 }, // floor span the tables share (right of the door); the kitchen is its own strip
 }
 
-/** Pot art width at zoom 1 (styles.css .pot-art) and the gap kept between pots. */
+/** Pot art width at zoom 1 (styles.css .pot-art) and the gap kept between pots on the kitchen strip. */
 export const POT_ART_W = 144
 const POT_GAP = 6
 const POT_ZOOM_MIN = 0.25

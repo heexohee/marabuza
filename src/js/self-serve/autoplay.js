@@ -5,9 +5,10 @@
 // story E002 (measuring the average daily profit D).
 import { DAY_LENGTH_SEC } from '../data.js'
 import {
-  adjustCharge, buyPack, confirmCharge, cookNext, counterPrice, frontCustomer, openShop, pickPot, restock, serveTable,
-  setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
+  adjustCharge, buyPack, buySidePack, confirmCharge, cookNext, counterPrice, frontCustomer, openShop, pickPot, restock, serveTable,
+  openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
 } from './logic.js'
+import { sideStockId } from './data.js'
 import { shelfQty } from './shelf.js'
 
 export const AUTOPLAY_STEP_SEC = 0.25
@@ -133,13 +134,20 @@ export function autoPlayDay(s, rng = Math.random, mistakes = BOT_MISTAKES) {
   return cur
 }
 
-/** Between days: orders packs of every shelf item that runs low, while the money lasts (a sensible player). */
+/** Between days: orders packs of every shelf item and open side that runs low, while the money lasts (a sensible player). */
 export function restockWarehouse(s) {
   let cur = s
   for (const id of shelfIds(s)) {
     while ((cur.stock[id] ?? 0) < WAREHOUSE_TARGET) {
       const next = buyPack(cur, id)
       if (next.money === cur.money) break // not buyable or out of money
+      cur = next
+    }
+  }
+  for (const side of openSides(cur)) {
+    while ((cur.stock[sideStockId(side.id)] ?? 0) < WAREHOUSE_TARGET) {
+      const next = buySidePack(cur, side.id)
+      if (next.money === cur.money) break
       cur = next
     }
   }

@@ -1,7 +1,7 @@
-# Story 007: 오프닝 5장 — 간판 교체 + 타이틀 드롭
+# Story 007: 오프닝 4장 — 간판 "마라부자" 교체
 
 > **Epic**: shop-growth (영업 화면 — 가게 단면)
-> **Status**: Ready
+> **Status**: In Progress
 > **Layer**: Presentation
 > **Type**: Visual/Feel
 > **Estimate**: M
@@ -22,23 +22,19 @@
 
 ## Acceptance Criteria
 
-*From `design/game-brief.md` (Story §오프닝 5장), scoped to this story:*
+*From `design/game-brief.md` (Story §오프닝 4장, 2026-09-27 개정 — 별도 5장 없이 4장 안에서), scoped to this story:*
 
-- [ ] 오프닝 4장(앞치마) 다음에 5장이 이어진다: 가게 정면 아침 → 갈색 "마라판다" 간판을 내림 → 판다 사장님 "간판은 바꿔도 돼. 맛은 그대로잖아." → 천 덮인 새 간판 → 천이 벗겨지고 핑크 "마라부자" 네온 점등
-- [ ] 점등 직후 제목 로고 "마라부자"가 떠오르는 타이틀 드롭이 나오고, 다음 클릭에 첫 영업으로 간다
-- [ ] 건너뛰기로 바로 첫 영업으로 갈 수 있다
-- [ ] 이미 오프닝을 본 기존 세이브는 다음 접속 때 5장만 한 번 보고, 이후엔 다시 보지 않는다 (`signSwapSeen` 저장)
-- [x] 이후 영업 단면의 간판은 "마라부자"다, 오프닝 1–4장은 "마라판다" 그대로 — 2026-09-27 먼저 반영: 영업 배경 7장(0–6단계) 모두 새 간판 (`scene_shop.py --all`, 옛 간판은 `--old-sign`)
-- [ ] 움직임 줄이기(`prefers-reduced-motion`)면 천·네온·로고가 애니메이션 없이 바로 바뀐다
+- [x] 4장(인수 첫날 아침)의 벽 간판은 처음엔 갈색 "마라판다"이고, 마지막 줄에서 창의 준비중 → 영업중과 함께 핑크 "마라부자"로 바뀐다
+- [x] 마지막 줄 대사는 "{이름} 사장의 마라부자, 첫 영업 시작!"
+- [x] 오프닝 1–3장과 4장 앞부분의 간판은 "마라판다" 그대로
+- [x] 이후 영업 단면의 간판은 0단계부터 "마라부자"다 (`scene_shop.py --all`)
 
 ---
 
 ## Implementation Notes
 
-- `OPENING_SCENES`에 5장 추가 (`enter`/`leave`/`bgAt`, 자막 재사용).
-- 배경: 1장 가게 정면(`tools/art/scene_office.py`)의 아침판 + 간판 두 벌(갈색·천 덮음·핑크 네온).
-- 타이틀 로고는 타이틀 화면의 `.title-logo`를 재사용.
-- 시안: `design/art/interior-mockups/stage-0.png` (갈색 가게 + 핑크 간판).
+- `tools/art/scene_regular.py`의 `open` 배경(`scene-takeover-open.png`, 4장 마지막 줄 `bgAt`)에만 핑크 간판 — 2장 밤·4장 아침 배경은 그대로.
+- 시안이던 별도 5장(간판 내리기 → 천 벗기기 → 타이틀 드롭)은 만들지 않음 (2026-09-27 사용자 결정).
 
 ---
 

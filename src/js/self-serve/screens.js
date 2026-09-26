@@ -4,7 +4,8 @@ import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import {
-  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, VARIANT_INGREDIENTS, WILT_SEC,
+  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, SIDE_ITEMS, VARIANT_INGREDIENTS, WILT_SEC,
+  sideStockId,
 } from './data.js'
 import { demandFactor, nextInterior, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
@@ -40,6 +41,7 @@ export function helpHtml() {
     ['소고기', won(p.beefSurcharge)], ['양고기', won(p.lambSurcharge)],
     ['꼬치 1개', won(p.skewerPrice)], ['고수', won(p.cilantroSurcharge)],
   ].map(([name, price]) => `<span class="help-price"><b>${name}</b> +${price}</span>`).join('')
+  const sides = SIDE_ITEMS.map((i) => `<span class="help-price"><b>${i.name}</b> +${won(i.price)} <small>${i.unlockDay}일차~</small></span>`).join('')
   return `
     <div class="overlay"><div class="modal help">
       <h2>게임방법 · 셀프 담기</h2>
@@ -53,6 +55,7 @@ export function helpHtml() {
           ${STEP('C', '조리 · 서빙', '주문표를 냄비에 넣고, 완성되면 같은 번호 테이블로')}
         </ol>
         <div class="help-prices">${extras}</div>
+        <div class="help-prices">${sides}</div>
       </section>
       <section class="help-sec">
         <h3>진열대</h3>
@@ -178,6 +181,30 @@ function interiorSection(s) {
       </section>`
 }
 
+// Side menu stock (side-menu story 001): one card per side — open ones order a box, later ones show their day.
+function sideCard(s, side) {
+  const isOpen = s.day >= side.unlockDay
+  const stock = s.stock[sideStockId(side.id)] ?? 0
+  const action = isOpen
+    ? `<button class="btn buy" data-action="sidePack" data-arg="${side.id}" ${s.money < side.packCost ? 'disabled' : ''}>+${PACK_SIZE}개<br>${won(side.packCost)}</button>`
+    : `<button class="btn buy" disabled>${side.unlockDay}일차에 열림</button>`
+  return `
+    <div class="card side-card ${isOpen ? '' : 'later'}">
+      <div class="card-art">${spriteImg(side.emoji, 20, 'card-img')}</div>
+      <div class="card-name">${side.name}</div>
+      <div class="card-sub">${won(side.price)} · 창고 ${stock}개</div>
+      ${action}
+    </div>`
+}
+
+function sideSection(s) {
+  return `
+      <section class="shop-section side-section">
+        <h2>사이드 메뉴 <small>(손님이 같이 주문 · 계산대에서 함께 계산)</small></h2>
+        <div class="cards">${SIDE_ITEMS.map((side) => sideCard(s, side)).join('')}</div>
+      </section>`
+}
+
 // Menu prices get their own shop section (they are not upgrades): both modes side by side, then the
 // combined, mode-mix-weighted demand hint from demandFactor(s) underneath.
 function priceSection(s) {
@@ -203,7 +230,7 @@ export function shopHtml(s) {
       <section class="shop-section">
         <h2>가게 업그레이드</h2>
         <div class="cards">${SELF_UPGRADES.map((u) => upgradeCard(s, u)).join('')}</div>
-      </section>${interiorSection(s)}${priceSection(s)}
+      </section>${interiorSection(s)}${priceSection(s)}${sideSection(s)}
       <section class="shop-section orange">
         <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
         <div class="cards ing">${VARIANT_INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>

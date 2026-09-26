@@ -8,7 +8,7 @@ import {
 import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
-  EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
+  EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, WOK_DAY, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
   WILT_SEC,
 } from './data.js'
 import {
@@ -48,7 +48,7 @@ function floating(items, px) {
   }).join('')
 }
 
-// Three columns so the whole shop fits one screen: shelf (left) · tables + kitchen (centre) · counter (right).
+// Layout (feedback 2026-09-27): hall · ticket rail · kitchen strip on the left, counter on the right, shelf along the bottom.
 // Stats sit in the top bar instead of a side column. Layout lives in self-serve.css (.game.ss).
 const GAME_SKELETON = `
 <div class="game ss">
@@ -57,24 +57,27 @@ const GAME_SKELETON = `
     <div class="clock"><div class="clock-fill" data-bar="clock"></div><span class="clock-text" data-text="clock"></span></div>
     <div class="ss-stats" data-slot="side"></div>
   </header>
+  <main class="ss-center">
+    <section class="shop-scene" aria-label="마라부자 홀 — 식탁">
+      <div class="shop-stage">
+        <div class="open-board" data-slot="open-board"></div>
+        <div class="seats" data-slot="tables"></div>
+      </div>
+    </section>
+    <div class="rail" data-slot="rail"></div>
+    <section class="ss-kitchen" aria-label="주방 — 냄비와 웍">
+      <div class="pots" data-slot="pots"></div>
+      <div class="wok" data-slot="wok"></div>
+    </section>
+    <p class="shop-hint">완성된 냄비를 눌러 들고 → 같은 🎫 번호 식탁을 누르세요</p>
+  </main>
+  <section class="bowl-panel counter ss-counter" data-slot="counter"></section>
   <section class="shelf-panel ss-shelf">
     <div class="panel-title">진열대 <small>눌러서 창고에서 보충</small></div>
     <div class="busy" data-busy><i class="busy-track"><b data-bar="busy"></b></i><em>보충 중…</em></div>
     <div class="shelf" data-slot="shelf"></div>
     <div class="info" data-slot="info"></div>
   </section>
-  <main class="ss-center">
-    <section class="shop-scene" aria-label="마라판다 가게 — 식탁과 주방">
-      <div class="shop-stage">
-        <div class="open-board" data-slot="open-board"></div>
-        <div class="seats" data-slot="tables"></div>
-      </div>
-      <div class="pots" data-slot="pots"></div>
-    </section>
-    <p class="shop-hint">완성된 냄비를 눌러 들고 → 같은 🎫 번호 식탁을 누르세요</p>
-    <div class="rail" data-slot="rail"></div>
-  </main>
-  <section class="bowl-panel counter ss-counter" data-slot="counter"></section>
   <div class="toasts" data-slot="toasts"></div>
   <div class="overlay-slot" data-slot="overlay"></div>
 </div>`
@@ -116,7 +119,7 @@ const spiceTag = (level) => (level === 0 ? '순한' : `${spriteImg('🌶️', 10
 function railHtml(s) {
   const tickets = s.rail.map((o) => `
     <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기 · ${MODE_LABEL[o.mode]} ${o.spice}단계">
-      <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}
+      <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}${o.side ? spriteImg(SIDE_BY_ID[o.side].emoji, 14, 'mini-face') : ''}
       <span>${MODE_LABEL[o.mode]}</span><span class="tspice">${spiceTag(o.spice)}</span>
     </button>`).join('')
   return `<div class="rail-title">주문표 <kbd>C</kbd></div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
@@ -179,6 +182,15 @@ function fitPots(el, count) {
   el.style.setProperty('--pot-zoom', String(potZoom(width, count)))
 }
 
+/** The wok (side-menu story 001): shows from WOK_DAY; lit while a pot cooks an order with a cooked side. */
+const isWokCooking = (s) => s.pots.some((p) => p && p.remaining > 0 && p.order.side && SIDE_BY_ID[p.order.side].cooked)
+const wokKey = (s) => `${s.day >= WOK_DAY}|${isWokCooking(s)}`
+function wokHtml(s) {
+  if (s.day < WOK_DAY) return ''
+  const on = isWokCooking(s)
+  return `<div class="wok-art ${on ? 'on' : ''}" title="사이드는 냄비와 함께 자동 조리돼요">${spriteImg('🥘', 20, 'wok-img')}${on ? '<i class="wok-fire"></i>' : ''}</div>`
+}
+
 /** 준비중 / 영업중 board on the back wall; it flips to 준비중 once the day is closing. */
 const openBoardHtml = (isOpen) => `<span class="${isOpen ? 'on' : 'off'}">${isOpen ? '영업중' : '준비중'}</span>`
 
@@ -202,7 +214,6 @@ function ownerHtml(s) {
   return `
     <div class="owner">
       ${heroImg(s.character, 'hero-owner')}
-      <span class="owner-name">사장 ${esc(s.character.name)}</span>
       ${line ? `<span class="owner-say">${esc(line)}</span>` : ''}
     </div>`
 }
@@ -216,6 +227,7 @@ function counterHtml(s) {
   const weighed = Object.entries(c.bowl.weighed).map(([id, q]) =>
     `<span class="chip">${spriteImg(INGREDIENT_BY_ID[id].emoji, 16, 'chip-img')}×${q}</span>`).join('')
   const cilantro = c.bowl.cilantro ? '<span class="chip found">🌿 고수</span>' : ''
+  const side = c.side ? `<span class="chip found side">${spriteImg(SIDE_BY_ID[c.side].emoji, 16, 'chip-img')} ${SIDE_BY_ID[c.side].name}</span>` : ''
   const modes = Object.keys(MODE_LABEL).map((m) =>
     `<button class="mode-btn ${s.counter.mode === m ? 'on' : ''}" data-action="mode" data-arg="${m}">${MODE_LABEL[m]}</button>`).join('')
   const spice = SPICE_LEVELS.map((l) =>
@@ -225,13 +237,13 @@ function counterHtml(s) {
   return `
     ${ownerHtml(s)}
     ${queueHtml(s)}
-    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}</div>
+    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}</div>
     <div class="bowl-art small">
       <div class="bowl-rim"><div class="broth spice-0">${floating(c.bowl.weighed, 12)}</div></div>
       <div class="bowl-body"><div class="bowl-inner"><i class="bowl-band"></i></div></div>
       <div class="bowl-foot"></div>
     </div>
-    <div class="chips">${found}${cilantro}${weighed}</div>
+    <div class="chips">${side}${found}${cilantro}${weighed}</div>
     <div class="dig-row">
       <span class="bowl-meta">⚖ ${checkoutBowlWeight(c.bowl)}g</span>
       <button class="btn ghost dig" data-action="dig">🥢 뒤적이기 <kbd>Space</kbd></button>
@@ -271,7 +283,7 @@ function shelfHtml(s, view) {
       <button class="slot ${cls}" data-action="restock" data-arg="${ing.id}" data-hover="${ing.id}" aria-label="${ing.name} 보충">
         ${fresh}
         ${spriteImg(ing.emoji, 16, 'slot-img')}
-        <span class="slot-name">${ing.name}</span>
+        <span class="slot-name">${ing.shortName ?? ing.name}</span>
         <span class="stock">${qty}/${SHELF_CAPACITY}</span>
         <span class="wh">창고 ${s.stock[ing.id]}</span>
         ${wilting ? '<span class="wilt-tag">🥀 곧 시듦</span>' : ''}
@@ -376,9 +388,10 @@ export function render(root, s, view) {
   patch(slot(root, 'rail'), s.rail.map((o) => o.ticketNo).join(','), () => railHtml(s))
   patch(slot(root, 'pots'), potsKey(s), () => potsHtml(s))
   fitPots(slot(root, 'pots'), s.pots.length)
-  // interior stage → background layer and furniture colours (.shop-scene[data-interior], shop-growth 005)
-  const scene = root.querySelector('.shop-scene')
-  if (scene && scene.dataset.interior !== String(s.interior ?? 0)) scene.dataset.interior = String(s.interior ?? 0)
+  patch(slot(root, 'wok'), wokKey(s), () => wokHtml(s))
+  // interior stage → hall background, furniture and kitchen-strip colours (.ss-center[data-interior], shop-growth 005)
+  const centre = root.querySelector('.ss-center')
+  if (centre && centre.dataset.interior !== String(s.interior ?? 0)) centre.dataset.interior = String(s.interior ?? 0)
   patch(slot(root, 'open-board'), `${!isClosing(s)}`, () => openBoardHtml(!isClosing(s)))
   patch(slot(root, 'counter'), counterKey(s), () => counterHtml(s))
   patch(slot(root, 'shelf'), shelfKey(s, view), () => shelfHtml(s, view))

@@ -118,7 +118,7 @@
 .fresh b[data-level="bad"] { background: var(--red); }
 
 /* tablet: tables + kitchen | counter on top, a wide short shelf underneath */
-@media (max-width: 1000px) {
+@container app (max-width: 1000px) {
   .game.ss {
     grid-template-columns: minmax(0, 1fr) 280px;
     grid-template-areas:
@@ -130,7 +130,7 @@
 }
 
 /* phone: one column — counter first (the main job), then shelf, then tables + kitchen */
-@media (max-width: 700px) {
+@container app (max-width: 700px) {
   .game.ss {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "top" "counter" "shelf" "center";
@@ -176,7 +176,7 @@
 .scene-regular { background: #b5651d url("img/scene-regular.png?v=2") center / 100% 100% no-repeat; }
 /* scene 4: the same shop the takeover morning (준비중), then opened on the last line (영업중) */
 .scene-takeover { background: #d99a5a url("img/scene-takeover.png?v=1") center / 100% 100% no-repeat; }
-.scene-takeover-open { background: #d99a5a url("img/scene-takeover-open.png?v=1") center / 100% 100% no-repeat; }
+.scene-takeover-open { background: #d99a5a url("img/scene-takeover-open.png?v=2") center / 100% 100% no-repeat; }
 /* painted by tools/art/scene_notice.py — the closed shop door in the rain */
 .scene-notice { background: #1e2230 url("img/scene-notice.png?v=1") center / 100% 100% no-repeat; }
 .prop { position: absolute; }
@@ -217,7 +217,7 @@
 }
 .end-line { display: flex; align-items: center; gap: 8px; margin: 4px 0 10px; font-size: 13px; background: #fffbd1; border: 2px solid var(--ink); border-radius: 8px; padding: 6px 8px; }
 
-@media (max-width: 700px) {
+@container app (max-width: 700px) {
   .create-body { flex-direction: column; }
 }
 
@@ -251,10 +251,6 @@
 .ss .counter .chips { height: var(--ss-chips-h); align-content: flex-start; overflow-y: auto; }
 .ss .counter-idle { flex: 1; display: flex; align-items: center; justify-content: center; margin: 0; }
 
-/* ---------- 10% larger on roomy screens (e.g. 14" MacBook Pro Chrome ≈ 1512×860) ---------- */
-@media (min-width: 1450px) and (min-height: 760px) {
-  .game.ss { zoom: 1.1; }
-}
 /* Counter content must fit --ss-counter-h even with a full queue and every item dug out. */
 .ss .counter .till { padding: 4px 10px; font-size: 30px; line-height: 1.2; }
 .ss .bowl-art.small { transform: scale(.7); margin: -14px auto -18px; }
@@ -336,7 +332,7 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
    Small labels were 9–11px regular and hard to read (feedback 2026-09-25). Key labels move to
    12–13px bold; the shelf column and slots grow to keep two-line names whole. */
 /* only the 3-column layout: an unscoped rule here would override the ≤1000px / ≤700px columns above */
-@media (min-width: 1001px) {
+@container app (min-width: 1001px) {
   .game.ss { grid-template-columns: 276px minmax(0, 1fr) 300px; }
 }
 :root { --ss-slot-h: 92px; }
@@ -394,7 +390,7 @@ html { scrollbar-gutter: stable; }
 :root { --dialogue-h: 128px; }
 .scene, .dialogue { box-sizing: border-box; width: 100%; }
 .dialogue { height: var(--dialogue-h); min-height: 0; overflow: hidden; }
-@media (max-width: 700px) {
+@container app (max-width: 700px) {
   :root { --dialogue-h: 156px; }
 }
 .skip-btn { font-size: 14px; font-weight: 700; }
@@ -417,7 +413,7 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .help-text { color: var(--ink); opacity: .78; }
 .help-prices { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0 1.6em; }
 .help-price { font-size: 14px; font-weight: 700; padding: 3px 8px; border: 2px solid var(--ink); border-radius: 8px; background: #fff5f7; }
-@media (max-width: 480px) {
+@container app (max-width: 480px) {
   .help-steps li { grid-template-columns: 1fr; gap: 0; }
 }
 .summary { font-size: 14px; font-weight: 700; }
@@ -430,10 +426,10 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 
 /* ---------- shop cross-section: the business screen's centre is 마라판다 seen side-on
    (production/epics/shop-growth/story-001-shop-cross-section.md). The stage is the background art's own grid —
-   tools/art/scene_shop.py, 320×150 art px, bump ?v= when regenerating — and every spot on it is written in art
-   px times --apx (one art px, from the stage width), matching src/js/self-serve/shop-stage.js. The door, wall,
-   floor and kitchen are painted; tables, customers, pots and the open board are DOM so they stay clickable
-   and follow the upgrades. If the image does not load the colours below remain and every control still works. */
+   tools/art/scene_shop.py, 320×120 art px (the hall; the kitchen is the .ss-kitchen strip below the rail), bump
+   ?v= when regenerating — and every spot on it is written in art px times --apx (one art px, from the stage
+   width), matching src/js/self-serve/shop-stage.js. The door, wall and floor are painted; tables, customers and
+   the open board are DOM so they stay clickable and follow the upgrades. If the image does not load the colours below remain and every control still works. */
 .ss-center { gap: 8px; }
 .shop-scene {
   --art-w: 320;
@@ -442,8 +438,8 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
   border: 4px solid var(--ink); border-radius: var(--radius); background: #9aa1ae;
 }
 .shop-stage {
-  position: relative; aspect-ratio: var(--art-w) / 150;
-  background: #d99a5a url("img/scene-shop.png?v=4") left top / auto 100% no-repeat;
+  position: relative; aspect-ratio: var(--art-w) / 120;
+  background: #d99a5a url("img/scene-shop.png?v=5") left top / auto 100% no-repeat;
   image-rendering: pixelated;
 }
 .shop-hint { margin: 0; text-align: center; font-size: 13px; font-weight: 700; color: var(--on-pastel); }
@@ -501,51 +497,50 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .shop-scene .ss-table:hover, .shop-scene .ss-table:focus-visible { background: rgba(255, 243, 201, .35); }
 .shop-scene .ss-table.can-serve { outline: 3px dashed var(--green-dark); outline-offset: -3px; background: rgba(143, 217, 182, .25); }
 
-/* kitchen: pots stand on the painted steel counter (top at art y 100), bar + label on its front */
-.shop-scene .pots {
-  position: absolute; left: calc(var(--apx) * 216); width: calc(var(--apx) * 102); top: calc(var(--apx) * 38); bottom: 0;
-  display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 0;
-  padding: 0; background: none; border: 0; border-radius: 0; align-items: stretch;
+/* kitchen strip under the ticket rail (layout 2026-09-27): a tiled wall over a steel counter; the pots stand on the
+   counter top (art scaled by --pot-zoom from the strip width), their bar + label on its front, the wok at the right end */
+.ss-kitchen {
+  --tile: #eee8de; --grout: #cfc7ba; --steel: #b0b6c2; --steel-top: #d6dbe3; --counter-h: 54px;
+  position: relative; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 8px;
+  padding: 8px 10px 0; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden;
+  background:
+    linear-gradient(to bottom, transparent calc(100% - var(--counter-h)), var(--steel-top) calc(100% - var(--counter-h)),
+      var(--steel-top) calc(100% - var(--counter-h) + 6px), var(--steel) calc(100% - var(--counter-h) + 6px)),
+    repeating-linear-gradient(0deg, var(--grout) 0 2px, transparent 2px 22px),
+    repeating-linear-gradient(90deg, var(--grout) 0 2px, transparent 2px 26px),
+    var(--tile);
 }
-.shop-scene .pot {
-  display: grid; grid-template-rows: minmax(0, 1fr) calc(var(--apx) * 50); justify-items: center; gap: 0;
+.ss-kitchen .pots {
+  display: grid; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); gap: 6px;
+  padding: 0; background: none; border: 0; border-radius: 0; align-items: end;
+}
+.ss-kitchen .pot {
+  display: grid; grid-template-rows: auto var(--counter-h); justify-items: center; gap: 0;
   min-width: 0; padding: 0; margin: 0; background: none; border: 0; border-radius: 6px; font: inherit; color: var(--on-pastel);
 }
-.shop-scene .pot-stand { align-self: end; display: flex; flex-direction: column; align-items: center; }
-.shop-scene .pot-art { zoom: var(--pot-zoom, 1); }
-.shop-scene .steam { height: auto; min-height: 14px; font-size: 14px; line-height: 1; }
-.shop-scene .pot-meta { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding-top: calc(var(--apx) * 6); }
-.shop-scene .pot-bar { width: 86%; max-width: 120px; height: 7px; box-sizing: border-box; }
+.ss-kitchen .pot-stand { align-self: end; display: flex; flex-direction: column; align-items: center; }
+.ss-kitchen .pot-art { zoom: var(--pot-zoom, 1); }
+.ss-kitchen .steam { height: auto; min-height: 14px; font-size: 14px; line-height: 1; }
+.ss-kitchen .pot-meta { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 100%; padding-top: 10px; }
+.ss-kitchen .pot-bar { width: 86%; max-width: 120px; height: 7px; box-sizing: border-box; }
 /* labels stay short (🎫N, 집기, 빈 냄비) and may wrap to two lines inside a narrow pot cell rather than overlap */
-.shop-scene .pot-label {
-  flex-direction: column; gap: 2px; min-height: 0; max-width: 100%; font-size: max(11px, calc(var(--apx) * 5.5)); font-weight: 700;
+.ss-kitchen .pot-label {
+  flex-direction: column; gap: 2px; min-height: 0; max-width: 100%; font-size: 12px; font-weight: 700;
   line-height: 1.2; text-align: center; overflow-wrap: anywhere;
 }
-.shop-scene .pot-label .btn.serve { display: inline-block; width: auto; max-width: 100%; box-sizing: border-box; margin: 0; padding: 2px 4px; font-size: inherit; }
-.shop-scene .pot.done { cursor: pointer; }
-.shop-scene .pot.done:hover, .shop-scene .pot.done:focus-visible { background: rgba(255, 243, 201, .45); }
-
-/* narrow (≤700px, one column): the stage shows the door and dining room only (left 214 art px, same scale),
-   and the kitchen counter drops underneath as a full-width steel strip, so every table and pot stays big
-   enough to press */
-@media (max-width: 700px) {
-  .shop-scene { --art-w: 214; }
-  .shop-scene .pots {
-    position: static; width: auto; padding: 6px 4px 8px; border-top: 4px solid var(--ink);
-    background: linear-gradient(#d6dbe3 0 6px, #b0b6c2 6px);
-  }
-  .shop-scene .pot { grid-template-rows: auto auto; }
-  .shop-scene .pot-meta { padding-top: 4px; }
-}
+.ss-kitchen .pot-label .btn.serve { display: inline-block; width: auto; max-width: 100%; box-sizing: border-box; margin: 0; padding: 2px 6px; font-size: inherit; }
+.ss-kitchen .pot.done { cursor: pointer; }
+.ss-kitchen .pot.done:hover, .ss-kitchen .pot.done:focus-visible { background: rgba(255, 243, 201, .45); }
 
 /* shop: menu prices section (economy story E001) — both 100g prices side by side, demand hint under them */
 .price-boxes { display: flex; flex-wrap: wrap; gap: 10px; }
 .price-boxes .price-box { flex: 1 1 200px; }
 .price-section .price-hint { margin-top: 8px; text-align: center; font-size: 14px; font-weight: 700; }
 
-/* dev mode bar (src/js/self-serve/dev.js) — localhost or ?dev only, never in the shipped game */
+/* dev mode bar (src/js/self-serve/dev.js) — localhost or ?dev only, never in the shipped game; sits under the
+   game (not floating) so it never covers the shelf */
 .dev-bar {
-  position: fixed; left: 12px; bottom: 12px; z-index: 50; display: flex; align-items: center; gap: 6px;
+  position: static; width: fit-content; margin: 10px auto 16px; display: flex; align-items: center; gap: 6px;
   padding: 6px 8px; background: rgba(40, 30, 40, .88); border: 2px solid #111; border-radius: 10px;
   font-size: 13px; font-weight: 700; color: #fff;
 }
@@ -561,14 +556,101 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .interior-card.next { outline: 3px solid var(--red); outline-offset: -3px; }
 .interior-card.later { opacity: .55; }
 
-/* interior stages on the shop cross-section (shop-growth 005): painted by tools/art/scene_shop.py --stage N */
-.shop-scene[data-interior="1"] .shop-stage { background-image: url("img/scene-shop-1.png?v=2"); }
-.shop-scene[data-interior="2"] .shop-stage { background-image: url("img/scene-shop-2.png?v=2"); }
-.shop-scene[data-interior="3"] .shop-stage { background-image: url("img/scene-shop-3.png?v=2"); }
-.shop-scene[data-interior="4"] .shop-stage { background-image: url("img/scene-shop-4.png?v=2"); }
-.shop-scene[data-interior="5"] .shop-stage { background-image: url("img/scene-shop-5.png?v=2"); }
-.shop-scene[data-interior="6"] .shop-stage { background-image: url("img/scene-shop-6.png?v=2"); }
-.shop-scene:is([data-interior="5"], [data-interior="6"]) .table-top { background: #fff6f0; }
-.shop-scene:is([data-interior="5"], [data-interior="6"]) .table-leg { background: #ec96b0; }
-.shop-scene:is([data-interior="5"], [data-interior="6"]) .chair,
-.shop-scene:is([data-interior="5"], [data-interior="6"]) .chair::after { background: #8fd9b6; }
+/* interior stages on the hall (shop-growth 005): painted by tools/art/scene_shop.py --stage N; 6 주방 tints the kitchen strip */
+.ss-center[data-interior="6"] .ss-kitchen { --tile: #ffeef2; --grout: #eec8d4; --steel-top: #ffe3ea; --steel: #f3c3d2; }
+.ss-center[data-interior="1"] .shop-stage { background-image: url("img/scene-shop-1.png?v=3"); }
+.ss-center[data-interior="2"] .shop-stage { background-image: url("img/scene-shop-2.png?v=3"); }
+.ss-center[data-interior="3"] .shop-stage { background-image: url("img/scene-shop-3.png?v=3"); }
+.ss-center[data-interior="4"] .shop-stage { background-image: url("img/scene-shop-4.png?v=3"); }
+.ss-center[data-interior="5"] .shop-stage { background-image: url("img/scene-shop-5.png?v=3"); }
+.ss-center[data-interior="6"] .shop-stage { background-image: url("img/scene-shop-6.png?v=3"); }
+.ss-center:is([data-interior="5"], [data-interior="6"]) .table-top { background: #fff6f0; }
+.ss-center:is([data-interior="5"], [data-interior="6"]) .table-leg { background: #ec96b0; }
+.ss-center:is([data-interior="5"], [data-interior="6"]) .chair,
+.ss-center:is([data-interior="5"], [data-interior="6"]) .chair::after { background: #8fd9b6; }
+
+/* side menu (side-menu story 001): the order chip at the counter and the wok at the kitchen strip's right end */
+.ss .counter .chip.side { background: #fff3c9; color: var(--on-pastel); border-color: var(--ink); font-weight: 700; }
+.ss .counter .chip.side .chip-img { filter: none; }
+.ss-kitchen .wok { width: 52px; margin-bottom: var(--counter-h); pointer-events: none; }
+.ss-kitchen .wok:empty { display: none; }
+.ss-kitchen .wok-art { position: relative; display: grid; place-items: center; }
+.ss-kitchen .wok-img { width: 100%; height: auto; }
+.ss-kitchen .wok-art.on .wok-img { animation: bob .5s infinite alternate; }
+.ss-kitchen .wok-fire {
+  position: absolute; left: 20%; right: 20%; bottom: -3px; height: 4px; border-radius: 2px;
+  background: var(--orange); box-shadow: 0 0 6px #ff8a3d;
+}
+@media (prefers-reduced-motion: reduce) { .ss-kitchen .wok-art.on .wok-img { animation: none; } }
+.side-card.later { opacity: .55; }
+
+/* ---------- layout (feedback 2026-09-27): hall · ticket rail · kitchen strip on the left, counter on the right,
+   the shelf as one full-width row along the bottom (its description box at the row's right end) ---------- */
+.game.ss {
+  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-areas: "top top" "center counter" "shelf shelf";
+}
+.ss-center { align-self: stretch; }
+.ss-kitchen { flex: 1; } /* the kitchen strip takes the height left under the hall and rail (the counter sets the row) */
+/* compact bottom shelf: title and restock bar on one line, one row of slots, the description box at the right */
+:root { --ss-slot-h: 84px; --ss-counter-h: 646px; } /* counter: fullest order ends at 633px (measured 2026-09-27) */
+.ss .owner { height: 40px; } /* owner row is the face + morning line only (no name) */
+/* bottom-row slots (~58px wide at 1280): icon, then the name (up to two lines), then the shelf count and
+   the warehouse count on lines of their own, all centred so nothing is squeezed (feedback 2026-09-27) */
+.ss-shelf .slot {
+  display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 22px minmax(0, 1fr) auto auto;
+  row-gap: 1px; align-items: center; justify-items: center; padding: 9px 2px 4px;
+}
+.ss-shelf .slot .slot-img { width: 22px; height: 22px; }
+.ss-shelf .slot .slot-name {
+  font-size: 11px; font-weight: 700; line-height: 12px; height: auto; max-height: 24px; text-align: center;
+  word-break: keep-all; overflow-wrap: anywhere; letter-spacing: -0.02em;
+}
+.ss-shelf .slot .stock { position: static; font-size: 10px; line-height: 12px; padding: 0 4px; white-space: nowrap; }
+.ss-shelf .slot .wh { font-size: 10px; line-height: 11px; white-space: nowrap; opacity: .8; }
+.ss-shelf {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) 240px; column-gap: 10px; row-gap: 6px; align-items: center;
+  grid-template-areas: "title busy info" "shelf shelf info";
+}
+.ss-shelf .panel-title { grid-area: title; margin: 0; }
+.ss-shelf .busy { grid-area: busy; margin: 0; }
+.ss-shelf .shelf { grid-area: shelf; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+.ss-shelf .info { grid-area: info; height: 100%; align-self: stretch; }
+/* narrower screens (feedback 2026-09-27): the hall spans both columns so it grows with the screen, and the shelf
+   moves under the kitchen beside the tall counter, so the kitchen keeps its own height instead of stretching */
+@container app (min-width: 701px) and (max-width: 1000px) {
+  .game.ss {
+    grid-template-columns: minmax(0, 1fr) 280px; grid-template-rows: auto auto auto auto auto minmax(0, 1fr);
+    grid-template-areas: "top top" "hall hall" "rail counter" "kitchen counter" "hint counter" "shelf counter";
+  }
+  .ss-center { display: contents; }
+  .ss-center > .shop-scene { grid-area: hall; }
+  .ss-center > .rail { grid-area: rail; }
+  .ss-center > .ss-kitchen { grid-area: kitchen; }
+  .ss-center > .shop-hint { grid-area: hint; }
+  .ss-counter { align-self: start; }
+  .ss-shelf { align-self: start; grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "busy" "shelf" "info"; }
+  .ss-shelf .shelf { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(72px, 1fr)); }
+  .ss-shelf .info { height: auto; }
+}
+@container app (max-width: 700px) {
+  .game.ss { grid-template-columns: minmax(0, 1fr); grid-template-areas: "top" "counter" "center" "shelf"; }
+  .ss-shelf { grid-template-columns: minmax(0, 1fr); grid-template-areas: "title" "busy" "shelf" "info"; }
+  .ss-shelf .shelf { grid-auto-flow: row; grid-template-columns: repeat(auto-fill, minmax(78px, 1fr)); }
+}
+
+/* ---------- fixed game stage (Steam build: no page scroll at any window size, feedback 2026-09-27) ----------
+   #app is laid out at STAGE size (src/js/self-serve/fit.js) and scaled to the window by --fit, so every screen
+   has one layout. The width rules above are container queries on #app — always 1280 wide — so the 1280 layout
+   is the one used; the narrower layouts stay in the file dormant. Fixed-position overlays (modals, toasts) now
+   sit inside the stage, since the transform makes #app their containing block. */
+html, body { overflow: hidden; }
+#app {
+  position: fixed; left: 50%; top: 50%; width: 1280px; height: 884px; min-height: 0; box-sizing: border-box;
+  transform: translate(-50%, -50%) scale(var(--fit, 1)); transform-origin: center;
+  align-items: safe center; overflow-y: auto; overscroll-behavior: contain;
+  container: app / inline-size;
+}
+/* dev bar: outside the stage, folded to its DEV tag in the corner so it never covers the shelf; opens on hover/focus */
+.dev-bar { position: fixed; left: 6px; bottom: 6px; margin: 0; z-index: 50; opacity: .85; }
+.dev-bar:not(:hover, :focus-within) button { display: none; }

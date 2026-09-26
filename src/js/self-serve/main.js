@@ -1,6 +1,6 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, advanceStory, beginNewGame, buyInterior, buyPack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
+  addToast, adjustCharge, advanceStory, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
   fadeToasts, finishCharacter, openShop, pickPot, resetCharge, restock, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
@@ -8,6 +8,7 @@ import {
 import { hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
+import { mountStageFit } from './fit.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
@@ -36,6 +37,7 @@ const gameActions = {
   unlock: (s, arg) => persist(unlockIngredient(s, arg)),
   upgrade: (s, arg) => persist(buyUpgrade(s, arg)),
   interior: (s) => persist(buyInterior(s)),
+  sidePack: (s, arg) => persist(buySidePack(s, arg)),
   price: (s, arg) => {
     const [mode, delta] = String(arg).split(':')
     return persist(setMenuPrice(s, mode, s.prices[mode] + Number(delta)))
@@ -107,6 +109,8 @@ window.addEventListener('keydown', (e) => {
 
 // Dev mode (localhost or ?dev): auto-play days and add money to check between-day UI quickly.
 // Results land on the summary screen; "상점으로" then saves them like a played day.
+mountStageFit(window)
+
 if (isDevMode()) {
   mountDevBar(document, (action) => {
     if (!DEV_ACTIONS[action]) return

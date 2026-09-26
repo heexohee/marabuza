@@ -40,7 +40,7 @@ export const OPENING_SCENES = [
   },
   {
     // same shop as the regular scene, the morning she takes it over: he hands her the apron and leaves,
-    // and on the last line the sign in the window flips from 준비중 to 영업중
+    // and on the last line the window sign flips from 준비중 to 영업중 and the shop board becomes her "마라부자"
     id: 'takeover', bg: 'scene-takeover', bgAt: { 7: 'scene-takeover-open' }, props: [], cast: ['me', 'panda'],
     leave: { panda: 5 },
     lines: [
@@ -51,7 +51,7 @@ export const OPENING_SCENES = [
       { who: 'panda', text: '난 이만 간다. 가끔 손님으로 올게.' },
       { who: 'me', text: '…이제 진짜 혼자네.' },
       { who: 'me', text: '이번엔 내가 누군가의 "버티게 해주는 한 그릇"이 되어 줄 거야.' },
-      { who: 'me', text: '{name} 사장의 마라판다, 첫 영업 시작!' },
+      { who: 'me', text: '{name} 사장의 마라부자, 첫 영업 시작!' },
     ],
   },
 ]

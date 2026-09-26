@@ -14,8 +14,8 @@ import {
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
-  RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
-  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf,
+  RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
@@ -60,10 +60,12 @@ export function createNewGame() {
     stock: {
       ...Object.fromEntries(VARIANT_INGREDIENTS.map((i) => [i.id, starters.includes(i.id) ? START_WAREHOUSE_STOCK : 0])),
       ...Object.fromEntries(SHELF_EXTRAS.map((i) => [i.id, i.startStock])),
+      ...Object.fromEntries(SIDE_ITEMS.map((i) => [sideStockId(i.id), 0])),
     },
     unlocked: starters,
     upgrades: Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, u.start])),
     interior: 0, // interior stages bought, 0–6 (INTERIOR_STAGES)
+    sideGifts: [], // side ids whose opening-day gift box was handed over
     toasts: [],
     nextToastId: 1,
     character: DEFAULT_CHARACTER,
@@ -124,7 +126,7 @@ export function counterPrice(s) {
   const c = frontCustomer(s)
   if (!c) return { base: 0, charged: 0, correct: 0 }
   const base = checkoutBasePrice({ ...c.bowl, mode: s.counter.mode }, s.prices)
-  return { base, charged: Math.max(0, base + s.counter.extra), correct: checkoutBowlPrice(c.bowl, s.prices) }
+  return { base, charged: Math.max(0, base + s.counter.extra), correct: checkoutBowlPrice(c.bowl, s.prices) + sidePrice(c) }
 }
 
 /** Sets a menu price (100g rate for one mode), clamped and rounded to MENU_PRICE's bounds/step. */
@@ -159,6 +161,46 @@ function spawnInterval(s) {
   ) / (demandFactor(s) * interiorFactor(s, 4, INTERIOR_EFFECT.visits))
 }
 
+// ---------- side menu (production/epics/side-menu/story-001) ----------
+
+/** Sides open on this business day (SIDE_ITEMS unlock days). */
+export const openSides = (s) => SIDE_ITEMS.filter((i) => s.day >= i.unlockDay)
+/** Price the register must add for a customer's side (0 without one). */
+export const sidePrice = (c) => (c?.side ? SIDE_BY_ID[c.side].price : 0)
+
+/** Morning of a side's opening day (or the first day after it): its gift box and a notice, once. */
+function openNewSides(s) {
+  const fresh = openSides(s).filter((i) => !(s.sideGifts ?? []).includes(i.id))
+  return fresh.reduce((cur, i) => addToast({
+    ...cur,
+    stock: { ...cur.stock, [sideStockId(i.id)]: (cur.stock[sideStockId(i.id)] ?? 0) + SIDE_GIFT },
+    sideGifts: [...(cur.sideGifts ?? []), i.id],
+  }, `새 메뉴 ${i.emoji} ${i.name} 시작! 첫 박스 ${SIDE_GIFT}개는 판다 사장님 선물 🎁`, 'good'), s)
+}
+
+/**
+ * Maybe adds an open side to a new customer's order. No randomness is used before the first side opens,
+ * so early days play exactly as before. Out of stock (counting sides already ordered in the queue) → they grumble.
+ */
+function withSide(s, customer, rng) {
+  const open = openSides(s)
+  if (open.length === 0 || rng() >= SIDE_CHANCE) return { customer, missingSide: null }
+  const side = open[Math.floor(rng() * open.length)]
+  const ordered = s.queue.filter((c) => c.side === side.id).length
+  if ((s.stock[sideStockId(side.id)] ?? 0) - ordered <= 0) return { customer, missingSide: side }
+  return { customer: { ...customer, side: side.id }, missingSide: null }
+}
+
+/** Buys a box of an open side's stock for the warehouse. */
+export function buySidePack(s, id) {
+  const side = SIDE_BY_ID[id]
+  if (!side || s.day < side.unlockDay) return s
+  if (s.money < side.packCost) return addToast(s, '돈이 부족해요 💸', 'bad')
+  const key = sideStockId(id)
+  return addToast({ ...s, money: s.money - side.packCost, stock: { ...s.stock, [key]: (s.stock[key] ?? 0) + PACK_SIZE } },
+    `${side.name} ${PACK_SIZE}개 창고 입고`, 'good')
+}
+
 /** Customer patience: the shared day curve (without the old interior upgrade) × the 바닥 stage. */
 export const maxPatience = (s) =>
   sharedMaxPatience({ ...s, upgrades: { ...s.upgrades, interior: 0 } }) * interiorFactor(s, 2, INTERIOR_EFFECT.patience)
@@ -168,7 +210,7 @@ export const isJustWilted = (s, id) =>
   s.wiltedAt?.[id] !== undefined && s.dayTime - s.wiltedAt[id] < WILT_FLASH_SEC
 
 /** The correct price of a bowl, line by line: scale, meat, skewers, cilantro. */
-export function chargeBreakdown(bowl, prices) {
+export function chargeBreakdown(bowl, prices, side = null) {
   const skewers = sum(Object.values(bowl.skewers))
   const beef = meatCount(bowl, 'beef')
   const lamb = meatCount(bowl, 'lamb')
@@ -178,6 +220,7 @@ export function chargeBreakdown(bowl, prices) {
     ...(lamb > 0 ? [{ label: `양고기 ×${lamb}`, amount: lamb * CHECKOUT_PRICE.lambSurcharge }] : []),
     ...(skewers > 0 ? [{ label: `꼬치 ×${skewers}`, amount: skewers * CHECKOUT_PRICE.skewerPrice }] : []),
     ...(bowl.cilantro ? [{ label: '고수', amount: CHECKOUT_PRICE.cilantroSurcharge }] : []),
+    ...(side ? [{ label: SIDE_BY_ID[side].name, amount: SIDE_BY_ID[side].price }] : []),
   ]
 }
 
@@ -204,7 +247,7 @@ const MISTAKE_TEXT = {
 /** Register result line shown right after prepay: praise, or how much was off and why. */
 function chargeFeedback(c, type, difference, mistake, correct, ticketNo, prices) {
   if (type === 'exact') return `🎫 ${ticketNo}번 ${correct.toLocaleString()}원 — 딱 맞게 받았어요 👍`
-  const breakdown = chargeBreakdown(c.bowl, prices).map((l) => `${l.label} ${l.amount.toLocaleString()}`).join(' + ')
+  const breakdown = chargeBreakdown(c.bowl, prices, c.side).map((l) => `${l.label} ${l.amount.toLocaleString()}`).join(' + ')
   const head = type === 'undercharge'
     ? `💸 ${difference.toLocaleString()}원 덜 받았어요`
     : `😠 ${difference.toLocaleString()}원 더 받았어요 — 손님 컴플레인!`
@@ -217,7 +260,7 @@ const lingerLastToast = (s, sec) => ({ ...s, toasts: s.toasts.map((t, i, all) =>
 // ---------- helpers ----------
 
 const withRating = (s, delta) => ({ ...s, rating: clamp(s.rating + delta, 0, MAX_RATING) })
-const withStat = (s, key, add) => ({ ...s, stats: { ...s.stats, [key]: s.stats[key] + add } })
+const withStat = (s, key, add) => ({ ...s, stats: { ...s.stats, [key]: (s.stats[key] ?? 0) + add } })
 const withCounter = (s, patch) => ({ ...s, counter: { ...s.counter, ...patch } })
 
 /** Resets the counter whenever a different customer reaches the front of the queue. */
@@ -239,7 +282,8 @@ export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
   const ownerLine = { text: dayStartLine(s.day), until: DAY_LINE_SEC }
   const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
-  return { ...s, phase: 'day', story: null, rating, ...day, ownerLine, ...openShelf(s.stock, shelfIds(s)) }
+  const opened = openNewSides(s)
+  return { ...opened, phase: 'day', story: null, rating, ...day, ownerLine, ...openShelf(opened.stock, shelfIds(opened)) }
 }
 
 /** The owner's start-of-day line while it is still showing, else null. */
@@ -340,10 +384,11 @@ export function spawnCustomer(s, rng) {
     patience,
     maxPatience: patience,
   }
-  const queued = syncCounter({ ...next, shelf: topped.shelf, queue: [...s.queue, customer] })
-  if (missing.length === 0) return queued
-  const names = missing.map((m) => SHELF_ITEM_BY_ID[m].name).join(', ')
-  return addToast(withRating(queued, RATING_DELTA.grumble * missing.length), `"${names} 없네…" 😕`, 'bad')
+  const { customer: ordering, missingSide } = withSide(s, customer, rng)
+  const queued = syncCounter({ ...next, shelf: topped.shelf, queue: [...s.queue, ordering] })
+  const names = [...missing.map((m) => SHELF_ITEM_BY_ID[m].name), ...(missingSide ? [missingSide.name] : [])]
+  if (names.length === 0) return queued
+  return addToast(withRating(queued, RATING_DELTA.grumble * names.length), `"${names.join(', ')} 없네…" 😕`, 'bad')
 }
 
 function advanceSpawn(s, dt, rng) {
@@ -530,10 +575,13 @@ export function confirmCharge(s) {
     const patience = maxPatience(free)
     const table = {
       customerId: c.id, face: c.face, ticketNo, mode: c.mode, spice: c.spice,
-      paid: charged, correctPrice: correct, patience, maxPatience: patience,
+      paid: charged, correctPrice: correct, patience, maxPatience: patience, side: c.side ?? null,
     }
-    const order = { ticketNo, face: c.face, bowl: c.bowl, mode: free.counter.mode, spice: free.counter.spice }
-    const recorded = withStat(OUTCOME_STATS[type](free, difference), 'revenue', charged)
+    const order = { ticketNo, face: c.face, bowl: c.bowl, mode: free.counter.mode, spice: free.counter.spice, side: c.side ?? null }
+    // the side leaves the warehouse when it is paid for (a drink is handed over right here)
+    const sideKey = c.side ? sideStockId(c.side) : null
+    const stocked = sideKey ? { ...free, stock: { ...free.stock, [sideKey]: Math.max(0, free.stock[sideKey] - 1) } } : free
+    const recorded = withStat(OUTCOME_STATS[type](stocked, difference), 'revenue', charged)
     const rated = type === 'overcharge' ? withRating(recorded, RATING_DELTA.overcharge) : recorded
     const seated = syncCounter({
       ...rated,
@@ -607,9 +655,11 @@ export function serveTable(s, tableIdx) {
       pots: free.pots.map((p, i) => (i === free.heldPot ? null : p)),
       heldPot: null,
     }
-    const served = withRating(withStat(withStat(cleared, 'served', 1), 'tips', tip), ratingDelta)
+    const withSides = table.side ? withStat(cleared, 'sides', 1) : cleared
+    const served = withRating(withStat(withStat(withSides, 'served', 1), 'tips', tip), ratingDelta)
+    const sideTag = table.side ? ` + ${SIDE_BY_ID[table.side].emoji}` : ''
     const text = isRight
-      ? `맛있어요 😋${tip > 0 ? ` 팁 ${tip.toLocaleString()}원` : ''}`
+      ? `맛있어요 😋${sideTag}${tip > 0 ? ` 팁 ${tip.toLocaleString()}원` : ''}`
       : `"${pot.order.mode !== table.mode ? '조리 방식' : '맵기'}이 달라요!" 😡`
     return addToast(served, text, isRight ? 'good' : 'bad')
   })

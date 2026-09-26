@@ -21,9 +21,9 @@ test('test_table_spots_do_not_overlap_and_are_equal', () => {
   }
 })
 
-test('test_table_spots_stay_left_of_kitchen', () => {
-  const last = tableSpots(5).at(-1)
-  assert.ok(last.x + last.w < SHOP_STAGE.kitchen.x0)
+test('test_table_spots_stay_inside_the_stage', () => {
+  const last = tableSpots(4).at(-1)
+  assert.ok(last.x + last.w <= SHOP_STAGE.w)
 })
 
 test('test_table_spots_zero_returns_empty', () => {
