@@ -218,19 +218,16 @@ function priceSection(s) {
       </section>`
 }
 
-/** Between-days shop: upgrades, ingredient orders and skewer/cilantro orders into the warehouse. */
-export function shopHtml(s) {
-  const toasts = s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join('')
+function upgradeSection(s) {
   return `
-    <div class="shop-screen">
-      <header class="shop-head">
-        <h1 class="title-logo small">마라부자 <span>: 상점 · 셀프 담기</span></h1>
-        <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>
-      </header>
       <section class="shop-section">
         <h2>가게 업그레이드</h2>
         <div class="cards">${SELF_UPGRADES.map((u) => upgradeCard(s, u)).join('')}</div>
-      </section>${interiorSection(s)}${priceSection(s)}${sideSection(s)}
+      </section>`
+}
+
+function orderSections(s) {
+  return `
       <section class="shop-section orange">
         <h2>재료 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
         <div class="cards ing">${VARIANT_INGREDIENTS.map((i) => stockCard(s, i)).join('')}</div>
@@ -238,7 +235,56 @@ export function shopHtml(s) {
       <section class="shop-section orange">
         <h2>꼬치 · 고수 발주 <small>(${PACK_SIZE}개 묶음 → 창고)</small></h2>
         <div class="cards ing">${SHELF_EXTRAS.map((i) => stockCard(s, i)).join('')}</div>
-      </section>
+      </section>`
+}
+
+/**
+ * Shop tabs (feedback 2026-09-27): the shop no longer fits the fixed stage as one list, so it is split in three,
+ * each one screen tall. The order tab opens first — restocking is the every-day job.
+ */
+export const SHOP_TABS = [
+  { id: 'order', label: '🧺 재료 발주', html: orderSections },
+  { id: 'decor', label: '🏮 가게 꾸미기', html: (s) => upgradeSection(s) + interiorSection(s) },
+  { id: 'menu', label: '💰 가격 · 사이드', html: (s) => priceSection(s) + sideSection(s) },
+]
+export const DEFAULT_SHOP_TAB = SHOP_TABS[0].id
+
+/**
+ * Tabs with something that opened today (s.day is the day just played): an interior stage or a side menu.
+ * @returns {Set<string>} tab ids that get a NEW mark
+ */
+export function shopTabBadges(s) {
+  const badges = new Set()
+  const next = nextInterior(s)
+  if (next && next.isOpen && next.unlockDay === s.day) badges.add('decor')
+  if (SIDE_ITEMS.some((side) => side.unlockDay === s.day)) badges.add('menu')
+  return badges
+}
+
+function shopTabsHtml(s, tab) {
+  const badges = shopTabBadges(s)
+  return `
+      <nav class="shop-tabs" role="tablist" aria-label="상점">${SHOP_TABS.map((t) => `
+        <button class="shop-tab ${t.id === tab ? 'on' : ''}" role="tab" aria-selected="${t.id === tab}" data-action="shopTab" data-arg="${t.id}">${t.label}${badges.has(t.id) && t.id !== tab ? '<span class="new">NEW</span>' : ''}</button>`).join('')}
+      </nav>`
+}
+
+/**
+ * Between-days shop, one tab at a time: orders into the warehouse, shop upgrades + interior, or prices + sides.
+ * @param {object} s state in phase 'shop'
+ * @param {string} tab SHOP_TABS id (unknown ids fall back to the order tab)
+ */
+export function shopHtml(s, tab = DEFAULT_SHOP_TAB) {
+  const current = SHOP_TABS.find((t) => t.id === tab) ?? SHOP_TABS[0]
+  const toasts = s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join('')
+  return `
+    <div class="shop-screen">
+      <header class="shop-head">
+        <h1 class="title-logo small">마라부자 <span>: 상점 · 셀프 담기</span></h1>
+        <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>
+      </header>${shopTabsHtml(s, current.id)}
+      <div class="shop-tab-body" role="tabpanel">${current.html(s)}
+      </div>
       <footer class="shop-foot">
         <button class="bubble-btn alt2" data-action="menu">타이틀</button>
         <button class="bubble-btn" data-action="nextDay">DAY ${s.day + 1} 영업 시작!</button>

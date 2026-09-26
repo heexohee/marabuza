@@ -380,8 +380,8 @@ export function render(root, s, view) {
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
   if (screen === 'shop') {
-    const key = `shop|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`
-    return patch(root, key, () => shopHtml(s))
+    const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`
+    return patch(root, key, () => shopHtml(s, view.shopTab))
   }
   patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day}`)
   patch(slot(root, 'tables'), tablesKey(s), () => tablesHtml(s))

@@ -654,3 +654,21 @@ html, body { overflow: hidden; }
 /* dev bar: outside the stage, folded to its DEV tag in the corner so it never covers the shelf; opens on hover/focus */
 .dev-bar { position: fixed; left: 6px; bottom: 6px; margin: 0; z-index: 50; opacity: .85; }
 .dev-bar:not(:hover, :focus-within) button { display: none; }
+
+/* ---------- shop tabs (feedback 2026-09-27): 재료 발주 / 가게 꾸미기 / 가격·사이드, each fits the fixed stage ---------- */
+.shop-tabs { display: flex; gap: 6px; margin: 0 0 -16px 8px; position: relative; z-index: 1; }
+.shop-tab {
+  position: relative; font: inherit; font-size: 16px; font-weight: 700; padding: 8px 18px;
+  border: 4px solid var(--ink); border-bottom: none; border-radius: 12px 12px 0 0; background: #f3d6de; color: var(--ink);
+}
+.shop-tab.on { background: #fff5f7; padding-bottom: 12px; cursor: default; }
+.shop-tab:not(.on):hover, .shop-tab:not(.on):focus-visible { background: #ffe9a8; }
+.shop-tab .new {
+  position: absolute; top: -10px; right: -8px; padding: 1px 6px; font-size: 11px;
+  background: var(--red); color: #fff; border: 2px solid var(--ink); border-radius: 8px;
+}
+.shop-tab-body { display: flex; flex-direction: column; gap: 12px; }
+/* the shop fills the stage: header and tabs stay at the top and the buttons at the bottom whichever tab is open */
+#app[data-screen="shop"] { align-items: stretch; }
+#app[data-screen="shop"] .shop-screen { height: 100%; box-sizing: border-box; }
+.shop-tab-body { flex: 1; min-height: 0; }

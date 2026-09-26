@@ -9,12 +9,13 @@ import { hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
+import { DEFAULT_SHOP_TAB } from './screens.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
 
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, hasSave: hasSave() }
+let view = { hover: null, paused: false, help: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB }
 
 function persist(s) {
   return saveGame(s) ? s : addToast(s, '저장에 실패했어요 (브라우저 저장소를 확인하세요)', 'bad')
@@ -61,6 +62,7 @@ const viewActions = {
   pause: (v) => ({ ...v, paused: !v.paused }),
   help: (v) => ({ ...v, help: true }),
   closeHelp: (v) => ({ ...v, help: false }),
+  shopTab: (v, arg) => ({ ...v, shopTab: arg }),
 }
 
 function run(action, arg) {
@@ -70,7 +72,7 @@ function run(action, arg) {
     return
   }
   if (viewActions[action]) {
-    view = viewActions[action](view)
+    view = viewActions[action](view, arg)
     return
   }
   if (!gameActions[action]) return
@@ -125,11 +127,15 @@ document.addEventListener('visibilitychange', () => {
 })
 
 let last = performance.now()
+let lastPhase = state.phase
 function frame(now) {
   const dt = Math.min(MAX_FRAME_SEC, (now - last) / 1000)
   last = now
   const isRunning = state.phase === 'day' && !view.paused && !view.help
   state = isRunning ? tick(state, dt) : fadeToasts(state, dt)
+  // every visit to the shop starts on the order tab
+  if (state.phase === 'shop' && lastPhase !== 'shop') view = { ...view, shopTab: DEFAULT_SHOP_TAB }
+  lastPhase = state.phase
   render(root, state, view)
   requestAnimationFrame(frame)
 }
