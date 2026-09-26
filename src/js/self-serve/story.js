@@ -46,7 +46,7 @@ export const OPENING_SCENES = [
     lines: [
       { who: 'caption', text: '그리고, 인수 첫날 아침.' },
       { who: 'panda', text: '내가 쓰던 앞치마야. 오늘부터 {name} 사장이네.' },
-      { who: 'me', text: '월세는 매주, 권리금은 조금씩… 꼭 다 갚을게요.' },
+      { who: 'me', text: '임대료는 매주, 권리금은 조금씩… 꼭 다 갚을게요.' },
       { who: 'panda', text: '천천히 해. 대신 손님 그릇은 꼭 뒤적여 봐. 고기랑 꼬치가 숨어 있거든.' },
       { who: 'panda', text: '난 이만 간다. 가끔 손님으로 올게.' },
       { who: 'me', text: '…이제 진짜 혼자네.' },

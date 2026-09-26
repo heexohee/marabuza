@@ -176,7 +176,7 @@ test('test_story_opening_tells_the_takeover_of_mara_panda', () => {
   const text = OPENING_SCENES.flatMap((sc) => sc.lines.map((l) => l.text)).join('\n')
   assert.match(text, /마라판다/)
   assert.match(text, /권리금/)
-  assert.match(text, /월세/)
+  assert.match(text, /임대료/)
   assert.doesNotMatch(text, /동물 마을 골목|창업 대출/, 'no new shop in another place any more')
   assert.ok(OPENING_SCENES[CREATE_AT_SCENE].cast.includes('panda'), 'the panda hands over the apron')
 })
