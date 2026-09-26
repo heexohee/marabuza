@@ -108,7 +108,7 @@ function railHtml(s) {
       <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}
       <span>${MODE_LABEL[o.mode]}</span><span class="tspice">${spiceTag(o.spice)}</span>
     </button>`).join('')
-  return `<div class="rail-title">주문표</div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
+  return `<div class="rail-title">주문표 <kbd>C</kbd></div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
 }
 
 /** Stainless pot on a burner (same art classes as the original flow). */
@@ -275,7 +275,7 @@ function sideHtml(s, view) {
     <div class="stat" title="서빙한 손님">${spriteImg('😋', 16, 'stat-img')}<span>${s.stats.served}</span></div>
     <div class="stat" title="떠난 손님">${spriteImg('😤', 16, 'stat-img')}<span>${s.stats.left}</span></div>
     <div class="stat" title="시든 재료">🥀<span>${s.stats.wasted}</span></div>
-    <button class="btn pause" data-action="pause" title="Esc">${view.paused ? '▶' : '⏸'}</button>`
+    <button class="btn pause" data-action="pause" title="일시정지 (P / Esc)">${view.paused ? '▶' : '⏸'}</button>`
 }
 
 function overlayHtml(s, view) {

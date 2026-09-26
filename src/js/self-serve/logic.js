@@ -491,6 +491,13 @@ export function startCooking(s, ticketNo) {
   })
 }
 
+/** Puts the longest-waiting ticket on the rail into a free pot (keyboard shortcut for the rail). */
+export function cookNext(s) {
+  if (s.phase !== 'day') return s
+  const oldest = s.rail[0]
+  return oldest ? startCooking(s, oldest.ticketNo) : addToast(s, '대기 중인 주문표가 없어요', 'bad')
+}
+
 /** Picks up (or puts back) a finished pot. */
 export function pickPot(s, potIdx) {
   return whenFree(s, (free) => {

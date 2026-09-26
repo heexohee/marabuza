@@ -3,7 +3,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  adjustCharge, confirmCharge, counterPrice, createNewGame, dig, hiddenItems, pickPot, resetCharge, restock,
+  adjustCharge, confirmCharge, cookNext, counterPrice, createNewGame, dig, hiddenItems, pickPot, resetCharge, restock,
   serveTable, setTicketMode, setTicketSpice, spawnCustomer, startCooking, startDay, tick,
 } from '../../../src/js/self-serve/logic.js'
 import { shelfQty } from '../../../src/js/self-serve/shelf.js'
@@ -141,6 +141,33 @@ test('test_flow_counter_resets_for_the_next_customer', () => {
 })
 
 // ---------- cook & serve ----------
+
+test('test_flow_cook_next_puts_the_longest_waiting_ticket_in_a_free_pot', () => {
+  const twoPots = (st) => ({ ...st, pots: [null, null] })
+  let s = twoPots(paid(paid(dayWithQueue({}, {}))))
+  assert.deepEqual(s.rail.map((o) => o.ticketNo), [1, 2])
+  s = cookNext(s)
+  assert.equal(s.pots[0].ticketNo, 1, 'oldest ticket first')
+  assert.deepEqual(s.rail.map((o) => o.ticketNo), [2])
+  s = cookNext(s)
+  assert.ok(s.pots.some((p) => p?.ticketNo === 2), 'next oldest goes into another free pot')
+  assert.equal(s.rail.length, 0)
+})
+
+test('test_flow_cook_next_with_no_waiting_ticket_only_says_so', () => {
+  const s = dayWithQueue()
+  const next = cookNext(s)
+  assert.deepEqual(next.pots, s.pots)
+  assert.match(next.toasts.at(-1).text, /대기 중인 주문표가 없어요/)
+})
+
+test('test_flow_cook_next_with_every_pot_busy_keeps_the_ticket', () => {
+  const s = paid(dayWithQueue({}))
+  const full = { ...s, pots: s.pots.map(() => ({ ticketNo: 99, order: {}, remaining: 5, total: 5 })) }
+  const next = cookNext(full)
+  assert.deepEqual(next.rail, full.rail)
+  assert.match(next.toasts.at(-1).text, /빈 냄비가 없어요/)
+})
 
 test('test_flow_cook_pick_and_serve_to_the_matching_table', () => {
   let s = paid(setTicketSpice(dayWithQueue({ spice: 3 }), 3))

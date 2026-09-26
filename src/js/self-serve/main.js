@@ -1,6 +1,6 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, advanceStory, beginNewGame, buyPack, buyUpgrade, confirmCharge, createNewGame, dig,
+  addToast, adjustCharge, advanceStory, beginNewGame, buyPack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
   fadeToasts, finishCharacter, openShop, pickPot, resetCharge, restock, serveTable, setCharacterName,
   setCharacterOption, setPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
@@ -27,6 +27,7 @@ const gameActions = {
   chargeReset: (s) => resetCharge(s),
   chargeConfirm: (s) => confirmCharge(s),
   cook: (s, arg) => startCooking(s, Number(arg)),
+  cookNext: (s) => cookNext(s),
   pick: (s, arg) => pickPot(s, Number(arg)),
   table: (s, arg) => serveTable(s, Number(arg)),
   toShop: (s) => persist(openShop(s)),
@@ -87,7 +88,8 @@ root.addEventListener('mouseover', (e) => {
 })
 
 const KEY_ACTIONS = {
-  day: { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause' },
+  // e.code = physical key, so P / C also work while a Korean IME is on (ㅔ / ㅊ)
+  day: { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause', KeyP: 'pause', KeyC: 'cookNext' },
   opening: { Enter: 'storyNext', Space: 'storyNext', Escape: 'storySkip' },
 }
 
