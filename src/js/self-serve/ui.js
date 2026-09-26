@@ -58,7 +58,7 @@ const GAME_SKELETON = `
   </header>
   <section class="shelf-panel ss-shelf">
     <div class="panel-title">진열대 <small>눌러서 창고에서 보충</small></div>
-    <div class="busy" data-busy><i data-bar="busy"></i><em>보충 중…</em></div>
+    <div class="busy" data-busy><i class="busy-track"><b data-bar="busy"></b></i><em>보충 중…</em></div>
     <div class="shelf" data-slot="shelf"></div>
     <div class="info" data-slot="info"></div>
   </section>

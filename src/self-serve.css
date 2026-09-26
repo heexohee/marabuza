@@ -79,9 +79,12 @@
 .ss .slot-img { width: 26px; height: 26px; }
 .ss .slot-name { font-size: 10px; line-height: 1.1; text-align: center; }
 .ss-shelf .info { font-size: 11px; min-height: 0; }
-.busy { display: flex; visibility: hidden; align-items: center; gap: 6px; font-size: 12px; color: #fff; margin-bottom: 6px; }
+/* The restock bar keeps one fixed-size line whether it shows or not, so the shelf below never moves:
+   the track is a fixed 80px and only the fill inside it shrinks (feedback 2026-09-26: the shelf "shook"). */
+.busy { display: flex; visibility: hidden; align-items: center; gap: 6px; height: 16px; font-size: 12px; color: #fff; margin-bottom: 6px; white-space: nowrap; }
 .busy.on { visibility: visible; }
-.busy i { display: block; width: 80px; height: 8px; background: var(--yellow); border: 2px solid var(--ink); border-radius: 4px; }
+.busy .busy-track { display: block; flex: none; width: 80px; height: 8px; background: rgba(255, 255, 255, .35); border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; }
+.busy .busy-track b { display: block; height: 100%; background: var(--yellow); }
 .busy em { font-style: normal; }
 /* Restock alerts: low slots pulse orange, empty slots pulse red, so the owner can spot
    what to refill at a glance during a rush (playtest 2026-09-25). */
