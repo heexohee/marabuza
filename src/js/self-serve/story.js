@@ -2,7 +2,7 @@
 // Pure data and text helpers; `{name}` is replaced with the protagonist's name.
 // design/game-brief.md "Story — 최애 한 그릇" · design/quick-specs/story-character-2026-09-25.md §B, §C
 
-const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주' }
+const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주', rabbit: '시험기간 토끼' }
 
 /**
  * Opening scenes in order. bg = CSS scene class, props = emoji sprites drawn in the scene,
@@ -140,6 +140,32 @@ export const DAILY_LINES = {
   27: { who: 'me', text: '내일은 판다 사장님 오시는 날. 마지막 영업도 한 그릇씩!' },
 }
 
+// ---------- regulars (story N002) ----------
+// Three customers with their own small story across part 1 (design §B 단골 방문 열). On a visit day one of the
+// day's customers comes as the regular: their face in the queue, their line in the counter's top bubble.
+export const REGULARS = {
+  raccoon: { face: '🦝', name: '야근 너구리' },
+  rabbit: { face: '🐰', name: '시험기간 토끼' },
+  bear: { face: '🐻', name: '택배 곰' },
+}
+const TOMORROW = '내일 사장님 오신다면서요?'
+const REGULAR_VISITS = {
+  4: [{ who: 'raccoon', text: '여기… 아직 하나요? 맛이 그대로네요.' }],
+  9: [{ who: 'rabbit', text: '시험 기간엔 여기 마라탕이 최고예요!' }],
+  11: [{ who: 'raccoon', text: '오늘도 야근이에요. 4단계로 주세요…' }],
+  13: [{ who: 'bear', text: '배달 사이에 후루룩 하고 갑니다!' }],
+  16: [{ who: 'rabbit', text: '사장님, 요즘 피곤해 보여요…' }],
+  18: [{ who: 'raccoon', text: '사장님 덕분에 버텨요. 저도 곧 그만두려고요.' }],
+  20: [{ who: 'bear', text: '사장님도 밥은 드시고 하세요!' }],
+  23: [{ who: 'bear', text: '소문 듣고 동료들 데려왔어요!' }],
+  24: [{ who: 'rabbit', text: '시험 끝났어요! 오늘은 샹궈로 축하할래요.' }],
+  25: [{ who: 'raccoon', text: '저 퇴사했어요. 오늘은 야근 없는 마라탕!' }],
+  27: [{ who: 'raccoon', text: TOMORROW }, { who: 'rabbit', text: TOMORROW }, { who: 'bear', text: TOMORROW }],
+}
+
+/** The regulars who come on `day`, in arrival order ([] on other days and from part 2 on). */
+export const regularVisits = (day) => REGULAR_VISITS[day] ?? []
+
 /** Who says the start-of-day line: the panda for his first tips and messages, else the protagonist herself. */
 export const dayStartSpeaker = (day) => (day <= TIPS.length ? 'panda' : DAILY_LINES[day]?.who ?? 'me')
 const OWN_LINES = [
@@ -222,3 +248,19 @@ export function endingLine(step, paidInFull) {
   const l = ENDING_LINES[Math.min(Math.max(step, 0), ENDING_LINES.length - 1)]
   return { who: l.who, text: l.text ?? (paidInFull ? l.paid : l.forgiven) }
 }
+
+// ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
+// Day 29's morning, once, after the ending: the rabbit brings a "알바 구함" flyer, and a franchise's
+// "오픈 예정" banner goes up across the street (from PART2_BANNER_STEP on).
+const PART2_TEASER_LINES = [
+  { who: 'caption', text: '29일차, 월요일 아침.' },
+  { who: 'rabbit', text: '사장님, 저 여기서 일해도 돼요?' },
+  { who: 'me', text: '(문밖을 보며) …저기도 마라탕?' },
+  { who: 'caption', text: '마라부자 2부 — 준비 중' },
+]
+export const PART2_TEASER_LINE_COUNT = PART2_TEASER_LINES.length
+/** Beat where the franchise banner across the street comes into view. */
+export const PART2_BANNER_STEP = 2
+
+/** Line `step` of the part-2 teaser. */
+export const teaserLine = (step) => PART2_TEASER_LINES[Math.min(Math.max(step, 0), PART2_TEASER_LINES.length - 1)]

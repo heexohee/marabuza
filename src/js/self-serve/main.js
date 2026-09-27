@@ -1,7 +1,7 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, advanceEnding, advanceStory, advanceSunday, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
-  fadeToasts, finishCharacter, isEndingDone, isSundayDone, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
+  addToast, adjustCharge, advanceEnding, advanceStory, advanceSunday, advanceTeaser, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
+  fadeToasts, finishCharacter, finishTeaser, isEndingDone, isSundayDone, isTeaserDone, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
@@ -73,7 +73,11 @@ const gameActions = {
     const [mode, delta] = String(arg).split(':')
     return persist(setMenuPrice(s, mode, s.prices[mode] + Number(delta)))
   },
-  nextDay: (s) => startNextDay(persist(s)),
+  // the first morning after the ending plays the part-2 teaser (story N003); it is saved on entry so it plays once
+  nextDay: (s) => {
+    const next = startNextDay(persist(s))
+    return next.phase === 'teaser' ? persist(next) : next
+  },
   new: () => beginNewGame(),
   charOpt: (s, arg) => {
     const [key, value] = String(arg).split(':')
@@ -86,6 +90,7 @@ const gameActions = {
   // 권리금 (economy E004): 더 갚기 on the Sunday ledger, and the day-28 ending's beats
   payPremium: (s, arg) => persist(payPremium(s, arg === 'all' ? 'all' : Number(arg))),
   endingNext: (s) => (isEndingDone(s) ? persist(afterSummary(s)) : advanceEnding(s)),
+  teaserNext: (s) => (isTeaserDone(s) ? finishTeaser(s) : advanceTeaser(s)),
   continue: (s) => {
     const loaded = loadGame()
     return loaded ? resumeShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
@@ -154,6 +159,7 @@ const KEY_ACTIONS = {
   opening: { Enter: 'storyNext', Space: 'storyNext', Escape: 'storySkip' },
   sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
   ending: { Enter: 'endingNext', Space: 'endingNext' },
+  teaser: { Enter: 'teaserNext', Space: 'teaserNext' },
 }
 
 // Title menu by keyboard: ↑/↓ move between the items that can be chosen, Enter/Space runs the highlighted one.

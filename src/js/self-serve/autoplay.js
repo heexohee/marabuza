@@ -6,7 +6,7 @@
 import { DAY_LENGTH_SEC } from '../data.js'
 import {
   adjustCharge, afterSummary, buyPack, buySidePack, confirmCharge, cookNext, counterPrice, frontCustomer, pickPot, restock, serveTable,
-  openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
+  finishTeaser, openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
 } from './logic.js'
 import { sideStockId } from './data.js'
 import { shelfQty } from './shelf.js'
@@ -164,6 +164,7 @@ function resolveToDay(s) {
   if (cur.phase === 'sunday') cur = afterSummary(cur)
   if (cur.phase === 'ending') cur = afterSummary(cur) // day-28 part-1 ending (economy E004): skip the scene
   if (cur.phase === 'shop') cur = startNextDay(restockWarehouse(cur))
+  if (cur.phase === 'teaser') cur = finishTeaser(cur) // day-29 part-2 teaser (story N003): skip the scene
   return cur
 }
 

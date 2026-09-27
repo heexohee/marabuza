@@ -1,7 +1,7 @@
 # 에픽: part1-story (1부 "28일" 스토리)
 
 > **단계**: minimal — `design/quick-specs/part1-28-days-2026-09-27.md`(Approved 2026-09-27)에서 만든 에픽
-> **상태**: In Progress (N001 완료 2026-09-27)
+> **상태**: In Progress (N001·N002·N003 완료 2026-09-27 — 에픽 완료)
 
 ## 목표
 
@@ -12,8 +12,8 @@
 | # | 스토리 | 유형 | 상태 | ADR |
 |---|-------|------|--------|-----|
 | N001 | 날짜별 아침 한마디 (4–28일차) | Logic | Complete | N/A (minimal) |
-| N002 | 단골 방문 — 너구리·토끼·곰 | Integration | Ready | N/A (minimal) |
-| N003 | 2부 예고 — 29일차 아침 | Integration | Ready | N/A (minimal) |
+| N002 | 단골 방문 — 너구리·토끼·곰 | Integration | Complete | N/A (minimal) |
+| N003 | 2부 예고 — 29일차 아침 | Integration | Complete | N/A (minimal) |
 
 ## Dependencies
 

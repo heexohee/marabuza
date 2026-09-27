@@ -19,6 +19,7 @@ export const PHASE_MUSIC = {
   day: 'business',
   summary: 'shop', shop: 'shop', sunday: 'shop',
   ending: 'title', // after the part-1 jingle, the title theme carries the ending (same hook)
+  teaser: 'title', // day-29 part-2 teaser (story N003) stays on the ending's music
   closed: null,
 }
 

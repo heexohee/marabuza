@@ -164,6 +164,7 @@ export const WOK_DAY = Math.min(...SIDE_ITEMS.filter((i) => i.cooked).map((i) =>
 export const NAME_MAX_LEN = 8 // fits the narrow counter panel
 export const DAY_LINE_SEC = 5 // opening-of-day line stays over the owner this long
 export const QUEUE_MAX = 3 // customers waiting at the counter
+export const REGULAR_FROM_CUSTOMER = 2 // a visiting regular (story N002) is at earliest the day's 2nd customer, after the morning line
 export const MIN_BOWL_ITEMS = 2 // fewer scoops than this and the customer walks out
 export const SHANGUO_CHANCE = 0.3
 export const SKEWER_CHANCE = 0.4

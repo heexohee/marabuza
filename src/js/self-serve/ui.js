@@ -13,13 +13,14 @@ import {
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
-  ownerLineText, ownerLineWho,
+  frontRegular, ownerLineText, ownerLineWho,
 } from './logic.js'
+import { REGULARS } from './story.js'
 import { closedHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
-  createHtml, createKey, esc, heroImg, closedSceneHtml, endingHtml, endingKey, openingHtml, openingKey, sundayHtml, sundayKey,
+  createHtml, createKey, esc, heroImg, closedSceneHtml, endingHtml, endingKey, openingHtml, openingKey, sundayHtml, sundayKey, teaserHtml, teaserKey,
   wallFrameHtml,
 } from './story-ui.js'
 
@@ -235,6 +236,16 @@ const foundChip = (item) =>
 const PANDA_FACE = '<img class="owner-face-img panda" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
 
 function ownerHtml(s) {
+  // a regular at the front of the queue takes the row: their face in the frame, name + line in the bubble (story N002)
+  const regular = frontRegular(s)
+  if (regular) {
+    const { face, name } = REGULARS[regular.who]
+    return `
+    <div class="owner regular-say">
+      <span class="owner-face">${spriteImg(face, 32, 'owner-face-img regular', name)}</span>
+      <span class="owner-say"><b class="regular-name">${esc(name)}</b> ${esc(regular.text)}</span>
+    </div>`
+  }
   const line = ownerLineText(s)
   const face = ownerLineWho(s) === 'panda' ? PANDA_FACE : heroImg(s.character, 'owner-face-img')
   return `
@@ -400,7 +411,7 @@ const audioKey = (view) => `${view.audio.muted}|${view.audio.sfxMuted}|${view.au
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
   const isRentClosed = s.phase === 'closed' && s.closedReason === 'rent'
-  const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday', 'ending'].includes(s.phase) ? s.phase : 'game'
+  const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday', 'ending', 'teaser'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
     document.documentElement.dataset.screen = screen // the title's background covers the whole window
@@ -415,6 +426,7 @@ export function render(root, s, view) {
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
   if (screen === 'sunday') return patch(root, sundayKey(s), () => sundayHtml(s))
   if (screen === 'ending') return patch(root, endingKey(s), () => endingHtml(s))
+  if (screen === 'teaser') return patch(root, teaserKey(s), () => teaserHtml(s))
   if (screen === 'closed') return patch(root, 'closed|rent', () => closedSceneHtml(s, closedHtml(s)))
   if (screen === 'shop') {
     const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`

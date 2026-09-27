@@ -67,7 +67,7 @@ export function isValidSave(d) {
     isRentOverdue(d.rentOverdue) &&
     isWeekRevenue(d.weekRevenue) &&
     isOptNonNegInt(d.premiumLeft) && isOptNonNegInt(d.premiumCarry) &&
-    isOptBool(d.endingSeen) && isOptBool(d.premiumPaidInFull) &&
+    isOptBool(d.endingSeen) && isOptBool(d.premiumPaidInFull) && isOptBool(d.part2TeaserSeen) &&
     isSavedPhase(d.phase) &&
     isLedger(d.ledger)
 }
@@ -92,6 +92,7 @@ export function saveGame(s) {
     premiumCarry: s.premiumCarry,
     endingSeen: s.endingSeen,
     premiumPaidInFull: s.premiumPaidInFull,
+    part2TeaserSeen: s.part2TeaserSeen,
     // Only the 'sunday' screen is saved as its own phase (see isSavedPhase) — every other phase resumes at
     // the shop via resumeShop, so recording it would be dead weight.
     ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
@@ -127,6 +128,8 @@ export function loadGame() {
       rentOverdue: d.rentOverdue ?? 0,
       weekRevenue: d.weekRevenue ?? 0,
       ...loadPremium(d),
+      // part-2 teaser (story N003): saves from before it count it as seen once day 28 is behind them
+      part2TeaserSeen: d.part2TeaserSeen ?? d.day > PART1_LAST_DAY,
       ...(d.phase === 'sunday' ? { phase: 'sunday', ledger: d.ledger ?? null } : {}),
     }
   } catch {

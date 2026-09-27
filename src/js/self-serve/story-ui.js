@@ -6,8 +6,8 @@ import { won } from '../ui.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
 import { NAME_MAX_LEN, PREMIUM_EXTRA_STEPS, PREMIUM_TOTAL, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
 import {
-  ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, STAGE, SUNDAY_BG, endingLine, premiumLine, SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast,
-  speakerName, storyName, sundayLine,
+  ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, PART2_BANNER_STEP, PART2_TEASER_LINE_COUNT, STAGE, SUNDAY_BG, endingLine, premiumLine,
+  SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast, speakerName, storyName, sundayLine, teaserLine,
 } from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -232,6 +232,43 @@ export function endingHtml(s) {
 }
 
 export const endingKey = (s) => `ending|${s.endingStep ?? 0}|${s.premiumPaidInFull}`
+
+// ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
+
+// the rabbit regular (story N002's 🐰) stands where the panda stood in the ending, holding the flyer
+const rabbitCast = () => `<span class="rabbit-with-flyer">${spriteImg('🐰', 64, 'rabbit-sprite', '시험기간 토끼')}<i class="flyer">알바 구함</i></span>`
+
+/**
+ * Day 29's morning in the player's own hall, once after the ending: the rabbit asks for a job, then (from
+ * PART2_BANNER_STEP) a franchise's "오픈 예정" banner shows across the street. The last beat opens day 29.
+ */
+export function teaserHtml(s) {
+  const step = s.teaserStep ?? 0
+  const line = teaserLine(step)
+  const isLast = step >= PART2_TEASER_LINE_COUNT - 1
+  const talking = (who) => (line.who === who ? 'talking' : '')
+  const cast = `
+      <span class="cast cast-me ${talking('me')}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>
+      ${step >= 1 ? `<span class="cast cast-rabbit ${talking('rabbit')}" style="${castStyle('panda')}">${rabbitCast()}</span>` : ''}`
+  const banner = step >= PART2_BANNER_STEP
+    ? `<span class="franchise-banner${step === PART2_BANNER_STEP ? ' drop' : ''}">대형 마라탕 프랜차이즈<b>오픈 예정</b></span>`
+    : ''
+  return `
+    <div class="opening-screen sunday-screen ending-screen teaser-screen" data-action="teaserNext">
+      <div class="scene ending-hall" data-interior="${s.interior ?? 0}">${s.endingSeen ? wallFrameHtml(s.premiumPaidInFull) : ''}${banner}${cast}</div>
+      <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
+        ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
+        <p>${esc(lineText(line.text, s.character.name))}</p>
+        <span class="next-hint">${isLast ? '' : '▶ 클릭 / Space'}</span>
+      </div>
+      <div class="opening-foot">
+        <span></span>
+        ${isLast ? '<button class="bubble-btn" data-action="teaserNext">29일차 영업 시작 →</button>' : ''}
+      </div>
+    </div>`
+}
+
+export const teaserKey = (s) => `teaser|${s.teaserStep ?? 0}`
 
 /**
  * The shop closed for missed rent: the same closed Sunday shop behind the closed-down modal, so the run

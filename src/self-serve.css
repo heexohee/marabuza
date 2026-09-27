@@ -761,6 +761,8 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 }
 .owner-face .owner-face-img { position: absolute; left: -15px; top: -8px; width: 64px; height: 112px; image-rendering: pixelated; }
 .owner-face .owner-face-img.panda { left: -30px; top: -6px; width: 96px; height: 160px; }
+.owner-face .owner-face-img.regular { left: 1px; top: 1px; width: 32px; height: 32px; } /* a regular's own face (story N002) */
+.owner-say .regular-name { color: var(--red); }
 .ss .owner-say {
   position: relative; left: auto; top: auto; right: auto; flex: 1; min-width: 0;
   font-size: 13px; font-weight: 700; line-height: 1.25; padding: 4px 8px;
@@ -824,6 +826,25 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .wall-frame.drop { animation: frame-drop .5s ease-out both; }
 @keyframes frame-drop { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .wall-frame.drop { animation: none; } }
+/* part-2 teaser (story N003): the rabbit regular with a "알바 구함" flyer, and the franchise banner across the street */
+.cast-rabbit { display: flex; justify-content: center; }
+.rabbit-with-flyer { position: relative; display: inline-block; width: 80%; }
+.rabbit-with-flyer .rabbit-sprite { width: 100%; height: auto; image-rendering: pixelated; }
+.flyer {
+  position: absolute; left: -34%; bottom: 10%; padding: 2px 5px; font-style: normal; font-size: 11px; font-weight: 700;
+  color: var(--ink); background: #fffbe8; border: 2px solid #3a1f14; transform: rotate(-8deg); white-space: nowrap;
+}
+/* seen through the right window (art x≈233–292, y≈20–69 of the 320×120 hall), so it reads as the building opposite */
+.franchise-banner {
+  position: absolute; left: 81.9%; top: 22%; transform: translateX(-50%); z-index: 1; width: calc(var(--apx) * 52);
+  padding: calc(var(--apx) * 1.5) 0; text-align: center; line-height: 1.15;
+  font-size: max(8px, calc(var(--apx) * 4.6)); font-weight: 700; color: #fff;
+  background: repeating-linear-gradient(90deg, #c2261d 0 10px, #a81c14 10px 20px); border: 2px solid #3a1f14;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, .35);
+}
+.franchise-banner b { display: block; color: #ffe27a; font-size: 1.25em; }
+.franchise-banner.drop { animation: frame-drop .5s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .franchise-banner.drop { animation: none; } }
 /* on the hall the frame takes the open board's spot, so the board steps down under it */
 .shop-stage:has(.wall-frame) .open-board { top: calc(var(--apx) * 54); }
 /* the 권리금 row + the panda's word + the bar must fit the fixed Sunday box (--sunday-box-h) */

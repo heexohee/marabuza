@@ -13,13 +13,16 @@ import {
   maxPatience as sharedMaxPatience, openShop, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
-  CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
+  CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, REGULAR_FROM_CUSTOMER,
   PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId, weekdayOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
-import { CREATE_AT_SCENE, ENDING_LINE_COUNT, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine, dayStartSpeaker } from './story.js'
+import {
+  CREATE_AT_SCENE, ENDING_LINE_COUNT, OPENING_SCENES, PART2_TEASER_LINE_COUNT, REGULARS, SUNDAY_LAST_STEP, dayStartLine, dayStartSpeaker,
+  regularVisits,
+} from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 // `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
@@ -73,6 +76,7 @@ export function createNewGame() {
     premiumCarry: 0, // instalments missed so far — added to the next Sunday's, never a reason to close
     endingSeen: false, // the day-28 part-1 ending has played
     premiumPaidInFull: false, // …and 권리금 was fully paid by then (false = forgiven)
+    part2TeaserSeen: false, // the day-29 part-2 teaser has played (story N003)
     closedReason: null, // 'rent' | 'rating' — which failure closed the shop (phase 'closed')
     toasts: [],
     nextToastId: 1,
@@ -95,6 +99,7 @@ function emptyDay(potCount, seatCount) {
     busy: 0,
     wiltedAt: {}, // shelf id → dayTime of its last wilt (drives the slot flash)
     ownerLine: null, // { text, who, until } — the start-of-day line and who says it ('panda' | 'me')
+    regularsDue: [], // regulars still to come today, in order (story N002)
     spawnTimer: SPAWN.firstDelaySec,
     nextCustomerId: 1,
     nextTicketNo: 1,
@@ -291,11 +296,22 @@ export function startDay(s) {
   const ownerLine = { text: dayStartLine(s.day), who: dayStartSpeaker(s.day), until: DAY_LINE_SEC }
   const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
   const opened = openNewSides(s)
-  return { ...opened, phase: 'day', story: null, rating, ...day, ownerLine, ...openShelf(opened.stock, shelfIds(opened)) }
+  const regularsDue = regularVisits(s.day).map((v) => v.who)
+  return { ...opened, phase: 'day', story: null, rating, ...day, ownerLine, regularsDue, ...openShelf(opened.stock, shelfIds(opened)) }
 }
 
 /** The owner's start-of-day line while it is still showing, else null. */
 export const ownerLineText = (s) => (s.ownerLine && s.dayTime < s.ownerLine.until ? s.ownerLine.text : null)
+
+/**
+ * The regular at the front of the counter queue and their line for today (story N002), else null.
+ * @returns {{ who: string, text: string } | null}
+ */
+export function frontRegular(s) {
+  const c = frontCustomer(s)
+  if (!c?.regular) return null
+  return regularVisits(s.day).find((v) => v.who === c.regular) ?? null
+}
 
 /** Who is talking in the owner's row: the line's speaker while it shows, else the protagonist. */
 export const ownerLineWho = (s) => (ownerLineText(s) ? s.ownerLine.who ?? 'me' : 'me')
@@ -337,7 +353,28 @@ export function skipStory(s) {
   if (s.phase !== 'opening' || !s.story) return s
   return s.story.scene < CREATE_AT_SCENE ? toCreation(s) : startDay(s)
 }
-export const startNextDay = (s) => startDay({ ...s, day: s.day + 1 })
+
+/**
+ * Opens the next business day — except the first morning after the part-1 ending, when the part-2 teaser
+ * (story N003) plays first. The teaser keeps day 28's number (day 29 opens when it ends) and marks itself seen
+ * on entry, so a save made then never replays it.
+ */
+export const startNextDay = (s) =>
+  (isPart2TeaserDue(s) ? { ...s, phase: 'teaser', teaserStep: 0, part2TeaserSeen: true } : startDay({ ...s, day: s.day + 1 }))
+
+const isPart2TeaserDue = (s) => s.endingSeen && !s.part2TeaserSeen && s.day >= PART1_LAST_DAY
+
+// ---------- part-2 teaser (story N003) ----------
+
+/** Next beat of the teaser; stays on the last one (leaving is finishTeaser's job). */
+export const advanceTeaser = (s) =>
+  (s.phase === 'teaser' ? { ...s, teaserStep: Math.min((s.teaserStep ?? 0) + 1, PART2_TEASER_LINE_COUNT - 1) } : s)
+
+/** True on the teaser's last beat, where a click opens day 29. */
+export const isTeaserDone = (s) => (s.teaserStep ?? 0) >= PART2_TEASER_LINE_COUNT - 1
+
+/** Leaves the teaser into the next day's business, same loop as before (part 2 content comes later). */
+export const finishTeaser = (s) => (s.phase === 'teaser' ? startDay({ ...s, day: s.day + 1, teaserStep: 0 }) : s)
 
 // ---------- weekly rent + Sunday off day (economy story E003) ----------
 
@@ -500,9 +537,12 @@ export function spawnCustomer(s, rng) {
   const missing = [...filled.missing, ...skewered.missing, ...topped.missing]
   const mode = rng() < SHANGUO_CHANCE ? 'shanguo' : 'maratang'
   const patience = maxPatience(s)
+  // a regular due today takes this customer's place (same wish, bowl and order — only the face and a line differ)
+  const regular = id >= REGULAR_FROM_CUSTOMER ? (s.regularsDue ?? [])[0] ?? null : null
   const customer = {
     id,
-    face: CUSTOMER_FACES[randInt(rng, 0, CUSTOMER_FACES.length - 1)],
+    face: regular ? REGULARS[regular].face : CUSTOMER_FACES[randInt(rng, 0, CUSTOMER_FACES.length - 1)],
+    ...(regular ? { regular } : {}),
     mode,
     spice: randInt(rng, 0, SPICE_LEVELS.length - 1),
     missing,
@@ -511,7 +551,8 @@ export function spawnCustomer(s, rng) {
     maxPatience: patience,
   }
   const { customer: ordering, missingSide } = withSide(s, customer, rng)
-  const queued = syncCounter({ ...next, shelf: topped.shelf, queue: [...s.queue, ordering] })
+  const regularsDue = regular ? s.regularsDue.slice(1) : s.regularsDue
+  const queued = syncCounter({ ...next, shelf: topped.shelf, queue: [...s.queue, ordering], regularsDue })
   const names = [...missing.map((m) => SHELF_ITEM_BY_ID[m].name), ...(missingSide ? [missingSide.name] : [])]
   if (names.length === 0) return queued
   return addToast(withRating(queued, RATING_DELTA.grumble * names.length), `"${names.join(', ')} 없네…" 😕`, 'bad')
