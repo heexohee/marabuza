@@ -55,8 +55,8 @@ export const createKey = (s) => `create|${s.character.hair}|${s.character.hairCo
 
 // ---------- opening cutscene ----------
 
-// panda owner: 96×160 pixel sprite painted by tools/art/panda_sprite.py; bump ?v= when regenerating
-const PANDA_IMG = '<img class="panda-sprite" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+// Approved A design, 96×160; tools/art/panda_sprite.py restores the approved PNG.
+const PANDA_IMG = '<img class="panda-sprite" src="img/panda.png?v=3" alt="판다 사장님" draggable="false">'
 const pct = (v, of) => `${((v / of) * 100).toFixed(3)}%`
 /** Stage px → % of the scene, so the cast scales with the background and keeps its painted spot. */
 const castStyle = (who) => {

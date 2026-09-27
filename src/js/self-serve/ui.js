@@ -6,6 +6,7 @@ import {
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
+import { queueFaceImg } from './animal-faces.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
@@ -218,7 +219,7 @@ const potsKey = (s) => `${s.pots.map((p) => (p ? `${p.ticketNo}:${p.remaining <=
 
 function queueHtml(s) {
   return `<div class="q-line">${s.queue.map((c, i) => `
-    <span class="q-face ${i === 0 ? 'front' : ''}">${spriteImg(c.face, 16, 'mini-face')}
+    <span class="q-face ${i === 0 ? 'front' : ''}">${queueFaceImg(c.face)}
       <i class="q-bar"><b data-bar="queue-${c.id}"></b></i></span>`).join('') || '<span class="hint">줄이 비었어요</span>'}</div>`
 }
 
@@ -277,7 +278,7 @@ function counterHtml(s) {
   return `
     ${ownerHtml(s)}
     ${queueHtml(s)}
-    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}
+    <div class="bubble say">"${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}
       <i class="front-patience" title="기다릴 수 있는 시간"><b data-bar="front-patience"></b></i></div>
     <div class="bowl-art small">
       <div class="bowl-rim"><div class="broth spice-0"></div><div class="bowl-floats">${floatAbove(c.bowl.weighed, 12)}</div></div>

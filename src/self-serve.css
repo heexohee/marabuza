@@ -60,6 +60,7 @@ button:not(:disabled), a[href], [data-action] { cursor: var(--cursor-click); }
 .q-line { display: flex; gap: 6px; justify-content: center; min-height: 30px; }
 .q-face { display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: .6; }
 .q-face.front { opacity: 1; transform: scale(1.15); }
+.q-face .queue-portrait { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
 .q-bar { display: block; width: 28px; height: 5px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
 .q-bar b { display: block; height: 100%; background: var(--green); }
 .q-bar b[data-level="warn"] { background: var(--orange); }
