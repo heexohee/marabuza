@@ -18,10 +18,10 @@
       "name": "maratang-selfserve",
       "runtimeExecutable": "python3",
       "runtimeArgs": [
-        "tools/dev/serve.py",
-        "8124"
+        "tools/dev/serve.py"
       ],
-      "port": 8124
+      "port": 8124,
+      "autoPort": true
     }
   ]
 }

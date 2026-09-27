@@ -1,10 +1,12 @@
 """Local dev server for src/ that opens like the deployed site: "/" goes to the self-serve flow.
 
-Run: python3 tools/dev/serve.py [port]   (default 8124; used by .claude/launch.json "maratang-selfserve")
+Run: python3 tools/dev/serve.py [port]   (port: argument, else $PORT, else 8124)
+.claude/launch.json "maratang-selfserve" uses autoPort, so the preview tool passes a free port via $PORT.
 
 Mirrors .github/workflows/pages.yml, where index.html becomes a redirect to self-serve.html
 ("/?classic" goes to the legacy flow). Here the legacy page stays reachable at /index.html.
 """
+import os
 import sys
 from functools import partial
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -39,7 +41,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == '__main__':
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else int(os.environ.get('PORT', DEFAULT_PORT))
     server = ThreadingHTTPServer(('127.0.0.1', port), partial(Handler, directory=str(SRC)))
     print(f'serving {SRC} on http://localhost:{port}/ (-> self-serve.html)')
     server.serve_forever()
