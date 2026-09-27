@@ -796,7 +796,8 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 .credits-window { height: min(360px, 60vh); overflow: hidden; position: relative;
   mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
 .credits-roll { display: flex; flex-direction: column; gap: 18px; padding: 100% 0; animation: credits-roll 26s linear infinite; }
-.credits-roll .title-logo { margin: 0; }
+/* same logo as the shop header: `.modal h2` (dark red, 22px) outranks .title-logo, so restore both here */
+.modal .credits-roll .title-logo { margin: 0; color: #ff7fa0; font-size: 32px; }
 .credit { display: flex; flex-direction: column; gap: 2px; }
 .credit b { font-size: 13px; opacity: .7; }
 .credit span { font-size: 17px; font-weight: 700; }
