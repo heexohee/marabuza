@@ -6,7 +6,7 @@
 // Pricing, shop and timing helpers are shared by import — never duplicated or modified here.
 import {
   CHECKOUT_PRICE, CUSTOMER_FACES, MAX_RATING, MAX_TIP_RATIO, ORDER, PACK_SIZE,
-  SKEWER_ITEMS, SPAWN, SPICE_LEVELS, START_MONEY, START_RATING,
+  SPAWN, SPICE_LEVELS, START_RATING,
 } from '../data.js'
 import {
   addToast, checkoutBasePrice, checkoutBowlPrice, checkoutBowlWeight, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
@@ -14,7 +14,7 @@ import {
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, REGULAR_FROM_CUSTOMER,
-  PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, SELF_SKEWER_ITEMS, SELF_START_MONEY, SPAWN_PER_DAY, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId, weekdayOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
@@ -57,7 +57,7 @@ export function createNewGame() {
   return {
     phase: 'menu',
     day: 1,
-    money: START_MONEY,
+    money: SELF_START_MONEY,
     rating: START_RATING,
     prices: { maratang: CHECKOUT_PRICE.ratePer100g.maratang, shanguo: CHECKOUT_PRICE.ratePer100g.shanguo },
     stock: {
@@ -170,7 +170,7 @@ const interiorFactor = (s, n, factor) => (hasInterior(s, n) ? factor : 1)
 function spawnInterval(s) {
   return Math.max(
     SPAWN.minIntervalSec,
-    SPAWN.baseIntervalSec - (s.day - 1) * SPAWN.perDay - s.rating * SPAWN.perRating,
+    SPAWN.baseIntervalSec - (s.day - 1) * SPAWN_PER_DAY - s.rating * SPAWN.perRating,
   ) / (demandFactor(s) * interiorFactor(s, 4, INTERIOR_EFFECT.visits))
 }
 
@@ -508,7 +508,7 @@ export function generateWish(unlocked, rng) {
 function takeSkewers(shelf, rng) {
   if (rng() >= SKEWER_CHANCE) return { shelf, skewers: {}, missing: [] }
   const wanted = Array.from({ length: randInt(rng, 1, MAX_SKEWERS) },
-    () => SKEWER_ITEMS[randInt(rng, 0, SKEWER_ITEMS.length - 1)].id)
+    () => SELF_SKEWER_ITEMS[randInt(rng, 0, SELF_SKEWER_ITEMS.length - 1)].id)
   return wanted.reduce((acc, id) => {
     const r = takeFromShelf(acc.shelf, id, 1)
     if (r.taken === 0) return { ...acc, missing: acc.missing.includes(id) ? acc.missing : [...acc.missing, id] }

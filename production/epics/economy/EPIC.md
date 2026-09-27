@@ -15,7 +15,7 @@
 | E002 | 기준 D 측정 + 가격표 재정렬 | Logic | In Progress | N/A (minimal) |
 | E003 | 주간 임대료 + 일요일 휴일 — 연체 1회, 2주 연속 폐업 | Integration | Ready | N/A (minimal) |
 | E004 | 권리금 4주 분할 + 28일차 엔딩 "이제 네 가게구나" (2026-09-27 개정) | Integration | Ready | N/A (minimal) |
-| B001 | 1부 밸런스 — 28일 봇 시뮬레이션으로 권리금 총액 확정 (`story-005-part1-balance.md`) | Config/Data | Ready | N/A (minimal) |
+| B001 | 1부 밸런스 — 28일 봇 시뮬레이션으로 권리금 총액 확정 (`story-005-part1-balance.md`) | Config/Data | Complete | N/A (minimal) |
 
 ## Dependencies
 

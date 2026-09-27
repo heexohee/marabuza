@@ -103,13 +103,22 @@ function actAll(s, rules) {
 }
 
 /**
+ * Human-like think time between the bot's actions, in game seconds (economy B001). A person needs about a
+ * second or two per click, so a day's throughput is capped by how fast they work, not by how many customers
+ * arrive; at 0 the bot acts instantly (the dev tool and the D baseline).
+ */
+export const BOT_PACE_SEC = { clumsy: 2, normal: 1.5, good: 1.1 }
+
+
+/**
  * Plays the current business day to its end-of-day summary.
  * @param {object} s state in phase 'day'
  * @param {() => number} rng random source for customers and slips (Math.random by default; seeded in tests)
  * @param {object} mistakes register-slip plan (BOT_MISTAKES by default; NO_MISTAKES for a perfect player)
+ * @param {number} [paceSec=0] think time between actions (BOT_PACE_SEC); 0 = instant
  * @returns {object} state in phase 'summary' (or unchanged if `s` is not a business day)
  */
-export function autoPlayDay(s, rng = Math.random, mistakes = BOT_MISTAKES) {
+export function autoPlayDay(s, rng = Math.random, mistakes = BOT_MISTAKES, paceSec = 0) {
   if (s.phase !== 'day') return s
   const plan = planMistakes(rng, mistakes)
   const firstTicket = s.nextTicketNo // ticket numbers count today's charges
@@ -128,8 +137,16 @@ export function autoPlayDay(s, rng = Math.random, mistakes = BOT_MISTAKES) {
   const rules = makeRules(slipFor)
   const maxSteps = Math.ceil((DAY_LENGTH_SEC + OVERTIME_SEC) / AUTOPLAY_STEP_SEC)
   let cur = s
+  let nextActAt = 0 // paced bot: day time of its next action
   for (let i = 0; i < maxSteps && cur.phase === 'day'; i++) {
-    cur = tick(actAll(cur, rules), AUTOPLAY_STEP_SEC, rng)
+    if (paceSec <= 0) {
+      cur = actAll(cur, rules)
+    } else if (cur.dayTime >= nextActAt) {
+      const acted = act(cur, rules)
+      if (acted !== cur) nextActAt = cur.dayTime + paceSec
+      cur = acted
+    }
+    cur = tick(cur, AUTOPLAY_STEP_SEC, rng)
   }
   return cur
 }

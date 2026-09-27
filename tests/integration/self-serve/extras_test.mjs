@@ -5,16 +5,16 @@ import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { buyPack, createNewGame, restock, shelfIds, spawnCustomer, startDay, tick } from '../../../src/js/self-serve/logic.js'
 import { fillBowl, shelfQty } from '../../../src/js/self-serve/shelf.js'
-import { INGREDIENTS, PACK_SIZE, SKEWER_ITEMS } from '../../../src/js/data.js'
+import { INGREDIENTS, PACK_SIZE } from '../../../src/js/data.js'
 import {
-  BOX_SIZE, EXTRA_IDS, RATING_DELTA, SHELF_ITEM_BY_ID, WILT_SEC,
+  BOX_SIZE, EXTRA_IDS, RATING_DELTA, SELF_SKEWER_ITEMS, SHELF_ITEM_BY_ID, WILT_SEC,
 } from '../../../src/js/self-serve/data.js'
 
 const constant = (v) => () => v
 const QUIET = 999
 // rng 0.1 → wants skewers (< SKEWER_CHANCE) and cilantro (< CILANTRO_CHANCE)
 const WANTS_EXTRAS = constant(0.1)
-const skewerIds = SKEWER_ITEMS.map((i) => i.id)
+const skewerIds = SELF_SKEWER_ITEMS.map((i) => i.id)
 const onShelf = (s, ids) => ids.reduce((n, id) => n + shelfQty(s.shelf, id), 0)
 const withoutShelf = (s, ids) => ({ ...s, shelf: { ...s.shelf, ...Object.fromEntries(ids.map((id) => [id, []])) } })
 

@@ -19,6 +19,12 @@ export const VARIANT_INGREDIENT_BY_ID = Object.fromEntries(VARIANT_INGREDIENTS.m
 // (skewer 40% × 1–2 sticks over 3 kinds; cilantro 25%), but cilantro wilts: each shelved box
 // is mostly thrown away after WILT_SEC, so it needs ~3 boxes a day (15) + one spare box.
 // Checked by tests/integration/self-serve/warehouse-balance_test.mjs.
+// Skewers sold in this flow: the shared three plus 치즈떡 꼬지 (playtest 2026-09-27 #10), which is self-serve only —
+// the legacy flow's SKEWER_ITEMS stay as they were.
+export const SELF_SKEWER_ITEMS = [
+  ...SKEWER_ITEMS,
+  { id: 'skewer_cheese_tteok', name: '치즈떡', emoji: 'px:cheesetteok', unitsPerSkewer: 3 },
+]
 const SKEWER_PACK_COST = { skewer_shrimp: 3000, skewer_fishcake_deluxe: 2500, skewer_sausage_deluxe: 2500, skewer_cheese_tteok: 2500 }
 const SKEWER_START_STOCK = 10
 // Short skewer names for this variant (feedback 2026-09-27: "고급 어묵 꼬치" was too long); the shared
@@ -27,7 +33,7 @@ const SKEWER_LABEL = {
   skewer_shrimp: '새우 꼬지', skewer_fishcake_deluxe: '어묵 꼬지', skewer_sausage_deluxe: '소세지 꼬지', skewer_cheese_tteok: '치즈떡 꼬지',
 }
 export const SHELF_EXTRAS = [
-  ...SKEWER_ITEMS.map((sk) => ({
+  ...SELF_SKEWER_ITEMS.map((sk) => ({
     id: sk.id, kind: 'skewer', name: SKEWER_LABEL[sk.id], shortName: SKEWER_LABEL[sk.id], emoji: sk.emoji,
     packCost: SKEWER_PACK_COST[sk.id], startStock: SKEWER_START_STOCK,
     desc: `${SKEWER_LABEL[sk.id]}! 1개당 1,000원이에요`,
@@ -89,9 +95,18 @@ export const priceOf = (multiple, d = BASELINE_D) => Math.round((multiple * d) /
 export const ECONOMY_MULTIPLE = {
   rent: 2, // weekly 임대료, paid on Sunday (economy story E003)
   // 권리금 total (economy story E004, decision 2026-09-27: part 1 = 28 days, paid in 4 Sunday instalments).
-  // Starting value; confirmed by the 28-day bot sim (economy B001).
-  premium: 8,
+  // Confirmed 2026-09-27 by the 28-day bot sim (economy B001, tools/sim/part1_run.mjs): 10 — at 8 even a
+  // clumsy player paid it all; at 10 the clumsy one carries some into the forgiven ending, the usual one pays
+  // every instalment on time with interior ≥3, and a payoff-first one clears it by day 21.
+  premium: 10,
 }
+
+// Economy B001 (design/quick-specs/playtest-2026-09-27.md #1): a new game starts with ≈5D, so the first
+// week's seat or interior purchase is in reach (the shared START_MONEY, 10,000원, stays for the legacy flow).
+export const SELF_START_MONEY = 500_000
+// Customers arrive a little faster each day. The shared 0.4 s/day outran what one person can serve from week 3
+// (24–30 arrivals vs ~12–15 served), so the reputation fell to 0 for every player in the B001 sim; 0.1 keeps it ~4.
+export const SPAWN_PER_DAY = 0.1
 /** Weekly rent in 원 (economy story E003). */
 export const RENT = priceOf(ECONOMY_MULTIPLE.rent)
 

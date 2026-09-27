@@ -70,8 +70,8 @@ export const INGREDIENTS = [
 ]
 
 // Self-serve only (design/quick-specs/playtest-2026-09-27.md #9): unlocked in that flow's shop. Kept out of
-// INGREDIENTS so the legacy owner-scoop flow's shop and bowls stay as they were; the lookup below knows them
-// because the shared weigh/checkout helpers resolve ids through it.
+// INGREDIENTS so the legacy owner-scoop flow stays exactly as it was (never add self-serve content to it);
+// the lookup below knows them only because the shared weigh/checkout helpers resolve ids through it.
 export const SELF_SERVE_INGREDIENTS = [
   { id: 'yubu', name: '유부', emoji: 'px:yubu', grams: 30, packCost: 1800, unlockCost: 2000, desc: '국물 머금은 유부! 가볍고 쫄깃해요' },
   { id: 'potato', name: '감자', emoji: 'px:potato', grams: 60, packCost: 1500, unlockCost: 2500, desc: '포슬포슬 감자! 싸지만 무게가 꽤 나가요' },
@@ -115,7 +115,6 @@ export const SKEWER_ITEMS = [
   { id: 'skewer_shrimp', name: '새우', emoji: '🦐', unitsPerSkewer: 2 },
   { id: 'skewer_fishcake_deluxe', name: '고급 어묵', emoji: '🍢', unitsPerSkewer: 3 }, // 🍥 looked like a bowl, not a skewer (feedback 2026-09-27)
   { id: 'skewer_sausage_deluxe', name: '고급 소시지', emoji: '🌭', unitsPerSkewer: 3 },
-  { id: 'skewer_cheese_tteok', name: '치즈떡', emoji: 'px:cheesetteok', unitsPerSkewer: 3 }, // playtest 2026-09-27 #10
 ]
 
 export const SKEWER_ITEM_BY_ID = Object.fromEntries(SKEWER_ITEMS.map((i) => [i.id, i]))

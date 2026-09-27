@@ -3,7 +3,7 @@
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import { INGREDIENTS, SELF_SERVE_INGREDIENTS, SKEWER_ITEMS } from '../../../src/js/data.js'
-import { EXTRA_IDS, SAVE_KEY, SHELF_EXTRAS, VARIANT_INGREDIENTS } from '../../../src/js/self-serve/data.js'
+import { EXTRA_IDS, SAVE_KEY, SELF_SKEWER_ITEMS, SHELF_EXTRAS, VARIANT_INGREDIENTS } from '../../../src/js/self-serve/data.js'
 import { checkoutBowlWeight, createNewGame, generateWish, shelfIds, unlockIngredient } from '../../../src/js/self-serve/logic.js'
 import { loadGame, saveGame } from '../../../src/js/self-serve/save.js'
 
@@ -70,7 +70,8 @@ test('test_new_ingredient_unlock_survives_save_and_load', () => {
 })
 
 test('test_cheese_tteok_skewer_is_on_the_shelf_from_the_start', () => {
-  assert.ok(SKEWER_ITEMS.some((k) => k.id === 'skewer_cheese_tteok'))
+  assert.ok(SELF_SKEWER_ITEMS.some((k) => k.id === 'skewer_cheese_tteok'))
+  assert.equal(SKEWER_ITEMS.some((k) => k.id === 'skewer_cheese_tteok'), false, 'legacy skewer list untouched')
   const extra = SHELF_EXTRAS.find((i) => i.id === 'skewer_cheese_tteok')
   assert.equal(extra.name, '치즈떡 꼬지')
   assert.equal(extra.kind, 'skewer')

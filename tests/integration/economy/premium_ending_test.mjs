@@ -42,9 +42,10 @@ function saveWithoutPremiumFields(s) {
 
 // ---------- amounts ----------
 
-test('test_premium_total_is_eight_d_paid_in_four_equal_instalments', () => {
-  assert.equal(PREMIUM_TOTAL, 776_000)
-  assert.equal(PREMIUM_INSTALMENT, 194_000)
+test('test_premium_total_is_ten_d_paid_in_four_equal_instalments', () => {
+  // 10D, confirmed by the B001 28-day sim (was 8D)
+  assert.equal(PREMIUM_TOTAL, 970_000)
+  assert.equal(PREMIUM_INSTALMENT, 242_500)
   assert.equal(PART1_LAST_DAY, 28)
   assert.equal(createNewGame().premiumLeft, PREMIUM_TOTAL)
 })
@@ -122,9 +123,10 @@ test('test_pay_premium_is_capped_by_money_and_by_what_is_left', () => {
 })
 
 test('test_pay_premium_extra_clears_carry_first', () => {
-  const short = sundayOf(7, { money: RENT + 100_000 }) // carry 94,000, money 0
+  const short = sundayOf(7, { money: RENT + 100_000 }) // pays 100,000 of the instalment, money 0
+  assert.equal(short.premiumCarry, PREMIUM_INSTALMENT - 100_000)
   const topped = payPremium({ ...short, money: 60_000 }, 60_000)
-  assert.equal(topped.premiumCarry, 34_000)
+  assert.equal(topped.premiumCarry, PREMIUM_INSTALMENT - 160_000)
 })
 
 test('test_pay_premium_does_nothing_outside_sunday', () => {
