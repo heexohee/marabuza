@@ -91,7 +91,7 @@ export const UPGRADES = [
 
 export const UPGRADE_BY_ID = Object.fromEntries(UPGRADES.map((u) => [u.id, u]))
 
-export const CUSTOMER_FACES = ['🐷', '🐱', '🐻', '🐰', '🐼', '🐧', '🐸', '🐶', '🦊', '🐨', '🐯', '🐹']
+export const CUSTOMER_FACES = ['🐷', '🐱', '🐻', '🐰', '🐧', '🐸', '🐶', '🦊', '🐨', '🐯', '🐹']
 
 // Checkout pricing (story-001). Weighed-item rate depends on cooking mode;
 // meat/skewer/cilantro are flat surcharges layered on top.

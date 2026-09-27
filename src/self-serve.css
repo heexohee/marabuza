@@ -816,8 +816,7 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 
 /* ---------- owner row (feedback 2026-09-27): a round face frame + a bold speech bubble pointing at it ----------
    44px row (was 40) = the bubble's two lines of 13px bold. The counter only has 1px to spare (its content
-   ended at 633 of 634px), so the small bowl art gives back 4px below. The frame crops the 64×112 sprite
-   (or the panda's 96×160) at ×1 to its face. */
+   ended at 633 of 634px), so the small bowl art gives back 4px below. The protagonist frame crops the 64×112 sprite; the panda uses a dedicated face portrait. */
 .ss .owner { height: 44px; gap: 10px; padding-bottom: 0; margin-bottom: 4px; }
 .ss .bowl-art.small { margin-top: -16px; margin-bottom: -23px; }
 .owner-face {
@@ -825,7 +824,7 @@ html[data-screen="menu"] .title-anim.on { display: block; }
   border: 3px solid var(--ink); border-radius: 50%; background: #ffe3ec;
 }
 .owner-face .owner-face-img { position: absolute; left: -15px; top: -8px; width: 64px; height: 112px; image-rendering: pixelated; }
-.owner-face .owner-face-img.panda { left: -30px; top: -6px; width: 96px; height: 160px; }
+.owner-face .owner-face-img.panda { left: 1px; top: 1px; width: 32px; height: 32px; object-fit: contain; }
 .owner-face .owner-face-img.regular { left: 1px; top: 1px; width: 32px; height: 32px; } /* a regular's own face (story N002) */
 .owner-say .regular-name { color: var(--red); }
 .ss .owner-say {

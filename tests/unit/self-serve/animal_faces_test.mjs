@@ -30,3 +30,9 @@ test('seated customers retain their portraits with a dining bib and two paws', (
   assert.ok(seatedCustomerHtml('🐰').includes('--customer-fur:#eee5d6'))
   assert.ok(seatedCustomerHtml('🐱').includes('--customer-fur:#77716c'))
 })
+
+// The panda portrait belongs to the owner, never to a visiting customer.
+test('panda owner is excluded from random and story customer pools', () => {
+  assert.ok(!CUSTOMER_FACES.includes('🐼'))
+  assert.ok(Object.values(REGULARS).every(r => r.face !== '🐼'))
+})

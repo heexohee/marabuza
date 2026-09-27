@@ -235,7 +235,7 @@ const foundChip = (item) =>
 /** The protagonist behind the counter, with her start-of-day line in a speech bubble. */
 // The owner's row: a round face frame (the protagonist, or the panda while he gives his first tips) and her
 // start-of-day line in a speech bubble pointing at it (feedback 2026-09-27: the full sprite felt cramped).
-const PANDA_FACE = '<img class="owner-face-img panda" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+const PANDA_FACE = '<img class="owner-face-img panda" src="img/animal-faces/panda.png?v=1" alt="판다 사장님" draggable="false">'
 
 function ownerHtml(s) {
   // a regular at the front of the queue takes the row: their face in the frame, name + line in the bubble (story N002)
