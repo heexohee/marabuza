@@ -15,7 +15,7 @@ import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
   ownerLineText, ownerLineWho,
 } from './logic.js'
-import { closedHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
+import { closedHtml, creditsHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
@@ -408,8 +408,8 @@ export function render(root, s, view) {
     root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.titleSel}|${audioKey(view)}`, () =>
-      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.help ? helpHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}`, () =>
+      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.credits ? creditsHtml() : '') + (view.help ? helpHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))

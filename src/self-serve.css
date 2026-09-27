@@ -749,6 +749,13 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .modal.settings .variant-link { font-size: 15px; font-weight: 700; }
 .modal.settings .btn.ghost { font-size: 17px; font-weight: 700; }
 
+/* credits — opened from the title settings; font licenses live here */
+.modal.credits { max-width: 380px; text-align: center; }
+.modal.credits .credit { margin: 0 0 12px; }
+.modal.credits .credit h3 { margin: 0 0 4px; font-size: 17px; font-weight: 700; }
+.modal.credits .credit p { margin: 0; font-size: 14px; font-weight: 700; }
+.modal.credits .credit-note { margin: 4px 0 12px; font-size: 13px; opacity: .8; }
+
 /* ---------- owner row (feedback 2026-09-27): a round face frame + a bold speech bubble pointing at it ----------
    44px row (was 40) = the bubble's two lines of 13px bold. The counter only has 1px to spare (its content
    ended at 633 of 634px), so the small bowl art gives back 4px below. The frame crops the 64×112 sprite

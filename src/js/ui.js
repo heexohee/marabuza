@@ -206,7 +206,7 @@ function checkoutHtml(pc) {
     meatPortions(b.beef) > 0 && `🥩 소고기 ×${meatPortions(b.beef)}`,
     meatPortions(b.lamb) > 0 && `🍖 양고기 ×${meatPortions(b.lamb)}`,
     ...Object.entries(b.skewers).filter(([, n]) => n > 0)
-      .map(([id, n]) => `${SKEWER_ITEM_BY_ID[id].emoji} ${SKEWER_ITEM_BY_ID[id].name} 꼬치 ×${n}`),
+      .map(([id, n]) => `${spriteImg(SKEWER_ITEM_BY_ID[id].emoji, 16, 'chip-img')} ${SKEWER_ITEM_BY_ID[id].name} 꼬치 ×${n}`),
     b.cilantro && '🌿 고수',
   ].filter(Boolean)
   const steps = CHARGE_STEPS.map((v) =>

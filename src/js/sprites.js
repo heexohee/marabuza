@@ -129,6 +129,29 @@ const CUSTOM_SPRITES = {
       '................',
     ],
   },
+  // 어묵 꼬지: a fishcake sheet folded accordion-style onto a stick — the 🍢 glyph (triangle,
+  // ball, cube) is Japanese oden and read as a blob at 16px.
+  'px:fishcake': {
+    palette: { H: '#f8dca0', F: '#e8b464', f: '#c98a44', d: '#94592c', S: '#dcc8a0' },
+    rows: [
+      '........SS......',
+      '...HHHHHSSHHH...',
+      '..HFFFFFFFFFFf..',
+      '...ddddddddddd..',
+      '....fFFFFFFFFFF.',
+      '...ffFFFFFFFFFH.',
+      '....dddddddddd..',
+      '..HFFFFFFFFFFf..',
+      '..FFFFFFFFFFFf..',
+      '...ddddddddddd..',
+      '....fFFFFFFFFFF.',
+      '...ffFFFFFFFFFH.',
+      '....dddddddddd..',
+      '........SS......',
+      '........SS......',
+      '........SS......',
+    ],
+  },
   // 푸주: two wrinkled, pale-yellow dried tofu-skin sticks
   'px:tofuskin': {
     palette: { w: '#fcefc4', Y: '#f0cf7c', y: '#d4a651', t: '#a87a34' },

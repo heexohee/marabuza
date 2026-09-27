@@ -27,7 +27,7 @@ function storageOrUndefined() {
 const storage = storageOrUndefined()
 
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, settings: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
+let view = { hover: null, paused: false, help: false, settings: false, credits: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
 view = { ...view, titleSel: defaultTitleSel(view) }
 
 const audio = createAudioPlayer({
@@ -98,13 +98,15 @@ const viewActions = {
   settings: (v) => ({ ...v, settings: true }),
   closeSettings: (v) => ({ ...v, settings: false }),
   closeHelp: (v) => ({ ...v, help: false }),
+  credits: (v) => ({ ...v, credits: true, settings: false }),
+  closeCredits: (v) => ({ ...v, credits: false, settings: true }),
   shopTab: (v, arg) => ({ ...v, shopTab: arg }),
 }
 
 function run(action, arg) {
   if (action === 'menu') {
     state = createNewGame()
-    view = { ...view, paused: false, help: false, settings: false, hasSave: hasSave() }
+    view = { ...view, paused: false, help: false, settings: false, credits: false, hasSave: hasSave() }
     view = { ...view, titleSel: defaultTitleSel(view) }
     return
   }
@@ -158,8 +160,9 @@ const KEY_ACTIONS = {
 
 // Title menu by keyboard: ↑/↓ move between the items that can be chosen, Enter/Space runs the highlighted one.
 function titleKey(code) {
+  if (code === 'Escape' && view.credits) return run('closeCredits'), true
   if (code === 'Escape' && (view.help || view.settings)) return run(view.help ? 'closeHelp' : 'closeSettings'), true
-  if (view.help || view.settings) return false
+  if (view.help || view.settings || view.credits) return false
   const usable = TITLE_MENU.map((it, i) => (titleItemEnabled(it, view) ? i : -1)).filter((i) => i >= 0)
   const at = usable.indexOf(view.titleSel)
   if (code === 'ArrowDown' || code === 'ArrowUp') {

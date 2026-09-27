@@ -46,7 +46,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] 1–28일 처음부터 끝까지 사람 플레이테스트 1회 이상
 
 ### Assets
-- [x] **이모지 대체 그림** — Noto Color Emoji 2.047(OFL)을 게임이 쓰는 79자만 잘라 내장(`src/fonts/noto-emoji-subset.ttf`, 159KB). `sprites.js`가 이 글꼴이 로드된 뒤 도트화 → 윈도우·맥 모두 같은 그림. 이모지를 새로 쓰면 `python3 tools/fonts/build_emoji_subset.py` 다시 실행. 증거: `production/qa/evidence/emoji-bundled-sprites.png`
+- [x] **이모지 대체 그림** — Noto Color Emoji 2.047(OFL)을 게임이 쓰는 79자만 잘라 내장(`src/fonts/noto-emoji-subset.ttf`, 159KB). `sprites.js`가 이 글꼴이 로드된 뒤 도트화 → 윈도우·맥 모두 같은 그림. 이모지를 새로 쓰면 `python3 tools/fonts/build_emoji_subset.py` 다시 실행. 증거: `production/qa/evidence/emoji-bundled-sprites.png`, 실제 영업 화면 `emoji-bundled-ingame.png`. 어묵 꼬지는 🍢 대신 직접 그린 도트(`px:fishcake`, `fishcake-sprite.png`)
 - [x] **글꼴 내장** — Galmuri 2.40.3(Galmuri11 보통·굵게, Galmuri9)을 `src/fonts/`에 woff2로 두고 `fonts/fonts.css`에서 불러옴. 외부 요청 0건 확인. 증거: `production/qa/evidence/fonts-bundled-title.png`
 - [x] 임시 에셋 없음 — `placeholder|temp_|WIP_` 0건(입력칸 안내 문구 1건 제외), `src/img` 15개 중 임시 파일명 없음
 - [x] **사운드** — 배경음악(화면별 곡)·징글·클릭 효과음 + 음소거·볼륨 설정 (b0541c8, 07f40a1). 음원 라이선스 표기는 Legal 항목에서
@@ -56,7 +56,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] **문구 외부화** — 대사·UI 문구가 JS 코드에 직접 들어 있음(`story.js`, `screens.js`, `ui.js`…). 번역하려면 문자열 테이블로 빼내기
 - [ ] **영어 번역** (강력 권장 — 한국어만이면 시장이 크게 줄어듦) + 영어에서 글자 넘침 확인
 - [ ] 영어·한국어 글꼴 커버리지 (Galmuri는 한글·라틴 지원)
-- [ ] 크레딧 — 엔딩 자막 한 줄 + 설정 메뉴 크레딧(글꼴·도구 라이선스 표기 포함)
+- [ ] 크레딧 — 엔딩 자막 한 줄 + 설정 메뉴 크레딧(글꼴·도구 라이선스 표기 포함) · 설정 → 크레딧 화면은 완료(글꼴 2종 OFL 표기, `production/qa/evidence/credits-modal.png`), 엔딩 자막 한 줄과 만든 사람 이름은 남음
 
 ### Game Content
 - [ ] 튜토리얼 흐름 — 오프닝 4장 + 1–3일차 판다 팁 있음, 처음 하는 사람 대상 테스트 필요
@@ -107,7 +107,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Legal
 - [ ] EULA — 스팀 기본 EULA 사용 가능
-- [ ] 서드파티 라이선스 표기 — Galmuri(OFL), Noto Color Emoji(OFL), Electron/Tauri(MIT) · 글꼴 라이선스 원문은 `src/fonts/OFL-*.md`에 동봉, 크레딧 화면 표기는 남음
+- [ ] 서드파티 라이선스 표기 — Galmuri(OFL), Noto Color Emoji(OFL), Electron/Tauri(MIT) · 글꼴 2종은 완료(원문 `src/fonts/OFL-*.md` 동봉 + 설정 → 크레딧 표기), 포장 도구(Electron/Tauri)는 포장 후 추가
 - [ ] 음악·효과음 라이선스 (사운드 결정 후)
 - [ ] 상표 확인 — "마라부자" 이름 검색
 

@@ -103,7 +103,7 @@ export const CHARGE_STEPS = [1000, 3000, 4000]
 // story-003 rewrites ingredient stocking.
 export const SKEWER_ITEMS = [
   { id: 'skewer_shrimp', name: '새우', emoji: '🦐', unitsPerSkewer: 2 },
-  { id: 'skewer_fishcake_deluxe', name: '고급 어묵', emoji: '🍢', unitsPerSkewer: 3 }, // 🍥 looked like a bowl, not a skewer (feedback 2026-09-27)
+  { id: 'skewer_fishcake_deluxe', name: '고급 어묵', emoji: 'px:fishcake', unitsPerSkewer: 3 }, // hand-drawn: 🍥 read as a bowl, 🍢 as a blob (feedback 2026-09-27)
   { id: 'skewer_sausage_deluxe', name: '고급 소시지', emoji: '🌭', unitsPerSkewer: 3 },
 ]
 
