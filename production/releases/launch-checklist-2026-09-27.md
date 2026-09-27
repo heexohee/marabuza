@@ -61,7 +61,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Game Content
 - [ ] 튜토리얼 흐름 — 오프닝 4장 + 1–3일차 판다 팁 있음, 처음 하는 사람 대상 테스트 필요
-- [ ] **저장**: localStorage → 파일 저장 + **스팀 클라우드** (포장 앱에서) ⛔
+- [~] **저장**: 데스크톱 앱은 파일 저장 완료 (`<userData>/saves/*.json`, 2026-09-28, `production/qa/evidence/desktop/desktop-evidence.md`) — 남은 것: Steamworks에서 Auto-Cloud 경로 설정(사람), 스팀 기기 간 동기화 확인 ⛔
 - [ ] 도전과제 설계·구현 (예: 첫 완납, 인테리어 6단계, 계산 완벽한 하루, 28일 엔딩)
 - [x] 엔딩 시퀀스 (E004) — 크레딧 화면은 아직 없음(Text 항목의 크레딧과 함께)
 

@@ -1,5 +1,5 @@
-// localStorage persistence for the self-serve variant, in its own slot so it never
-// touches the original flow's save. Only the between-days progress is saved.
+// Save persistence for the self-serve variant (localStorage on the web, a save file in the desktop app — save-store.js),
+// in its own slot so it never touches the original flow's save. Only the between-days progress is saved.
 // Has its own validator: the warehouse here also holds skewer/cilantro stock, which the
 // original flow's validator (../save.js) does not know about.
 import { INGREDIENT_BY_ID, MAX_RATING, UPGRADE_BY_ID } from '../data.js'
@@ -8,6 +8,7 @@ import {
 } from './data.js'
 import { createNewGame, setMenuPrice } from './logic.js'
 import { normalizeCharacter } from './character.js'
+import { saveStore } from './save-store.js'
 
 const SAVE_VERSION = 1
 
@@ -98,8 +99,7 @@ export function saveGame(s) {
     ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
   }
   try {
-    localStorage.setItem(SAVE_KEY, JSON.stringify(data))
-    return true
+    return saveStore().setItem(SAVE_KEY, JSON.stringify(data)) !== false
   } catch {
     return false
   }
@@ -108,7 +108,7 @@ export function saveGame(s) {
 /** Returns a playable state from the save, or null when there is no valid save. */
 export function loadGame() {
   try {
-    const raw = localStorage.getItem(SAVE_KEY)
+    const raw = saveStore().getItem(SAVE_KEY)
     if (!raw) return null
     const d = JSON.parse(raw)
     if (!isValidSave(d)) return null
@@ -160,8 +160,7 @@ export const hasSave = () => loadGame() !== null
 /** Deletes the save (economy E003: a closed-down shop ends the run — "이어하기" must not bring it back). */
 export function clearSave() {
   try {
-    localStorage.removeItem(SAVE_KEY)
-    return true
+    return saveStore().removeItem(SAVE_KEY) !== false
   } catch {
     return false
   }
