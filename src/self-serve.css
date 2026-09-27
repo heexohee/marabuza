@@ -929,3 +929,49 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 
 /* emoji inside words (src/js/self-serve/emoji-text.js): the bundled pixel sprite at the text's own size */
 img.txt-emoji { width: 1.15em; height: 1.15em; vertical-align: -0.2em; display: inline-block; }
+
+/* ---------- day-change calendar (src/js/self-serve/day-intro.js, request 2026-09-28) ----------
+   A tear-off pad over the game for a moment: yesterday's page is torn off and falls, today's is underneath.
+   Click / any key skips it; with reduced motion there is no tear, the page just shows. */
+.day-intro {
+  position: fixed; inset: 0; z-index: 30; display: none; align-items: center; justify-content: center;
+  background: rgba(58, 31, 43, .35); cursor: var(--cursor-click);
+}
+.day-intro.on { display: flex; animation: cal-fade .18s ease-out both; }
+.day-intro-card { display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.cal-pad { position: relative; width: 170px; height: 190px; }
+.cal-page {
+  position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; box-sizing: border-box;
+  background: #fffaf2; border: 4px solid var(--ink); border-radius: 6px; box-shadow: 0 5px 0 var(--ink);
+  overflow: hidden;
+}
+.cal-rings {
+  position: absolute; top: 6px; left: 0; right: 0; height: 8px;
+  background: radial-gradient(circle, var(--ink) 3px, transparent 4px) 12px 0 / 28px 8px repeat-x;
+}
+.cal-head {
+  width: 100%; padding: 16px 0 6px; text-align: center; font-size: 15px; letter-spacing: 2px; color: #fff;
+  background: #ff7fa0; border-bottom: 3px solid var(--ink);
+}
+.cal-num { flex: 1; display: flex; align-items: center; font-size: 78px; font-weight: 700; line-height: 1; color: var(--ink); }
+.cal-page.sun .cal-num { color: #e2405f; }
+.cal-page.sun .cal-head { background: #e2405f; }
+/* yesterday's page sits on top and is torn off from its top-left corner */
+.cal-page.old { transform-origin: 18% 0; animation: cal-tear 1.4s .3s ease-in both; } /* tear 1.4s, done at 1.7s — today's page then stays 0.6s of the 2.3s card */
+.cal-title, .cal-note {
+  margin: 0; padding: 4px 12px; border: 3px solid var(--ink); border-radius: 8px; background: #fffaf2;
+  font-weight: 700; color: var(--ink); white-space: nowrap;
+}
+.cal-title { font-size: 18px; }
+.cal-title, .cal-note { position: relative; z-index: 1; } /* the torn page falls behind the labels */
+.cal-note { font-size: 14px; background: #fff3c9; }
+@keyframes cal-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes cal-tear {
+  0% { transform: none; opacity: 1; }
+  25% { transform: rotate(-6deg); }
+  100% { transform: translate(-40px, 150%) rotate(-28deg); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .day-intro.on { animation: none; }
+  .cal-page.old { display: none; }
+}
