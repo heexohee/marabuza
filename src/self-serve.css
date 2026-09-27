@@ -764,6 +764,7 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .ss .owner-say {
   position: relative; left: auto; top: auto; right: auto; flex: 1; min-width: 0;
   font-size: 13px; font-weight: 700; line-height: 1.25; padding: 4px 8px;
+  word-break: keep-all; /* wrap between words ("마지막" stays whole); every day 1–40 line still fits two lines (N001) */
   background: #fffbe8; border: 2px solid var(--ink); border-radius: 8px; box-shadow: 0 2px 0 var(--ink);
 }
 .ss .owner-say::before {

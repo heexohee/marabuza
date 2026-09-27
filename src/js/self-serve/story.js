@@ -113,8 +113,35 @@ const TIPS = [
   '샹궈는 100g당 더 비싸! 주문표 조리 방식부터 확인해.',
 ]
 
-/** Who says the start-of-day line: the panda for his first tips, then the protagonist herself. */
-export const dayStartSpeaker = (day) => (day <= TIPS.length ? 'panda' : 'me')
+// Days 4–27 (story N001): one fixed line per business day, part 1's story told a morning at a time —
+// design/quick-specs/part1-28-days-2026-09-27.md §B. Sundays (7·14·21·28) have no business day; the panda
+// only phones in ("(메시지)") until he visits on day 28. Every line fits the owner's two-line bubble.
+export const DAILY_LINES = {
+  4: { who: 'me', text: '오늘부터 진짜 혼자다. 배운 대로만 하자!' },
+  5: { who: 'me', text: '불금이다! 퇴근 손님 오기 전에 진열대부터.' },
+  6: { who: 'me', text: '내일은 첫 일요일. 장부 정리하는 날!' },
+  8: { who: 'me', text: '판다 사장님이 음료 한 박스를 보내 주셨어!' },
+  9: { who: 'me', text: '너구리 손님, 오늘도 오시려나.' },
+  10: { who: 'me', text: '웍이 생겼다! 볶음밥은 알아서 볶아져. 계산만 정확히!' },
+  11: { who: 'me', text: '이 골목 사람들 입맛, 조금씩 알 것 같아.' },
+  12: { who: 'me', text: '꿔바로우까지! 이제 진짜 우리 가게 메뉴판이야.' },
+  13: { who: 'me', text: '토요일 점심은 전쟁이야. 냄비부터 비워 두자.' },
+  15: { who: 'me', text: '월요일 러시… 손이 세 개였으면.' },
+  16: { who: 'me', text: '어제 마감하고 그대로 잠들었어.' },
+  17: { who: 'me', text: '계산하고, 끓이고, 채우고… 회사 다닐 때 같아.' },
+  18: { who: 'panda', text: '(메시지) 혼자 다 하려고 하지 마. 쉬는 것도 장사야.' },
+  19: { who: 'me', text: '오늘은 무리하지 말고, 한 그릇씩만.' },
+  20: { who: 'me', text: '혼자 다 하지 않기. 내일은 푹 쉬자.' },
+  22: { who: 'panda', text: '(메시지) 다음 주 일요일에 가게 한번 들를게.' },
+  23: { who: 'me', text: '판다 사장님 오시기 전에 가게 반짝반짝하게!' },
+  24: { who: 'me', text: '처음 인수하던 날이 벌써 까마득해.' },
+  25: { who: 'me', text: '오늘 너구리 손님은 표정이 밝던데?' },
+  26: { who: 'me', text: '4주 전의 나한테 이 가게를 보여 주고 싶다.' },
+  27: { who: 'me', text: '내일은 판다 사장님 오시는 날. 마지막 영업도 한 그릇씩!' },
+}
+
+/** Who says the start-of-day line: the panda for his first tips and messages, else the protagonist herself. */
+export const dayStartSpeaker = (day) => (day <= TIPS.length ? 'panda' : DAILY_LINES[day]?.who ?? 'me')
 const OWN_LINES = [
   '오늘도 누군가의 한 그릇이 되어 보자!',
   '점심 러시 오기 전에 진열대부터 채워 두자.',
@@ -122,9 +149,12 @@ const OWN_LINES = [
   '대출 갚는 날까지, 한 그릇씩!',
 ]
 
-/** One line said at the start of `day`. */
-export const dayStartLine = (day) =>
-  (day <= TIPS.length ? TIPS[day - 1] : OWN_LINES[(day - TIPS.length - 1) % OWN_LINES.length])
+/** One line said at the start of `day`: tips (1–3), the part-1 table (4–27), then OWN_LINES in turn (29+). */
+export const dayStartLine = (day) => {
+  if (day <= TIPS.length) return TIPS[day - 1]
+  if (DAILY_LINES[day]) return DAILY_LINES[day].text
+  return OWN_LINES[(day - TIPS.length - 1) % OWN_LINES.length]
+}
 
 // ---------- Sunday off day (economy E003) ----------
 // A short scene in the closed shop (scene-sunday: her board, "휴무" in the window, lanterns off), played
