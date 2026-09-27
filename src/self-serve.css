@@ -902,10 +902,10 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 @media (prefers-reduced-motion: reduce) { .wall-frame.drop { animation: none; } }
 /* part-2 teaser (story N003): the rabbit regular with a "알바 구함" flyer, and the franchise banner across the street */
 .cast-rabbit { display: flex; justify-content: center; }
-.rabbit-with-flyer { position: relative; display: inline-block; width: 80%; }
-.rabbit-with-flyer .rabbit-sprite { width: 100%; height: auto; image-rendering: pixelated; }
+.rabbit-with-flyer { position: relative; display: inline-block; width: 66.667%; }
+.rabbit-with-flyer .rabbit-sprite { display: block; width: 100%; height: auto; image-rendering: pixelated; }
 .flyer {
-  position: absolute; left: -34%; bottom: 10%; padding: 2px 5px; font-style: normal; font-size: 11px; font-weight: 700;
+  position: absolute; left: -35%; bottom: 35%; padding: 2px 5px; font-style: normal; font-size: 11px; font-weight: 700;
   color: var(--ink); background: #fffbe8; border: 2px solid #3a1f14; transform: rotate(-8deg); white-space: nowrap;
 }
 /* seen through the right window (art x≈233–292, y≈20–69 of the 320×120 hall), so it reads as the building opposite */
