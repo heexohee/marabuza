@@ -2,6 +2,8 @@
 // Pure data and text helpers; `{name}` is replaced with the protagonist's name.
 // design/game-brief.md "Story — 최애 한 그릇" · design/quick-specs/story-character-2026-09-25.md §B, §C
 
+import { PART1_LAST_DAY } from './data.js'
+
 const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주', rabbit: '시험기간 토끼' }
 
 /**
@@ -198,10 +200,13 @@ export const SUNDAY_BG = 'scene-sunday'
 export const SUNDAY_LEDGER_STEP = 2
 export const SUNDAY_LAST_STEP = 3
 
-/** The Sunday scene's line at `step` (the ledger step has none), given the week's settled ledger. */
-export function sundayLine(step, ledger) {
+/**
+ * The Sunday scene's line at `step` (the ledger step has none), given the week's settled ledger and the
+ * Sunday's day number — day 28 closes part 1's four weeks, so she looks back on the month (feedback 2026-09-28).
+ */
+export function sundayLine(step, ledger, day = 0) {
   if (step === 0) return { who: 'caption', text: '오늘은 일요일! 쉬는 날.' }
-  if (step === 1) return { who: 'me', text: '한 주 동안 수고했어. 장부부터 정리하자.' }
+  if (step === 1) return { who: 'me', text: `${day === PART1_LAST_DAY ? '한 달' : '한 주'} 동안 수고했어. 장부부터 정리하자.` }
   if (step === SUNDAY_LEDGER_STEP) return null
   if (ledger?.bankrupt) return { who: 'landlord', text: '두 주 연속이면… 더는 어렵겠어요. 가게를 비워 주셔야겠어요.' }
   return ledger?.rentPaid === false

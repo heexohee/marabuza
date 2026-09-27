@@ -6,7 +6,7 @@
 import { DAY_LENGTH_SEC } from '../data.js'
 import {
   adjustCharge, afterSummary, buyPack, buySidePack, confirmCharge, cookNext, counterPrice, frontCustomer, pickPot, restock, serveTable,
-  finishTeaser, openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
+  finishCredits, finishTeaser, openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
 } from './logic.js'
 import { sideStockId } from './data.js'
 import { shelfQty } from './shelf.js'
@@ -175,13 +175,17 @@ export function restockWarehouse(s) {
 // settlement (economy E003) is a free pass-through here, same as the shop always is: `afterSummary` from
 // 'summary' lands on 'sunday' only on a Saturday close, and calling it again from 'sunday' falls through
 // to the shop, so a week boundary never costs an extra iteration of the caller's day-counting loop below.
+/** Part-2 teaser → ending credits (story N003) → shop: skips both scenes. */
+const skipPart2Scenes = (s) => (s.phase === 'teaser' ? finishCredits(finishTeaser(s)) : s)
+
 function resolveToDay(s) {
   let cur = s
   if (cur.phase === 'summary') cur = afterSummary(cur)
   if (cur.phase === 'sunday') cur = afterSummary(cur)
   if (cur.phase === 'ending') cur = afterSummary(cur) // day-28 part-1 ending (economy E004): skip the scene
-  if (cur.phase === 'shop') cur = startNextDay(restockWarehouse(cur))
-  if (cur.phase === 'teaser') cur = finishTeaser(cur) // day-29 part-2 teaser (story N003): skip the scene
+  cur = skipPart2Scenes(cur)
+  if (cur.phase === 'shop') cur = skipPart2Scenes(startNextDay(restockWarehouse(cur)))
+  if (cur.phase === 'shop') cur = startNextDay(cur) // an old save's teaser led back to the shop
   return cur
 }
 

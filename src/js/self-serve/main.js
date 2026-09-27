@@ -1,7 +1,7 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
   addToast, adjustCharge, advanceEnding, advanceStory, advanceSunday, advanceTeaser, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
-  fadeToasts, finishCharacter, finishTeaser, isEndingDone, isSundayDone, isTeaserDone, openSide, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
+  fadeToasts, finishCharacter, finishCredits, finishTeaser, isEndingDone, isSundayDone, isTeaserDone, openSide, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
@@ -93,6 +93,7 @@ const gameActions = {
   payPremium: (s, arg) => persist(payPremium(s, arg === 'all' ? 'all' : Number(arg))),
   endingNext: (s) => (isEndingDone(s) ? persist(afterSummary(s)) : advanceEnding(s)),
   teaserNext: (s) => (isTeaserDone(s) ? finishTeaser(s) : advanceTeaser(s)),
+  creditsDone: (s) => persist(finishCredits(s)), // end-of-part-1 credits → the day-28 shop
   continue: (s) => {
     const loaded = loadGame()
     return loaded ? resumeShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
@@ -167,6 +168,7 @@ const KEY_ACTIONS = {
   sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
   ending: { Enter: 'endingNext', Space: 'endingNext' },
   teaser: { Enter: 'teaserNext', Space: 'teaserNext' },
+  credits: { Enter: 'creditsDone' },
   shop: { Escape: 'closeLedger' },
 }
 
@@ -217,7 +219,7 @@ if (isDevMode()) {
     if (!DEV_ACTIONS[action]) return
     const next = DEV_ACTIONS[action](state)
     state = next.phase === 'shop' ? persist(next) : next
-    view = { ...view, paused: false, help: false }
+    view = { ...view, paused: false, help: false, settings: false, credits: false, ledger: false }
   })
 }
 
