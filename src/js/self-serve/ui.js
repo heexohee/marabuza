@@ -13,7 +13,7 @@ import {
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
-  ownerLineText,
+  ownerLineText, ownerLineWho,
 } from './logic.js'
 import { closedHtml, helpHtml, menuHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
@@ -44,6 +44,17 @@ function floating(items, px) {
   return list.map((id, i) => {
     const x = 16 + ((i * 37) % 60)
     const y = 14 + ((i * 53) % 44)
+    return `<span class="float" style="left:${x}%;top:${y}%;animation-delay:${(i % 5) * 0.3}s">${spriteImg(INGREDIENT_BY_ID[id].emoji, px, 'float-img')}</span>`
+  }).join('')
+}
+
+// Counter bowl (feedback 2026-09-27): the scooped ingredients bob on a layer above the bowl, around and over its rim,
+// instead of being masked inside the broth where the rim hid them.
+function floatAbove(items, px) {
+  const list = Object.entries(items).flatMap(([id, q]) => Array.from({ length: q }, () => id))
+  return list.map((id, i) => {
+    const x = 10 + ((i * 29) % 78)
+    const y = -18 + ((i * 41) % 34) // from just above the rim down over the broth
     return `<span class="float" style="left:${x}%;top:${y}%;animation-delay:${(i % 5) * 0.3}s">${spriteImg(INGREDIENT_BY_ID[id].emoji, px, 'float-img')}</span>`
   }).join('')
 }
@@ -205,15 +216,24 @@ function queueHtml(s) {
 }
 
 /** A dug-out meat or skewer, labelled in the unit it is charged in (every skewer kind = 1,000원 each). */
+// Found items show icon + count like the vegetables, on an orange background — but that colour alone
+// didn't read as "this is a skewer, not weight" (feedback 2026-09-27), so skewers also spell it out
+// ("🦐꼬지×1"); meat keeps just the icon (🥩/🐑 are unambiguous). Full name stays in the hover title.
+const FOUND_LABEL_SUFFIX = { skewer: '꼬지' }
 const foundChip = (item) =>
-  `<span class="chip found">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${hiddenItemLabel(item)}</span>`
+  `<span class="chip found" title="${hiddenItemLabel(item)}">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${FOUND_LABEL_SUFFIX[item.kind] ?? ''}×${item.count}</span>`
 
 /** The protagonist behind the counter, with her start-of-day line in a speech bubble. */
+// The owner's row: a round face frame (the protagonist, or the panda while he gives his first tips) and her
+// start-of-day line in a speech bubble pointing at it (feedback 2026-09-27: the full sprite felt cramped).
+const PANDA_FACE = '<img class="owner-face-img panda" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+
 function ownerHtml(s) {
   const line = ownerLineText(s)
+  const face = ownerLineWho(s) === 'panda' ? PANDA_FACE : heroImg(s.character, 'owner-face-img')
   return `
     <div class="owner">
-      ${heroImg(s.character, 'hero-owner')}
+      <span class="owner-face">${face}</span>
       ${line ? `<span class="owner-say">${esc(line)}</span>` : ''}
     </div>`
 }
@@ -225,8 +245,8 @@ function counterHtml(s) {
   const hidden = hiddenItems(c.bowl)
   const found = hidden.slice(0, s.counter.revealed).map(foundChip).join('')
   const weighed = Object.entries(c.bowl.weighed).map(([id, q]) =>
-    `<span class="chip">${spriteImg(INGREDIENT_BY_ID[id].emoji, 16, 'chip-img')}×${q}</span>`).join('')
-  const cilantro = c.bowl.cilantro ? '<span class="chip found">🌿 고수</span>' : ''
+    `<span class="chip" title="${INGREDIENT_BY_ID[id].name}">${spriteImg(INGREDIENT_BY_ID[id].emoji, 16, 'chip-img')}×${q}</span>`).join('')
+  const cilantro = c.bowl.cilantro ? `<span class="chip found" title="고수">${spriteImg('🌿', 16, 'chip-img')}</span>` : ''
   const side = c.side ? `<span class="chip found side">${spriteImg(SIDE_BY_ID[c.side].emoji, 16, 'chip-img')} ${SIDE_BY_ID[c.side].name}</span>` : ''
   const modes = Object.keys(MODE_LABEL).map((m) =>
     `<button class="mode-btn ${s.counter.mode === m ? 'on' : ''}" data-action="mode" data-arg="${m}">${MODE_LABEL[m]}</button>`).join('')
@@ -239,7 +259,7 @@ function counterHtml(s) {
     ${queueHtml(s)}
     <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}</div>
     <div class="bowl-art small">
-      <div class="bowl-rim"><div class="broth spice-0">${floating(c.bowl.weighed, 12)}</div></div>
+      <div class="bowl-rim"><div class="broth spice-0"></div><div class="bowl-floats">${floatAbove(c.bowl.weighed, 12)}</div></div>
       <div class="bowl-body"><div class="bowl-inner"><i class="bowl-band"></i></div></div>
       <div class="bowl-foot"></div>
     </div>
@@ -260,7 +280,7 @@ function counterHtml(s) {
     </div>`
 }
 
-const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringify(s.counter)}|${ownerLineText(s) ? 'say' : ''}`
+const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringify(s.counter)}|${ownerLineText(s) ? `say-${ownerLineWho(s)}` : ''}`
 
 // ---------- shelf ----------
 
