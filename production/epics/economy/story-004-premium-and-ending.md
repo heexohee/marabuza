@@ -1,7 +1,7 @@
 # Story E004: 권리금 4주 분할 + 28일차 엔딩 "이제 네 가게구나"
 
 > **Epic**: economy (경제 레벨링)
-> **Status**: Ready
+> **Status**: In Progress (규칙·저장·봇·화면 완료 2026-09-27 — 남은 것: 영업 화면 홀 벽 액자 + 액자 도트 그림)
 > **Layer**: Feature
 > **Type**: Integration
 > **Estimate**: L
@@ -55,7 +55,7 @@
 
 **Story Type**: Integration
 **Required evidence**: `tests/integration/economy/premium_ending_test.mjs` + 엔딩 두 갈래 스크린샷 `production/qa/evidence/premium-ending/`
-**Status**: [ ] Not yet created
+**Status**: [x] `tests/integration/economy/premium_ending_test.mjs` 25개 통과 · 스크린샷 `production/qa/evidence/premium-ending/` + `premium-ending-evidence.md`
 
 ---
 

@@ -1,7 +1,7 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, advanceStory, advanceSunday, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
-  fadeToasts, finishCharacter, isSundayDone, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
+  addToast, adjustCharge, advanceEnding, advanceStory, advanceSunday, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
+  fadeToasts, finishCharacter, isEndingDone, isSundayDone, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
@@ -83,6 +83,9 @@ const gameActions = {
   storyNext: (s) => advanceStory(s),
   storySkip: (s) => skipStory(s),
   sundayNext: (s) => (isSundayDone(s) ? persist(afterSummary(s)) : advanceSunday(s)),
+  // 권리금 (economy E004): 더 갚기 on the Sunday ledger, and the day-28 ending's beats
+  payPremium: (s, arg) => persist(payPremium(s, arg === 'all' ? 'all' : Number(arg))),
+  endingNext: (s) => (isEndingDone(s) ? persist(afterSummary(s)) : advanceEnding(s)),
   continue: (s) => {
     const loaded = loadGame()
     return loaded ? resumeShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
@@ -150,6 +153,7 @@ const KEY_ACTIONS = {
   day: { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause', KeyP: 'pause', KeyC: 'cookNext' },
   opening: { Enter: 'storyNext', Space: 'storyNext', Escape: 'storySkip' },
   sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
+  ending: { Enter: 'endingNext', Space: 'endingNext' },
 }
 
 // Title menu by keyboard: ↑/↓ move between the items that can be chosen, Enter/Space runs the highlighted one.

@@ -9,7 +9,7 @@ import {
 } from './data.js'
 import { demandFactor, nextInterior, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
-import { esc, heroImg } from './story-ui.js'
+import { esc, heroImg, premiumBarHtml } from './story-ui.js'
 
 /**
  * Title menu (feedback 2026-09-27, Dave the Diver style): white pixel-font items in a column on the right of the
@@ -343,7 +343,7 @@ export function shopHtml(s, tab = DEFAULT_SHOP_TAB) {
     <div class="shop-screen">
       <header class="shop-head">
         <h1 class="title-logo small">마라부자 <span>: 상점 · 셀프 담기</span></h1>
-        <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>
+        <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>${premiumBarHtml(s)}
       </header>${shopTabsHtml(s, current.id)}
       <div class="shop-tab-body" role="tabpanel">${current.html(s)}
       </div>

@@ -705,8 +705,9 @@ html, body { overflow: hidden; }
 /* one fixed height for every beat, so the scene never moves when the taller ledger replaces a line */
 .sunday-screen { min-height: 640px; justify-content: flex-start; }
 /* the box under the Sunday scene is one height for every beat — a line or the ledger (measured 182px with
-   rent only; E004 adds the 권리금 rows and raises this) — so the screen's proportions never change */
-:root { --sunday-box-h: 200px; }
+   rent only; with E004's 권리금 row + the panda's word + the bar on one line, 195px + border) — so the
+   screen's proportions never change */
+:root { --sunday-box-h: 212px; }
 .sunday-screen .dialogue, .sunday-screen .ledger-panel { height: var(--sunday-box-h); min-height: 0; box-sizing: border-box; overflow: hidden; }
 
 /* ---------- title screen (feedback 2026-09-27, Dave the Diver style) ----------
@@ -745,3 +746,31 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 /* the smaller lines under the big buttons read too faint at the fitted scale */
 .modal.settings .variant-link { font-size: 15px; font-weight: 700; }
 .modal.settings .btn.ghost { font-size: 17px; font-weight: 700; }
+
+/* ---------- 권리금 + part-1 ending (economy E004) ---------- */
+.premium-bar { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 6px; }
+.premium-label { font-weight: 700; }
+.premium-track { flex: 1; min-width: 80px; height: 8px; border: 2px solid var(--ink); border-radius: 4px; background: #fff; overflow: hidden; display: block; }
+.premium-track b { display: block; height: 100%; background: var(--green); }
+.premium-left { white-space: nowrap; }
+.shop-head .premium-bar { min-width: 220px; margin-top: 0; color: var(--ink); font-weight: 700; }
+.premium-note { margin: 6px 0 0; font-size: 13px; text-align: left; }
+.pay-extra-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+.pay-extra-row .btn.pay-extra { flex: none; padding: 4px 8px; }
+/* the old "마라판다" sign hung as a frame on the wall (CSS stand-in until the pixel-art frame) */
+.ending-frame {
+  position: absolute; left: 14%; top: 4%; transform: translateX(-50%); /* wall above the window, clear of the sign and cast */
+  display: inline-flex; flex-direction: column; align-items: center; gap: 4px;
+  padding: 6px 12px; background: #6b4226; border: 6px solid #3a1f14; box-shadow: 0 0 0 3px #c49a6c inset, 0 6px 0 rgba(0, 0, 0, .35);
+  animation: frame-drop .5s ease-out both;
+}
+.ending-frame b { font-size: 18px; color: #f3dcb5; letter-spacing: 4px; text-shadow: 2px 2px 0 #2a150c; }
+.ending-plate { font-style: normal; font-size: 12px; font-weight: 700; color: #3a2a00; background: linear-gradient(#ffe27a, #d9a520); border: 2px solid #7a5a00; border-radius: 3px; padding: 1px 8px; }
+@keyframes frame-drop { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .ending-frame { animation: none; } }
+/* the 권리금 row + the panda's word + the bar must fit the fixed Sunday box (--sunday-box-h) */
+.sunday-screen .ledger td { padding-top: 1px; padding-bottom: 1px; }
+.premium-foot { display: flex; align-items: center; gap: 10px; margin-top: 2px; padding-right: 110px; } /* room for the ▶ hint */
+.premium-label, .premium-note { white-space: nowrap; }
+.premium-foot .premium-note { margin: 0; flex: 1 1 auto; }
+.premium-foot .premium-bar { margin: 0; flex: 0 1 220px; }

@@ -4,9 +4,9 @@
 import { spriteImg } from '../sprites.js'
 import { won } from '../ui.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
-import { NAME_MAX_LEN, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
+import { NAME_MAX_LEN, PREMIUM_EXTRA_STEPS, PREMIUM_TOTAL, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
 import {
-  OPENING_SCENES, STAGE, SUNDAY_BG, SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast,
+  ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, STAGE, SUNDAY_BG, endingLine, premiumLine, SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast,
   speakerName, storyName, sundayLine,
 } from './story.js'
 
@@ -103,6 +103,7 @@ function ledgerHtml(s) {
   const rows = [
     [`${weekOf(s.day)}주차 매출 (월~토)`, won(weekRevenue), ''],
     ['임대료 (건물주)', `−${won(rentDue)}`, stamp],
+    ...premiumRows(s),
   ]
   const rowsHtml = rows.map(([label, value, stamp], i) => `
         <tr class="ledger-row" style="animation-delay:${i * 0.35}s">
@@ -114,9 +115,52 @@ function ledgerHtml(s) {
         <b class="speaker">📒 장부</b>
         <table class="summary ledger">${rowsHtml}
           <tr class="total ledger-row" style="animation-delay:${rows.length * 0.35}s"><td colspan="2">남은 돈</td><td>${won(s.money)}</td></tr>
-        </table>
+        </table>${premiumNoteHtml(s)}
         <span class="next-hint">▶ 클릭 / Space</span>
       </div>`
+}
+
+// ---------- 권리금 on the ledger (economy E004) ----------
+
+/** The ledger's 권리금 row: nothing after part 1, "완납 ✓" once all paid, else paid vs due with a stamp. */
+function premiumRows(s) {
+  const l = s.ledger ?? {}
+  if (l.premiumDue === undefined) return []
+  if (l.premiumSettled) return [['권리금 (판다 사장님)', '—', '완납 ✓']]
+  const short = l.premiumPaid < l.premiumDue
+  return [['권리금 할부 (판다 사장님)', `−${won(l.premiumPaid)}`, short ? '이월 !' : '완납 ✓']]
+}
+
+/** Remaining 권리금 as a bar (part 1 only), shared by the Sunday ledger and the shop header. */
+export function premiumBarHtml(s) {
+  if (s.endingSeen) return ''
+  const paid = PREMIUM_TOTAL - s.premiumLeft
+  const pct = Math.round((paid / PREMIUM_TOTAL) * 100)
+  return `
+        <div class="premium-bar" title="권리금 ${won(paid)} / ${won(PREMIUM_TOTAL)}">
+          <span class="premium-label">권리금</span>
+          <i class="premium-track"><b style="width:${pct}%"></b></i>
+          <span class="premium-left">남은 ${won(s.premiumLeft)}</span>
+        </div>`
+}
+
+/** The panda's word on the 권리금 row (by phone), under the ledger. */
+function premiumNoteHtml(s) {
+  const line = premiumLine({ day: s.day, ...(s.ledger ?? {}) })
+  const note = line ? `<p class="premium-note">🐼 ${esc(line.text)}</p>` : ''
+  const bar = premiumBarHtml(s)
+  return note || bar ? `<div class="premium-foot">${note}${bar}</div>` : ''
+}
+
+/** "더 갚기" on the Sunday scene's last beat, while 권리금 is left in part 1. */
+function payExtraHtml(s) {
+  if (s.endingSeen || s.premiumLeft <= 0 || s.ledger?.bankrupt || s.ledger?.premiumDue === undefined) return ''
+  const buttons = PREMIUM_EXTRA_STEPS.map((v) => {
+    const label = v === 'all' ? '가능한 만큼' : `+${v / 10_000}만`
+    const disabled = s.money <= 0 || (v !== 'all' && s.money < Math.min(v, s.premiumLeft))
+    return `<button class="btn key pay-extra" data-action="payPremium" data-arg="${v}" ${disabled ? 'disabled' : ''}>${label}</button>`
+  }).join('')
+  return `<div class="pay-extra-row"><span>권리금 더 갚기</span>${buttons}</div>`
 }
 
 /**
@@ -140,13 +184,48 @@ export function sundayHtml(s) {
       <div class="scene ${SUNDAY_BG}">${cast}<span class="day-tag">DAY ${s.day} · ${weekOf(s.day)}주차 ${WEEKDAY_LABEL[weekdayOf(s.day)]}요일</span></div>
       ${body}
       <div class="opening-foot">
-        <span></span>
-        ${isLast ? `<button class="bubble-btn" data-action="toShop">${s.ledger?.bankrupt ? '…' : '상점으로 →'}</button>` : ''}
+        ${isLast ? payExtraHtml(s) : '<span></span>'}
+        ${isLast ? `<button class="bubble-btn" data-action="toShop">${s.ledger?.bankrupt ? '…' : s.day === 28 && !s.endingSeen ? '…' : '상점으로 →'}</button>` : ''}
       </div>
     </div>`
 }
 
-export const sundayKey = (s) => `sunday|${s.day}|${s.sundayStep ?? 0}|${s.money}`
+export const sundayKey = (s) => `sunday|${s.day}|${s.sundayStep ?? 0}|${s.money}|${s.premiumLeft}`
+
+// ---------- day-28 ending (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §C) ----------
+
+// The old "마라판다" sign as a frame on the wall (CSS-drawn for now; pixel art is a later art task).
+const endingFrameHtml = (paidInFull) => `
+      <span class="ending-frame"><b>마라판다</b>${paidInFull ? '<i class="ending-plate">완납</i>' : ''}</span>`
+
+/**
+ * The part-1 ending: the panda walks into the closed Sunday shop for the first time since the takeover.
+ * Same stage and dialogue box as the Sunday scene; the frame goes up at ENDING_FRAME_STEP.
+ */
+export function endingHtml(s) {
+  const step = s.endingStep ?? 0
+  const line = endingLine(step, s.premiumPaidInFull)
+  const isLast = step >= ENDING_LINE_COUNT - 1
+  const talking = (who) => (line.who === who ? 'talking' : '')
+  const cast = `
+      <span class="cast cast-me ${talking('me')}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>
+      ${step >= 1 ? `<span class="cast cast-panda ${talking('panda')}" style="${castStyle('panda')}">${castSprite('panda')}</span>` : ''}`
+  return `
+    <div class="opening-screen sunday-screen ending-screen" data-action="endingNext">
+      <div class="scene ${SUNDAY_BG}">${step >= ENDING_FRAME_STEP ? endingFrameHtml(s.premiumPaidInFull) : ''}${cast}</div>
+      <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
+        ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
+        <p>${esc(lineText(line.text, s.character.name))}</p>
+        <span class="next-hint">${isLast ? '' : '▶ 클릭 / Space'}</span>
+      </div>
+      <div class="opening-foot">
+        <span></span>
+        ${isLast ? '<button class="bubble-btn" data-action="endingNext">계속 영업하기 →</button>' : ''}
+      </div>
+    </div>`
+}
+
+export const endingKey = (s) => `ending|${s.endingStep ?? 0}|${s.premiumPaidInFull}`
 
 /**
  * The shop closed for missed rent: the same closed Sunday shop behind the closed-down modal, so the run
