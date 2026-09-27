@@ -302,7 +302,7 @@ function whenFree(s, action) {
 /** Opens the shop for the day: fresh day state plus one box of every unlocked ingredient on the shelf. */
 export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
-  const ownerLine = { text: dayStartLine(s.day), who: dayStartSpeaker(s.day), until: DAY_LINE_SEC }
+  const ownerLine = { text: dayStartLine(s.day, s.sideGifts ?? []), who: dayStartSpeaker(s.day), until: DAY_LINE_SEC }
   const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
   const regularsDue = regularVisits(s.day).map((v) => v.who)
   return { ...s, phase: 'day', story: null, rating, ...day, ownerLine, regularsDue, ...openShelf(s.stock, shelfIds(s)) }

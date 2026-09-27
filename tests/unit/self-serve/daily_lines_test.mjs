@@ -4,6 +4,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import { DAILY_LINES, dayStartLine, dayStartSpeaker } from '../../../src/js/self-serve/story.js'
+import { createNewGame, startDay } from '../../../src/js/self-serve/logic.js'
 
 const SUNDAYS = [7, 14, 21, 28]
 const BUBBLE_MAX_CHARS = 32 // two lines of the owner's bubble (owner_line_test.mjs)
@@ -44,4 +45,30 @@ test('test_daily_lines_all_fit_the_two_line_bubble', () => {
   for (let d = 1; d <= 40; d++) {
     assert.ok([...dayStartLine(d)].length <= BUBBLE_MAX_CHARS, `day ${d}: ${dayStartLine(d)}`)
   }
+})
+
+// BUG-001 (production/qa/bugs/BUG-001-side-menu-daily-lines.md): sides are added in the shop (playtest #2), so the
+// day-8/10/12 lines only announce a side that is really on the menu, and otherwise nudge towards the shop.
+test('test_daily_lines_side_days_announce_only_an_added_side', () => {
+  const lines = { 8: 'drink', 10: 'friedrice', 12: 'guobao' }
+  for (const [day, side] of Object.entries(lines).map(([d, s]) => [Number(d), s])) {
+    assert.equal(dayStartLine(day, [side]), DAILY_LINES[day].text, `day ${day} with ${side}`)
+    const without = dayStartLine(day, [])
+    assert.notEqual(without, DAILY_LINES[day].text, `day ${day} without ${side}`)
+    assert.match(without, /상점/, `day ${day} nudges to the shop`)
+    assert.ok([...without].length <= BUBBLE_MAX_CHARS, `day ${day}: ${without}`)
+  }
+})
+
+test('test_daily_lines_without_side_list_keep_the_table_line', () => {
+  assert.equal(dayStartLine(10), DAILY_LINES[10].text)
+  assert.equal(dayStartLine(9, []), DAILY_LINES[9].text, 'days without a side are unchanged')
+})
+
+test('test_daily_lines_start_day_uses_the_sides_actually_added', () => {
+  const plain = startDay({ ...createNewGame(), day: 10 })
+  assert.equal(plain.ownerLine.text, dayStartLine(10, []))
+  assert.doesNotMatch(plain.ownerLine.text, /웍이 생겼다/)
+  const withRice = startDay({ ...createNewGame(), day: 10, sideGifts: ['drink', 'friedrice'] })
+  assert.equal(withRice.ownerLine.text, DAILY_LINES[10].text)
 })

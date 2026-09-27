@@ -116,15 +116,17 @@ const TIPS = [
 // Days 4–27 (story N001): one fixed line per business day, part 1's story told a morning at a time —
 // design/quick-specs/part1-28-days-2026-09-27.md §B. Sundays (7·14·21·28) have no business day; the panda
 // only phones in ("(메시지)") until he visits on day 28. Every line fits the owner's two-line bubble.
+// Days 8/10/12 announce a side menu, which the player adds in the shop (playtest 2026-09-27 #2): `side` names it and
+// `notAdded` is said instead when it is not on the menu that morning (BUG-001).
 export const DAILY_LINES = {
   4: { who: 'me', text: '오늘부터 진짜 혼자다. 배운 대로만 하자!' },
   5: { who: 'me', text: '불금이다! 퇴근 손님 오기 전에 진열대부터.' },
   6: { who: 'me', text: '내일은 첫 일요일. 장부 정리하는 날!' },
-  8: { who: 'me', text: '판다 사장님이 음료 한 박스를 보내 주셨어!' },
+  8: { who: 'me', text: '판다 사장님이 음료 한 박스를 보내 주셨어!', side: 'drink', notAdded: '오늘부터 음료를 팔 수 있대. 상점에서 추가해 볼까?' },
   9: { who: 'me', text: '너구리 손님, 오늘도 오시려나.' },
-  10: { who: 'me', text: '웍이 생겼다! 볶음밥은 알아서 볶아져. 계산만 정확히!' },
+  10: { who: 'me', text: '웍이 생겼다! 볶음밥은 알아서 볶아져. 계산만 정확히!', side: 'friedrice', notAdded: '볶음밥도 팔 수 있대! 상점에서 추가하면 웍이 생겨.' },
   11: { who: 'me', text: '이 골목 사람들 입맛, 조금씩 알 것 같아.' },
-  12: { who: 'me', text: '꿔바로우까지! 이제 진짜 우리 가게 메뉴판이야.' },
+  12: { who: 'me', text: '꿔바로우까지! 이제 진짜 우리 가게 메뉴판이야.', side: 'guobao', notAdded: '꿔바로우도 팔 수 있대. 상점에서 메뉴판 채워 볼까?' },
   13: { who: 'me', text: '토요일 점심은 전쟁이야. 냄비부터 비워 두자.' },
   15: { who: 'me', text: '월요일 러시… 손이 세 개였으면.' },
   16: { who: 'me', text: '어제 마감하고 그대로 잠들었어.' },
@@ -175,10 +177,16 @@ const OWN_LINES = [
   '대출 갚는 날까지, 한 그릇씩!',
 ]
 
-/** One line said at the start of `day`: tips (1–3), the part-1 table (4–27), then OWN_LINES in turn (29+). */
-export const dayStartLine = (day) => {
+/**
+ * One line said at the start of `day`: tips (1–3), the part-1 table (4–27), then OWN_LINES in turn (29+).
+ * @param {number} day
+ * @param {string[]} [sideIds] side menus on the menu that morning; without it a side day keeps its table line
+ * @returns {string}
+ */
+export const dayStartLine = (day, sideIds) => {
   if (day <= TIPS.length) return TIPS[day - 1]
-  if (DAILY_LINES[day]) return DAILY_LINES[day].text
+  const entry = DAILY_LINES[day]
+  if (entry) return entry.side && Array.isArray(sideIds) && !sideIds.includes(entry.side) ? entry.notAdded : entry.text
   return OWN_LINES[(day - TIPS.length - 1) % OWN_LINES.length]
 }
 

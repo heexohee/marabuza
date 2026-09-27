@@ -57,7 +57,7 @@
 
 **Story Type**: Visual/Feel
 **Required evidence**: `production/qa/evidence/sign-swap-opening/` 스크린샷(간판 내림·점등·타이틀) + 기존 세이브에서 한 번만 나오는지 확인
-**Status**: [ ] Not yet created
+**Status**: [x] `production/qa/evidence/sign-swap-opening-evidence.md` + `sign-swap-opening/` (1회성은 1부 회귀 QA C-01–C-03, 2026-09-27) — 리드 사인오프 대기
 
 ---
 
