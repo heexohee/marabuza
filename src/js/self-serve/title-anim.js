@@ -1,7 +1,8 @@
-// Living title background (feedback 2026-09-27): rain falls, the roof neon sign flickers, the clouds sway behind the
+// Living title background (feedback 2026-09-27). The night scene: rain falls, the roof neon sign flickers, the clouds sway behind the
 // buildings and the wet road shimmers. A canvas at the art's own 800×442 px, scaled like the CSS background
 // (object-fit: cover, centred) so it lines up with img/title-bg.png — that still frame stays under it for the first
 // paint and is all that shows with prefers-reduced-motion. Layers: tools/art/title_layers.py. CSS: .title-anim.
+// The fine-weather day scene lives in title-day.js (?title=day while it is reviewed).
 
 /** Art size and the street lines of tools/art/title_bg.py (BASE = building bases, ROAD_Y + 5 = wet road top). */
 export const TITLE_ART = { w: 800, h: 442, base: 340, road: 363 }
@@ -119,8 +120,8 @@ export function shimmerOffset(y, t) {
 /** Sideways sway of the cloud strip at time t, in px. */
 export const cloudOffset = (t) => TITLE_FX.cloudSway * Math.sin((t / TITLE_FX.cloudPeriod) * Math.PI * 2)
 
-function loadImages(doc) {
-  return Promise.all(Object.entries(IMAGES).map(([key, src]) => new Promise((resolve, reject) => {
+function loadImages(doc, images) {
+  return Promise.all(Object.entries(images).map(([key, src]) => new Promise((resolve, reject) => {
     const img = new doc.defaultView.Image()
     img.onload = () => resolve([key, img])
     img.onerror = () => reject(new Error(`title art failed to load: ${src}`))
@@ -178,35 +179,18 @@ function drawRipples(ctx, ripples) {
 }
 
 /**
- * Starts the living title: a canvas behind #app, running only while the title screen shows
- * (html[data-screen="menu"]) and motion is allowed. Falls back to the still CSS background if the art fails.
- * @param {Window} win
- * @param {{rng?: () => number, onError?: (err: Error) => void}} [opts]
- * @returns {{stop: () => void}}
+ * The rainy night scene: rain with splashes and ripples, the roof sign flickering, clouds swaying, the road
+ * shimmering. A scene is { images, update(dt, clock), draw(ctx, art, canvas, clock) } (see title-day.js too).
+ * @param {() => number} rng
  */
-export function mountTitleAnim(win = window, { rng = Math.random, onError = () => {} } = {}) {
-  const doc = win.document
+export function createNightScene(rng) {
   const { w, h, road } = TITLE_ART
-  const canvas = doc.createElement('canvas')
-  canvas.className = 'title-anim'
-  canvas.width = w
-  canvas.height = h
-  canvas.setAttribute('aria-hidden', 'true')
-  doc.body.prepend(canvas)
-  const ctx = canvas.getContext('2d')
-  const motion = win.matchMedia?.('(prefers-reduced-motion: reduce)')
-
-  let art = null
-  let frame = 0
-  let last = 0
-  let clock = 0
   let drops = Array.from({ length: TITLE_FX.drops }, () => spawnDrop(rng, true))
   let splashes = []
   let ripples = []
   let signs = Object.fromEntries(Object.keys(NEON_BOXES).map((name) => [name, createSign(rng, name, 0)]))
 
   function update(dt) {
-    clock += dt
     const landed = []
     drops = drops.map((d) => {
       const step = stepDrop(d, dt)
@@ -220,7 +204,7 @@ export function mountTitleAnim(win = window, { rng = Math.random, onError = () =
     ripples = [...age(ripples, TITLE_FX.rippleSec), ...fresh(true)]
   }
 
-  function drawNeon() {
+  function drawNeon(ctx, art, clock) {
     for (const [name, box] of Object.entries(NEON_BOXES)) {
       const { sign, level } = signAt(signs[name], clock, rng)
       signs = { ...signs, [name]: sign }
@@ -231,13 +215,13 @@ export function mountTitleAnim(win = window, { rng = Math.random, onError = () =
     }
   }
 
-  function draw() {
+  function draw(ctx, art, canvas, clock) {
     ctx.drawImage(art.sky, 0, 0)
     const cx = Math.round(cloudOffset(clock))
     ctx.drawImage(art.clouds, cx, TITLE_FX.cloudY)
     ctx.drawImage(art.clouds, cx + (cx > 0 ? -w : w), TITLE_FX.cloudY) // the strip tiles; fill the gap it leaves
     ctx.drawImage(art.fg, 0, 0)
-    drawNeon()
+    drawNeon(ctx, art, clock)
     for (let y = road; y < h; y++) {
       const dx = shimmerOffset(y, clock)
       if (dx) ctx.drawImage(canvas, 0, y, w, 1, dx, y, w, 1)
@@ -248,11 +232,51 @@ export function mountTitleAnim(win = window, { rng = Math.random, onError = () =
     drawRain(ctx, drops, 'near')
   }
 
+  return { images: IMAGES, update, draw }
+}
+
+/**
+ * Which title scene to show: 'day' with ?title=day in the page address (a preview while the day title is
+ * reviewed, feedback 2026-09-28), otherwise the rainy 'night'.
+ * @param {string} search location.search
+ * @returns {'day' | 'night'}
+ */
+export const titleSceneName = (search) => (new URLSearchParams(search).get('title') === 'day' ? 'day' : 'night')
+
+/**
+ * Starts the living title: a canvas behind #app, running only while the title screen shows
+ * (html[data-screen="menu"]) and motion is allowed. Falls back to the still CSS background if the art fails.
+ * html[data-title-scene] tells the CSS which still to show under it.
+ * @param {Window} win
+ * @param {{rng?: () => number, onError?: (err: Error) => void, scenes?: Record<string, (rng: () => number) => object>}} [opts]
+ * @returns {{stop: () => void}}
+ */
+export function mountTitleAnim(win = window, { rng = Math.random, onError = () => {}, scenes = { night: createNightScene } } = {}) {
+  const doc = win.document
+  const { w, h } = TITLE_ART
+  const name = titleSceneName(win.location?.search ?? '')
+  const scene = (scenes[name] ?? createNightScene)(rng)
+  doc.documentElement.dataset.titleScene = scenes[name] ? name : 'night'
+  const canvas = doc.createElement('canvas')
+  canvas.className = 'title-anim'
+  canvas.width = w
+  canvas.height = h
+  canvas.setAttribute('aria-hidden', 'true')
+  doc.body.prepend(canvas)
+  const ctx = canvas.getContext('2d')
+  const motion = win.matchMedia?.('(prefers-reduced-motion: reduce)')
+
+  let art = null
+  let frame = 0
+  let last = 0
+  let clock = 0
+
   function loop(now) {
     const dt = last ? Math.min(MAX_DT, (now - last) / 1000) : 0
     last = now
-    update(dt)
-    draw()
+    clock += dt
+    scene.update(dt, clock)
+    scene.draw(ctx, art, canvas, clock)
     frame = win.requestAnimationFrame(loop)
   }
 
@@ -272,7 +296,7 @@ export function mountTitleAnim(win = window, { rng = Math.random, onError = () =
   const observer = new win.MutationObserver(sync)
   observer.observe(doc.documentElement, { attributes: true, attributeFilter: ['data-screen'] })
   motion?.addEventListener?.('change', sync)
-  loadImages(doc).then((images) => {
+  loadImages(doc, scene.images).then((images) => {
     art = images
     sync()
   }).catch(onError)

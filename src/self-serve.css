@@ -767,6 +767,10 @@ html, body { overflow: hidden; }
 html[data-screen="menu"], html[data-screen="menu"] body {
   background: #0a0a1e url("img/title-bg.png?v=1") center / cover no-repeat; image-rendering: pixelated;
 }
+/* the fine-weather day title (?title=day, src/js/self-serve/title-day.js): its own still under the canvas */
+html[data-screen="menu"][data-title-scene="day"], html[data-screen="menu"][data-title-scene="day"] body {
+  background: #7ec4f0 url("img/title-bg-day.png?v=1") center / cover no-repeat;
+}
 #app[data-screen="menu"] { background: transparent; }
 /* the living title (src/js/self-serve/title-anim.js): the art-sized canvas scaled exactly like the background above */
 .title-anim {
