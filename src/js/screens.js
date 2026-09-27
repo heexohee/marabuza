@@ -4,6 +4,28 @@ import { demandFactor, upgradeCost } from './logic.js'
 import { spriteImg } from './sprites.js'
 import { stars, won } from './ui.js'
 
+const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+/** Escapes text from outside the game (e.g. a Kakao nickname) before it goes into innerHTML. */
+export const escapeHtml = (text) => String(text).replace(/[&<>"']/g, (ch) => HTML_ESCAPES[ch])
+
+/** Kakao login / cloud-sync status box on the title screen; empty when cloud saves are not configured. */
+function accountHtml(cloud) {
+  if (!cloud?.enabled) return ''
+  const message = cloud.message ? `<p class="cloud-msg">${escapeHtml(cloud.message)}</p>` : ''
+  if (!cloud.signedIn) {
+    return `
+      <div class="account">
+        <button class="kakao-btn" data-action="login"><span class="kakao-mark" aria-hidden="true"></span>카카오 로그인</button>
+        <p class="cloud-hint">로그인하면 다른 기기에서도 이어할 수 있어요</p>${message}
+      </div>`
+  }
+  return `
+    <div class="account signed-in">
+      <span>☁️ <b>${escapeHtml(cloud.name)}</b>님 · 자동 저장 중</span>
+      <button class="btn ghost small" data-action="logout">로그아웃</button>${message}
+    </div>`
+}
+
 /** Title screen. */
 export function menuHtml(view) {
   const parade = CUSTOMER_FACES.slice(0, 8).map((f, i) =>
@@ -19,6 +41,7 @@ export function menuHtml(view) {
         <button class="bubble-btn alt" data-action="continue" ${view.hasSave ? '' : 'disabled'}>이어하기</button>
         <button class="bubble-btn alt2" data-action="help">게임방법</button>
       </div>
+      ${accountHtml(view.cloud)}
     </div>`
 }
 

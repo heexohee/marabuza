@@ -1,3 +1,5 @@
+// LEGACY flow (owner-scoop) rules. Kept green: it also covers shared checkout functions in
+// src/js/logic.js that the self-serve flow imports. See docs/flows.md.
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {

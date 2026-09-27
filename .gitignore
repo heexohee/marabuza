@@ -162,3 +162,6 @@ $RECYCLE.BIN/
 *.msm
 *.msp
 *.lnk
+
+# Supabase project URL + key for cloud saves (copy src/js/cloud-config.example.js)
+src/js/cloud-config.js

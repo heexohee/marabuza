@@ -274,7 +274,7 @@ export function render(root, s, view) {
     root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}`, () => menuHtml(view) + (view.help ? helpHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${JSON.stringify(view.cloud)}`, () => menuHtml(view) + (view.help ? helpHtml() : ''))
   }
   if (screen === 'shop') {
     const key = `shop|${s.money}|${s.pricePer100g}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.toasts.map((t) => t.id)}`
