@@ -72,7 +72,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 ### Testing
 - [x] 자동 테스트 321개 통과
 - [ ] 1부 전체 회귀 QA (`/team-qa`) — 마지막 QA 2026-09-25는 레거시 흐름 대상
-- [ ] 스모크 체크 보고서 (`/smoke-check`) — 아직 없음
+- [x] 스모크 체크 보고서 — `production/qa/smoke-2026-09-27.md` PASS (출시 빌드 dist/, 374 테스트)
 - [ ] S1·S2 버그 0 — `[?]` 버그 트래커 없음(`production/qa/bugs/` 비어 있음)
 - [ ] 저장소 가득 참·강제 종료 후 저장 복구 확인
 
