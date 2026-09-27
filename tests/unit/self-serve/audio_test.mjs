@@ -58,8 +58,8 @@ test('test_jingle_plays_on_day_end_and_closing_only', () => {
 test('test_prefs_sanitize_bad_values_to_defaults_and_clamp_volume', () => {
   assert.deepEqual(sanitizeAudioPrefs(null), DEFAULT_AUDIO_PREFS)
   assert.deepEqual(sanitizeAudioPrefs({ muted: 'yes', volume: 'loud' }), DEFAULT_AUDIO_PREFS)
-  assert.deepEqual(sanitizeAudioPrefs({ muted: true, volume: 3 }), { muted: true, volume: 1 })
-  assert.deepEqual(sanitizeAudioPrefs({ muted: false, volume: -1 }), { muted: false, volume: 0 })
+  assert.deepEqual(sanitizeAudioPrefs({ muted: true, volume: 3 }), { muted: true, sfxMuted: false, volume: 1 })
+  assert.deepEqual(sanitizeAudioPrefs({ muted: false, sfxMuted: true, volume: -1 }), { muted: false, sfxMuted: true, volume: 0 })
 })
 
 test('test_volume_steps_clamp_and_turning_up_unmutes', () => {
@@ -73,8 +73,8 @@ test('test_volume_steps_clamp_and_turning_up_unmutes', () => {
 
 test('test_prefs_round_trip_through_storage_and_survive_broken_storage', () => {
   const storage = fakeStorage()
-  assert.equal(saveAudioPrefs(storage, { muted: true, volume: 0.3 }), true)
-  assert.deepEqual(loadAudioPrefs(storage), { muted: true, volume: 0.3 })
+  assert.equal(saveAudioPrefs(storage, { muted: true, sfxMuted: true, volume: 0.3 }), true)
+  assert.deepEqual(loadAudioPrefs(storage), { muted: true, sfxMuted: true, volume: 0.3 })
   assert.deepEqual(loadAudioPrefs(fakeStorage({ 'maratang.audio.v1': '{not json' })), DEFAULT_AUDIO_PREFS)
   assert.deepEqual(loadAudioPrefs(undefined), DEFAULT_AUDIO_PREFS)
   const throwing = { getItem() { throw new Error('blocked') }, setItem() { throw new Error('blocked') } }
@@ -83,13 +83,16 @@ test('test_prefs_round_trip_through_storage_and_survive_broken_storage', () => {
 })
 
 test('test_music_controls_show_state_and_disable_volume_at_the_ends', () => {
-  const on = musicControlsHtml({ muted: false, volume: 1 })
+  const on = musicControlsHtml({ muted: false, sfxMuted: false, volume: 1 })
   assert.match(on, /배경음악 켜짐/)
-  assert.match(on, /100%/)
+  assert.match(on, /효과음 켜짐/)
+  assert.match(on, /볼륨 100%/)
   assert.match(on, /data-arg="1"[^>]*disabled/)
-  const off = musicControlsHtml({ muted: true, volume: 0 })
+  const off = musicControlsHtml({ muted: true, sfxMuted: true, volume: 0 })
   assert.match(off, /배경음악 꺼짐/)
-  assert.match(off, /음소거/)
+  assert.match(off, /효과음 꺼짐/)
+  assert.match(off, /볼륨 0%/) // the level always reads as a volume, never "음소거"
+  assert.doesNotMatch(off, /음소거/)
   assert.match(off, /data-arg="-1"[^>]*disabled/)
   assert.match(settingsHtml({ muted: false, volume: 0.7 }), /music-controls/)
 })

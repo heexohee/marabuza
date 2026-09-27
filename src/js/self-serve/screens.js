@@ -45,17 +45,18 @@ export function menuHtml(view) {
 }
 
 /**
- * Music on/off and volume − / + — shared by the title settings and the pause menu.
- * @param {{muted: boolean, volume: number}} audio
+ * Music on/off, click sounds on/off and volume − / + — shared by the title settings and the pause menu.
+ * @param {{muted: boolean, sfxMuted: boolean, volume: number}} audio
  */
 export function musicControlsHtml(audio) {
   const level = `${Math.round(audio.volume * 100)}%`
   return `
     <div class="music-controls" role="group" aria-label="배경음악">
       <button class="btn big music-toggle" data-action="musicToggle" aria-pressed="${!audio.muted}">배경음악 ${audio.muted ? '꺼짐' : '켜짐'} <kbd>M</kbd></button>
+      <button class="btn big music-toggle" data-action="sfxToggle" aria-pressed="${!audio.sfxMuted}">효과음 ${audio.sfxMuted ? '꺼짐' : '켜짐'}</button>
       <div class="music-volume">
         <button class="btn music-vol" data-action="musicVol" data-arg="-1" aria-label="음량 줄이기" ${audio.volume <= 0 ? 'disabled' : ''}>−</button>
-        <span class="music-level" aria-live="polite">${audio.muted ? '음소거' : level}</span>
+        <span class="music-level" aria-live="polite">볼륨 ${level}</span>
         <button class="btn music-vol" data-action="musicVol" data-arg="1" aria-label="음량 키우기" ${audio.volume >= 1 ? 'disabled' : ''}>+</button>
       </div>
     </div>`

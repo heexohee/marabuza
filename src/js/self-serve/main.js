@@ -10,7 +10,8 @@ import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
-import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted } from './audio.js'
+import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
+import { sfxForAction } from './sfx.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
@@ -110,13 +111,20 @@ function run(action, arg) {
   }
   if (action === 'musicToggle') return setAudioPrefs(toggleMuted(view.audio))
   if (action === 'musicVol') return setAudioPrefs(changeVolume(view.audio, Number(arg) * VOLUME_STEP))
+  if (action === 'sfxToggle') {
+    setAudioPrefs(toggleSfxMuted(view.audio))
+    return audio.playSfx('tap') // a sample when turning sounds on (silent when turning them off)
+  }
   if (viewActions[action]) {
     view = viewActions[action](view, arg)
     return
   }
   if (!gameActions[action]) return
   const isBlocked = state.phase === 'day' && (view.paused || view.help)
-  if (!isBlocked) state = gameActions[action](state, arg)
+  if (isBlocked) return
+  const prev = state
+  state = gameActions[action](state, arg)
+  audio.playSfx(sfxForAction(action, prev, state))
 }
 
 root.addEventListener('click', (e) => {

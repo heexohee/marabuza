@@ -741,4 +741,7 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .music-controls .music-toggle { white-space: nowrap; }
 .music-volume { display: flex; align-items: center; justify-content: center; gap: 10px; }
 .music-volume .music-vol { width: 44px; padding: 6px 0; font-size: 18px; }
-.music-volume .music-level { min-width: 64px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }
+.music-volume .music-level { min-width: 96px; text-align: center; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
+/* the smaller lines under the big buttons read too faint at the fitted scale */
+.modal.settings .variant-link { font-size: 15px; font-weight: 700; }
+.modal.settings .btn.ghost { font-size: 17px; font-weight: 700; }

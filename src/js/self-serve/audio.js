@@ -1,6 +1,7 @@
 // Background music and jingles for the self-serve variant: which track plays in which phase,
 // the player's volume prefs, and a Web Audio player that loops the BGM sample-accurately.
-// Tracks are rendered by tools/audio/bgm_demo.py and copied into src/audio/.
+// Tracks are rendered by tools/audio/bgm_demo.py and copied into src/audio/; click sounds come from sfx.js.
+import { SFX_RECIPES, scheduleSfx } from './sfx.js'
 
 /** Every audio file the game can play, by key. */
 export const AUDIO_TRACKS = {
@@ -23,7 +24,8 @@ export const PHASE_MUSIC = {
 /** Mix and timing knobs. Gains are on top of the player's volume. */
 export const AUDIO_TUNING = { fadeSec: 0.8, musicGain: 0.55, jingleGain: 0.75, afterJingleSec: 0.4 }
 
-export const DEFAULT_AUDIO_PREFS = { muted: false, volume: 0.7 }
+/** `muted` = music off, `sfxMuted` = click sounds off; `volume` scales both. */
+export const DEFAULT_AUDIO_PREFS = { muted: false, sfxMuted: false, volume: 0.7 }
 export const VOLUME_STEP = 0.1
 const PREFS_KEY = 'maratang.audio.v1'
 
@@ -43,23 +45,30 @@ export function jingleForTransition(from, to) {
 
 const clampVolume = (v) => Math.round(Math.max(0, Math.min(1, v)) * 10) / 10
 
-/** Coerces anything read from storage into valid prefs. @returns {{muted: boolean, volume: number}} */
+/** Coerces anything read from storage into valid prefs. @returns {{muted: boolean, sfxMuted: boolean, volume: number}} */
 export function sanitizeAudioPrefs(raw) {
   const volume = Number(raw?.volume)
   return {
     muted: raw?.muted === true,
+    sfxMuted: raw?.sfxMuted === true,
     volume: raw?.volume != null && Number.isFinite(volume) ? clampVolume(volume) : DEFAULT_AUDIO_PREFS.volume,
   }
 }
 
-/** @returns {{muted: boolean, volume: number}} */
 export const toggleMuted = (prefs) => ({ ...prefs, muted: !prefs.muted })
+export const toggleSfxMuted = (prefs) => ({ ...prefs, sfxMuted: !prefs.sfxMuted })
 
-/** Volume change by `delta`; turning it up also unmutes. */
-export const changeVolume = (prefs, delta) => ({ muted: delta > 0 ? false : prefs.muted, volume: clampVolume(prefs.volume + delta) })
+/** Volume change by `delta`; turning it up also unmutes the music. */
+export const changeVolume = (prefs, delta) => ({ ...prefs, muted: delta > 0 ? false : prefs.muted, volume: clampVolume(prefs.volume + delta) })
 
-/** Effective master gain: 0 when muted. */
+/** Effective music gain: 0 when the music is off. */
 export const masterGain = (prefs) => (prefs.muted ? 0 : prefs.volume)
+
+/** Effective click-sound gain: 0 when sounds are off. */
+export const sfxGain = (prefs) => (prefs.sfxMuted ? 0 : prefs.volume)
+
+/** Two same sounds closer than this merge into one (fast repeated clicks). */
+const SFX_MIN_GAP_SEC = 0.04
 
 /** @param {Storage|undefined} storage */
 export function loadAudioPrefs(storage) {
@@ -88,7 +97,9 @@ export function saveAudioPrefs(storage, prefs) {
  */
 export function createAudioPlayer({ AudioContextClass, fetchFn, onError }) {
   let ctx = null
-  let master = null
+  let master = null // music bus
+  let sfxBus = null
+  const lastSfxAt = new Map()
   let prefs = { ...DEFAULT_AUDIO_PREFS }
   let phase = null
   let music = null // { key, source, gain }
@@ -182,6 +193,9 @@ export function createAudioPlayer({ AudioContextClass, fetchFn, onError }) {
         master = ctx.createGain()
         master.gain.value = masterGain(prefs)
         master.connect(ctx.destination)
+        sfxBus = ctx.createGain()
+        sfxBus.gain.value = sfxGain(prefs)
+        sfxBus.connect(ctx.destination)
         apply(null, phase)
       }
       if (ctx.state === 'suspended') ctx.resume().catch(report)
@@ -193,10 +207,20 @@ export function createAudioPlayer({ AudioContextClass, fetchFn, onError }) {
       phase = next
       apply(from, next)
     },
-    /** @param {{muted: boolean, volume: number}} next */
+    /** @param {{muted: boolean, sfxMuted: boolean, volume: number}} next */
     setPrefs(next) {
       prefs = next
-      if (master) master.gain.setTargetAtTime(masterGain(prefs), ctx.currentTime, 0.05)
+      if (!master) return
+      master.gain.setTargetAtTime(masterGain(prefs), ctx.currentTime, 0.05)
+      sfxBus.gain.setTargetAtTime(sfxGain(prefs), ctx.currentTime, 0.05)
+    },
+    /** Plays a click sound (key into SFX_RECIPES); no-op before unlock, when off, or for `null`. */
+    playSfx(key) {
+      if (!ctx || !key || prefs.sfxMuted || !SFX_RECIPES[key]) return
+      const now = ctx.currentTime
+      if (now - (lastSfxAt.get(key) ?? -1) < SFX_MIN_GAP_SEC) return
+      lastSfxAt.set(key, now)
+      scheduleSfx(ctx, sfxBus, SFX_RECIPES[key])
     },
   }
 }

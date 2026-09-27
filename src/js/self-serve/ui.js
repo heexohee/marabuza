@@ -387,7 +387,7 @@ function updateBars(root, s) {
 
 // ---------- entry ----------
 
-const audioKey = (view) => `${view.audio.muted}|${view.audio.volume}`
+const audioKey = (view) => `${view.audio.muted}|${view.audio.sfxMuted}|${view.audio.volume}`
 
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
