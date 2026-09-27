@@ -7,7 +7,7 @@ import {
 } from '../../../src/js/self-serve/audio.js'
 import { musicControlsHtml, settingsHtml } from '../../../src/js/self-serve/screens.js'
 
-const GAME_PHASES = ['menu', 'create', 'opening', 'day', 'summary', 'shop', 'sunday', 'closed']
+const GAME_PHASES = ['menu', 'create', 'opening', 'day', 'summary', 'shop', 'sunday', 'ending', 'closed']
 
 function fakeStorage(initial = {}) {
   const data = { ...initial }
@@ -50,6 +50,8 @@ test('test_jingle_plays_on_day_end_and_closing_only', () => {
   assert.equal(jingleForTransition('day', 'summary'), 'dayEnd')
   assert.equal(jingleForTransition('day', 'closed'), 'closed')
   assert.equal(jingleForTransition('sunday', 'closed'), 'closed')
+  assert.equal(jingleForTransition('sunday', 'ending'), 'ending') // day 28's ledger → part-1 ending
+  assert.equal(jingleForTransition('ending', 'shop'), null)
   assert.equal(jingleForTransition('shop', 'day'), null)
   assert.equal(jingleForTransition('menu', 'menu'), null)
   assert.equal(jingleForTransition(null, 'menu'), null)
@@ -122,6 +124,19 @@ test('test_player_plays_the_day_end_jingle_then_the_shop_loop', async () => {
     [AUDIO_TRACKS.business, true], [AUDIO_TRACKS.dayEnd, false], [AUDIO_TRACKS.shop, true],
   ])
   assert.equal(started[0].stopped, true)
+})
+
+test('test_player_ending_plays_the_part1_jingle_then_the_title_theme', async () => {
+  const { FakeContext, fetchFn, started } = fakeAudio()
+  const player = createAudioPlayer({ AudioContextClass: FakeContext, fetchFn, onError: assert.fail })
+  player.unlock()
+  player.setPhase('sunday')
+  await settle()
+  player.setPhase('ending')
+  await settle(500) // jingle (0.01 s fake) + AUDIO_TUNING.afterJingleSec
+  assert.deepEqual(started.map((s) => [s.buffer.url, s.loop]), [
+    [AUDIO_TRACKS.shop, true], [AUDIO_TRACKS.ending, false], [AUDIO_TRACKS.title, true],
+  ])
 })
 
 test('test_player_same_track_across_phases_keeps_playing', async () => {

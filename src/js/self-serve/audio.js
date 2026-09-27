@@ -10,7 +10,7 @@ export const AUDIO_TRACKS = {
   shop: 'audio/bgm-shop.m4a',
   dayEnd: 'audio/jingle-day-end.m4a',
   closed: 'audio/jingle-closed.m4a',
-  ending: 'audio/jingle-ending.m4a', // 1부 엔딩 — wired when the ending scene exists
+  ending: 'audio/jingle-ending.m4a', // 1부 엔딩 — plays as the day-28 ending scene opens
 }
 
 /** Loop to play in each game phase; `null` = silence (a jingle may still play on entry). */
@@ -18,6 +18,7 @@ export const PHASE_MUSIC = {
   menu: 'title', create: 'title', opening: 'title',
   day: 'business',
   summary: 'shop', shop: 'shop', sunday: 'shop',
+  ending: 'title', // after the part-1 jingle, the title theme carries the ending (same hook)
   closed: null,
 }
 
@@ -39,6 +40,7 @@ export const musicForPhase = (phase) => PHASE_MUSIC[phase] ?? null
 export function jingleForTransition(from, to) {
   if (from === to) return null
   if (to === 'closed') return 'closed'
+  if (to === 'ending') return 'ending'
   if (from === 'day' && to === 'summary') return 'dayEnd'
   return null
 }
