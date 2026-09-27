@@ -1,0 +1,43 @@
+{
+  "name": "marabuza",
+  "productName": "Marabuza",
+  "version": "0.1.0",
+  "description": "마라부자 — 퇴사하고 마라탕집 사장님",
+  "private": true,
+  "type": "module",
+  "main": "desktop/main.cjs",
+  "scripts": {
+    "test": "node --test 'tests/**/*.mjs'",
+    "release": "node tools/release/release.mjs",
+    "desktop": "node tools/release/release.mjs && electron .",
+    "desktop:pack": "node tools/release/release.mjs && electron-builder --dir",
+    "desktop:dist": "node tools/release/release.mjs && electron-builder --mac --win"
+  },
+  "build": {
+    "appId": "com.marabuza.game",
+    "productName": "Marabuza",
+    "directories": {
+      "output": "out/desktop"
+    },
+    "files": [
+      "desktop/**",
+      "dist/**",
+      "package.json"
+    ],
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.simulation-games"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^44.4.5",
+    "electron-builder": "^26.15.3"
+  }
+}

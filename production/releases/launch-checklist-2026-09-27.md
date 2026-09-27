@@ -14,9 +14,9 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Build Health
 - [x] 유닛·통합 테스트 전부 통과 — `node --test` 338/338 (2026-09-27 갱신)
-- [ ] **데스크톱 앱 포장** (Electron 또는 Tauri) — 지금은 브라우저 게임. 스팀 배포 불가 ⛔
+- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 윈도우 빌드 확인, 아이콘, 코드 서명
 - [ ] 포장된 빌드가 윈도우 · macOS(선택) · 스팀 덱(선택)에서 깨끗하게 실행
-- [ ] 빌드 크기 확인 (포장 후 측정) — `[?]` 포장 전이라 측정 불가
+- [x] 빌드 크기 확인 — 맥 arm64 앱 294MB (대부분 Electron 런타임, 게임 app.asar 2.9MB). 윈도우는 빌드 후 측정
 - [ ] 빌드 버전 표기와 git 태그 — 타이틀에 "v0.1" 표기만 있음
 - [ ] 장시간 플레이(28일 + 2부 루프) 메모리·프레임 확인 — `[?]` 측정한 적 없음
 
