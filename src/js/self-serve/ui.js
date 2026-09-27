@@ -6,7 +6,7 @@ import {
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
-import { queueFaceImg } from './animal-faces.js'
+import { queueFaceImg, seatedCustomerHtml } from './animal-faces.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
@@ -103,9 +103,9 @@ const GAME_SKELETON = `
 
 // ---------- hall: tables ----------
 
-// Side-view table on the shop floor: chair, customer seated behind the table top, number stand on the table.
+// Front-facing furniture; the tabletop conceals the customer's lower torso.
 // Spots come from tableSpots (art px); CSS multiplies by one art px (--apx) so they scale with the stage.
-const TABLE_FURNITURE = '<i class="chair"></i><i class="table-top"></i><i class="table-leg"></i>'
+const TABLE_FURNITURE = '<i class="chair"></i><i class="table-top"></i>'
 
 function tablesHtml(s) {
   const isHolding = s.heldPot !== null
@@ -120,13 +120,13 @@ function tablesHtml(s) {
         <div class="patience"><div class="patience-fill" data-bar="table-${t.ticketNo}"></div></div>
         <div class="ticket-badge">🎫${t.ticketNo}</div>
         ${TABLE_FURNITURE}
-        <div class="animal">${spriteImg(t.face, 20, 'animal-img')}</div>
+        ${seatedCustomerHtml(t.face)}
         ${plate}
       </button>`
   }).join('')
 }
 
-const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(',')}|${s.heldPot !== null}`
+const tablesKey = (s) => `${s.tables.map((t) => (t ? `${t.ticketNo}:${t.face}` : '-')).join(',')}|${s.heldPot !== null}`
 
 // ---------- kitchen: ticket rail + pots ----------
 
@@ -134,7 +134,7 @@ const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(','
 const spiceTag = (level) => (level === 0 ? '순한' : `${spriteImg('🌶️', 10, 'chili')}${level}`)
 
 // The rail holds at most one ticket per table (paid customers are seated), and tables top out
-// at 5, so the rail is laid out as 5 fixed slots and never needs to scroll.
+// at 4. The rail has spare room and never needs to scroll.
 function railHtml(s) {
   const tickets = s.rail.map((o) => `
     <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기 · ${MODE_LABEL[o.mode]} ${o.spice}단계">

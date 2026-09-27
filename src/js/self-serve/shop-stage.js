@@ -19,7 +19,7 @@ const round2 = (v) => Math.round(v * 100) / 100
 
 /**
  * Where each table stands: the dining span split into equal cells, one table centred in each.
- * @param {number} count tables in the shop (2–5 with upgrades)
+ * @param {number} count tables in the shop (2–4 with upgrades)
  * @returns {{ x: number, w: number }[]} per table: left edge and width of its cell, art px
  */
 export function tableSpots(count) {
