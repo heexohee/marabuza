@@ -38,6 +38,8 @@ PLASTER, PLASTER_DARK = (70, 58, 92), (56, 46, 76)
 PINK, PINK_MID, PINK_DEEP, PINK_PALE = (240, 128, 170), (214, 96, 142), (150, 54, 96), (255, 196, 216)
 CREAM = (255, 240, 244)
 NEON, NEON_HALO = (255, 238, 248), (255, 100, 170)
+TUBE_OFF = (128, 72, 100)  # an unlit neon tube (the animated title's flicker frame, tools/art/title_layers.py)
+NEON_LIT = True  # False = both signs switched off; set per build
 LIGHT = (255, 150, 200)  # her shop's pink light
 LIT_WARM, LIT_BLUE = (244, 212, 140), (140, 190, 224)  # the neighbours (scene_office.py)
 LAMP = (255, 214, 140)  # sodium street lamp
@@ -66,7 +68,7 @@ def pool(cx, cy, rx, ry, c, strength):
 
 # ---------- sky and city ----------
 
-def sky():
+def sky(clouds=True):
     for y in range(H):
         t = y / BASE
         for x in range(W):
@@ -81,6 +83,8 @@ def sky():
         if rng.random() < 0.12:  # a few twinkles with a cross
             for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
                 glow(x + dx, y + dy, (230, 230, 255), 0.35)
+    if not clouds:  # the animated title draws its own drifting clouds (tools/art/title_layers.py)
+        return
     for cx, cy, w in ((120, 70, 90), (470, 50, 120), (330, 120, 70)):  # thin clouds lit pink from the city
         for y in range(cy - 3, cy + 4):
             for x in range(cx - w // 2, cx + w // 2):
@@ -226,7 +230,8 @@ def pink_lantern(cx, top):
 
 
 def neon_sign(x0, y0, x1, y1):
-    for y in range(y0 - 10, y1 + 10):
+    neon = NEON if NEON_LIT else TUBE_OFF
+    for y in range(y0 - 10, y1 + 10 if NEON_LIT else y0 - 10):
         for x in range(x0 - 14, x1 + 14):
             dx = max(x0 - x, 0, x - x1)
             dy = max(y0 - y, 0, y - y1)
@@ -240,7 +245,8 @@ def neon_sign(x0, y0, x1, y1):
         for x in range(x0, x1):
             if (x + y * 2) % 7 == 0:
                 glow(x, y, (110, 40, 80), 0.5)
-    for inset, c in ((2, NEON_HALO), (4, (255, 170, 210))):  # double neon tube border
+    tubes = ((2, NEON_HALO), (4, (255, 170, 210))) if NEON_LIT else ((2, TUBE_OFF), (4, mix(TUBE_OFF, INK, 0.2)))
+    for inset, c in tubes:  # double neon tube border
         rect(x0 + inset, y0 + inset, x1 - inset, y0 + inset + 1, c)
         rect(x0 + inset, y1 - inset - 1, x1 - inset, y1 - inset, c)
         rect(x0 + inset, y0 + inset, x0 + inset + 1, y1 - inset, c)
@@ -248,17 +254,17 @@ def neon_sign(x0, y0, x1, y1):
     for bx in (x0 + 18, x1 - 20):  # a steaming neon bowl at each end
         by = (y0 + y1) // 2 + 3
         for x in range(bx - 8, bx + 9):
-            put(x, by - 1, NEON)
+            put(x, by - 1, neon)
         for x in range(bx - 7, bx + 8):
             if abs(x - bx) > 5:
-                put(x, by + 3, NEON)
+                put(x, by + 3, neon)
         for x in range(bx - 6, bx + 7):
-            put(x, by + 6, NEON)
-        rect(bx - 3, by + 7, bx + 4, by + 8, NEON)
+            put(x, by + 6, neon)
+        rect(bx - 3, by + 7, bx + 4, by + 8, neon)
         for i, sx in enumerate((bx - 4, bx, bx + 4)):
             for k in range(3):
-                put(sx + (k + i) % 2, by - 4 - k * 2, NEON)
-    cv.sign_text(SUBTITLE, (x0 + x1) // 2, (y0 + y1) // 2, NEON, NEON_HALO, size=16)
+                put(sx + (k + i) % 2, by - 4 - k * 2, neon)
+    cv.sign_text(SUBTITLE, (x0 + x1) // 2, (y0 + y1) // 2, neon, NEON_HALO if NEON_LIT else None, size=16)
 
 
 def awning(x0, x1, y):
@@ -445,6 +451,8 @@ def roof_sign(cx, roof_y):
     """The title's "마라부자" board on posts on her roof — the same board as the in-game shop sign
     (tools/art/scene_shop.py RENAMED_SIGN colours), so the logo is part of the street, not pasted on top."""
     edge, bg, text, halo = (255, 127, 160), (122, 58, 84), (255, 240, 246), (255, 120, 170)
+    if not NEON_LIT:
+        edge, text, halo = mix(edge, bg, 0.55), mix(TUBE_OFF, bg, 0.2), None
     w, h = 236, 58
     x0, x1, y1 = cx - w // 2, cx + w // 2, roof_y - 16
     y0 = y1 - h
@@ -452,7 +460,7 @@ def roof_sign(cx, roof_y):
         rect(px_, y1, px_ + 4, roof_y - 10, (70, 60, 86))
         rect(px_ - 2, roof_y - 12, px_ + 6, roof_y - 10, (90, 80, 108))
     rect(x0 + 34, y1 + 10, x1 - 32, y1 + 12, (70, 60, 86))  # cross brace
-    for y in range(y0 - 18, y1 + 18):  # neon halo
+    for y in range(y0 - 18, y1 + 18 if halo else y0 - 18):  # neon halo
         for x in range(x0 - 22, x1 + 22):
             dx, dy = max(x0 - x, 0, x - x1), max(y0 - y, 0, y - y1)
             d = (dx * dx + dy * dy) ** 0.5
@@ -465,11 +473,13 @@ def roof_sign(cx, roof_y):
         for x in range(x0, x1):
             if (x + y * 2) % 9 == 0:
                 glow(x, y, (150, 70, 104), 0.35)
-    rect(x0 + 3, y0 + 3, x1 - 3, y0 + 4, (255, 170, 205))  # inner neon line
-    rect(x0 + 3, y1 - 4, x1 - 3, y1 - 3, (255, 170, 205))
+    line = (255, 170, 205) if halo else mix(TUBE_OFF, bg, 0.3)
+    rect(x0 + 3, y0 + 3, x1 - 3, y0 + 4, line)  # inner neon line
+    rect(x0 + 3, y1 - 4, x1 - 3, y1 - 3, line)
     cv.sign_text('마라부자', cx, (y0 + y1) // 2, text, halo, size=40)
     cv.sign_text('마라부자', cx + 1, (y0 + y1) // 2, text, None, size=40)  # 1px faux-bold, like a thick neon tube
-    pool(cx, y1 + 4, w * 0.6, 16, halo, 0.25)  # light on the roof
+    if halo:
+        pool(cx, y1 + 4, w * 0.6, 16, halo, 0.25)  # light on the roof
 
 
 # ---------- street ----------
@@ -541,13 +551,14 @@ LAYOUTS = {
 }
 
 
-def build(layout):
-    global LAYOUT, SHOP_X, rng, cv, px, put, glow, rect
-    LAYOUT, rng, cv = layout, random.Random(SEED), Canvas(W, H)
+def build(layout, clouds=True, with_rain=True, neon_lit=True):
+    """The whole background. The flags drop the parts the animated title draws live (tools/art/title_layers.py)."""
+    global LAYOUT, SHOP_X, NEON_LIT, rng, cv, px, put, glow, rect
+    LAYOUT, NEON_LIT, rng, cv = layout, neon_lit, random.Random(SEED), Canvas(W, H)
     px, put, glow, rect = cv.px, cv.put, cv.glow, cv.rect
     L = LAYOUTS[layout]
     SHOP_X = L['shop']
-    sky()
+    sky(clouds)
     far_skyline()
     for x0, x1, top, face_right, people in L['sides']:
         side_building(x0, x1, top, face_right, people)
@@ -558,7 +569,8 @@ def build(layout):
     if layout == 'left':
         roof_sign(SHOP_X + SHOP_W // 2, 146)  # the cornice top
     reflections(L['lamp'])
-    rain()
+    if with_rain:
+        rain()
     return cv
 
 

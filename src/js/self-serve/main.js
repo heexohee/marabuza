@@ -9,6 +9,7 @@ import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
+import { mountTitleAnim } from './title-anim.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
 import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
 import { sfxForAction } from './sfx.js'
@@ -202,6 +203,7 @@ window.addEventListener('keydown', (e) => {
 // Dev mode (localhost or ?dev): auto-play days and add money to check between-day UI quickly.
 // Results land on the summary screen; "상점으로" then saves them like a played day.
 mountStageFit(window)
+mountTitleAnim(window) // the still title-bg.png stays behind if its art fails to load
 
 if (isDevMode()) {
   mountDevBar(document, (action) => {
