@@ -236,7 +236,7 @@ export const endingKey = (s) => `ending|${s.endingStep ?? 0}|${s.premiumPaidInFu
 // ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
 
 // the rabbit regular (story N002's 🐰) stands where the panda stood in the ending, holding the flyer
-const rabbitCast = () => `<span class="rabbit-with-flyer">${spriteImg('🐰', 64, 'rabbit-sprite', '시험기간 토끼')}<i class="flyer">알바 구함</i></span>`
+const rabbitCast = () => `<span class="rabbit-with-flyer"><img class="rabbit-sprite" src="img/rabbit-worker.png?v=1" width="64" height="160" alt="시험기간 토끼" draggable="false"><i class="flyer">알바 구함</i></span>`
 
 /**
  * Day 29's morning in the player's own hall, once after the ending: the rabbit asks for a job, then (from
