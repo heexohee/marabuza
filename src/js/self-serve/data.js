@@ -185,6 +185,7 @@ export const CREDITS = [
   { role: '도트 그래픽', names: ['자체 제작 (tools/art)'] },
   { role: '음악 · 효과음', names: ['자체 제작 (tools/audio)'] },
   { role: '글꼴', names: ['갈무리 Galmuri — © Lee Minseo', 'SIL Open Font License 1.1'] },
+  { role: '이모지 그림', names: ['Noto Emoji — © Google', 'Apache License 2.0'] },
   { role: '개발 도움', names: ['Claude Code'] },
   { role: '그리고', names: ['플레이해 주신 여러분 🙏'] },
 ]

@@ -17,6 +17,7 @@ import {
 } from './logic.js'
 import { REGULARS } from './story.js'
 import { closedHtml, creditsHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
+import { spriteText } from './emoji-text.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
@@ -26,11 +27,11 @@ import {
 
 const LOW_SHELF = 2
 
-/** Re-renders el only when key changed (keeps buttons stable between clicks). */
+/** Re-renders el only when key changed (keeps buttons stable between clicks); emoji in text become sprites. */
 function patch(el, key, html) {
   if (!el || el.__key === key) return
   el.__key = key
-  el.innerHTML = html()
+  el.innerHTML = spriteText(html())
 }
 
 const slot = (root, name) => root.querySelector(`[data-slot="${name}"]`)
@@ -420,7 +421,7 @@ export function render(root, s, view) {
     root.dataset.screen = screen
     document.documentElement.dataset.screen = screen // the title's background covers the whole window
     root.__key = null
-    root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
+    root.innerHTML = screen === 'game' ? spriteText(GAME_SKELETON) : ''
   }
   if (screen === 'menu') {
     return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}`, () =>

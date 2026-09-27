@@ -910,3 +910,6 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 .premium-label, .premium-note { white-space: nowrap; }
 .premium-foot .premium-note { margin: 0; flex: 1 1 auto; }
 .premium-foot .premium-bar { margin: 0; flex: 0 1 220px; }
+
+/* emoji inside words (src/js/self-serve/emoji-text.js): the bundled pixel sprite at the text's own size */
+img.txt-emoji { width: 1.15em; height: 1.15em; vertical-align: -0.2em; display: inline-block; }

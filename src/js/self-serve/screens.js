@@ -326,7 +326,7 @@ function orderSections(s) {
  */
 export const SHOP_TABS = [
   { id: 'order', label: '🧺 재료 발주', html: orderSections },
-  { id: 'decor', label: '🏮 가게 꾸미기', html: (s) => upgradeSection(s) + interiorSection(s) },
+  { id: 'decor', label: '🎀 가게 꾸미기', html: (s) => upgradeSection(s) + interiorSection(s) },
   { id: 'menu', label: '💰 가격 · 사이드', html: (s) => priceSection(s) + sideSection(s) },
 ]
 export const DEFAULT_SHOP_TAB = SHOP_TABS[0].id

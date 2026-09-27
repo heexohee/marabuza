@@ -47,7 +47,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Assets
 - [x] **이모지 대체 그림** — 도트 스프라이트(동물·재료·아이콘)는 이제 게임에 내장한 Noto 이모지 PNG 78개(`src/img/emoji/`, Apache-2.0)를 도트화. 기기 이모지 글꼴은 목록에 없는 이모지에만 쓰는 예비. 새 이모지를 코드에 넣으면 `node tools/art/bundle_emoji.mjs <emoji-datasource-google 폴더>` 다시 실행. 증거: `production/qa/evidence/offline-assets-evidence.md`
-  - [ ] 남은 것: 글자 속 이모지(예: 버튼 "건너뛰기 ⏭", 안내 "같은 🎫 번호", 장부 📒)는 아직 기기 글꼴로 그려짐 → 스프라이트로 바꾸거나 빼기
+  - [x] 글자 속 이모지도 번들 도트 스프라이트로 (emoji-text.js, 2026-09-27 — 툴팁 속 이모지는 기기 글꼴 그대로)
 - [x] **글꼴 내장** — Galmuri 2.40.3 중 쓰는 세 벌(Galmuri11 보통·굵게, Galmuri9)을 `src/fonts/`에 넣음(OFL 전문 동봉). 외부 요청 전부 막은 브라우저에서 글꼴 로드 확인
 - [x] 임시 에셋 없음 — `placeholder|temp_|WIP_` 0건(입력칸 안내 문구 1건 제외), `src/img` 15개 중 임시 파일명 없음
 - [x] **사운드** — 배경음악(화면별 곡)·징글·클릭 효과음 + 음소거·볼륨 설정 (b0541c8, 07f40a1). 음원 라이선스 표기는 Legal 항목에서
@@ -57,7 +57,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] **문구 외부화** — 대사·UI 문구가 JS 코드에 직접 들어 있음(`story.js`, `screens.js`, `ui.js`…). 번역하려면 문자열 테이블로 빼내기
 - [ ] **영어 번역** (강력 권장 — 한국어만이면 시장이 크게 줄어듦) + 영어에서 글자 넘침 확인
 - [ ] 영어·한국어 글꼴 커버리지 (Galmuri는 한글·라틴 지원)
-- [ ] 크레딧 — 엔딩 자막 한 줄 + 설정 메뉴 크레딧(글꼴·도구 라이선스 표기 포함)
+- [x] 크레딧 — 설정 → 엔딩 크레딧 (Galmuri OFL · Noto Emoji Apache-2.0 표기 포함, 2026-09-27)
 
 ### Game Content
 - [ ] 튜토리얼 흐름 — 오프닝 4장 + 1–3일차 판다 팁 있음, 처음 하는 사람 대상 테스트 필요
