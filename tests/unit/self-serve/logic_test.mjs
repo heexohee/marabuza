@@ -25,8 +25,8 @@ test('generateWish picks distinct unlocked ingredients with valid quantities', (
 })
 
 test('test_hidden_item_label_counts_skewers_not_pieces', () => {
-  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_shrimp', count: 2 }), '새우 꼬치 ×2')
-  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_fishcake_deluxe', count: 1 }), '고급 어묵 꼬치 ×1')
+  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_shrimp', count: 2 }), '새우 꼬지 ×2')
+  assert.equal(hiddenItemLabel({ kind: 'skewer', id: 'skewer_fishcake_deluxe', count: 1 }), '어묵 꼬지 ×1')
   assert.equal(hiddenItemLabel({ kind: 'meat', id: 'beef', count: 2 }), '소고기 ×2')
   assert.equal(hiddenItemLabel({ kind: 'meat', id: 'lamb', count: 1 }), '양고기 ×1')
 })

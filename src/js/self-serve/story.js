@@ -105,11 +105,16 @@ export const speakerName = (who, name) => (who === 'me' ? name : SPEAKERS[who] ?
 export const lineText = (text, name) => text.replaceAll('{name}', name)
 
 // Days 1–3: the retired panda owner's tips. After that the protagonist's own lines rotate.
+// The panda's face on the counter shows who is talking (dayStartSpeaker), so the tips carry no name prefix
+// and stay within two lines of the owner's bubble (feedback 2026-09-27).
 const TIPS = [
-  '판다 사장님: "손님 그릇은 꼭 뒤적여 봐. 고기랑 꼬치가 숨어 있거든!"',
-  '판다 사장님: "진열대가 깜빡이면 채울 때야. 채소는 너무 많이 채우면 시들고."',
-  '판다 사장님: "샹궈는 100g당 더 비싸! 주문표 조리 방식부터 확인해."',
+  '손님 그릇은 꼭 뒤적여 봐. 고기랑 꼬치가 숨어 있거든!',
+  '진열대가 깜빡이면 채울 때! 너무 채우면 채소가 시들어.',
+  '샹궈는 100g당 더 비싸! 주문표 조리 방식부터 확인해.',
 ]
+
+/** Who says the start-of-day line: the panda for his first tips, then the protagonist herself. */
+export const dayStartSpeaker = (day) => (day <= TIPS.length ? 'panda' : 'me')
 const OWN_LINES = [
   '오늘도 누군가의 한 그릇이 되어 보자!',
   '점심 러시 오기 전에 진열대부터 채워 두자.',

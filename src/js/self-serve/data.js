@@ -20,11 +20,14 @@ export const VARIANT_INGREDIENT_BY_ID = Object.fromEntries(VARIANT_INGREDIENTS.m
 // Checked by tests/integration/self-serve/warehouse-balance_test.mjs.
 const SKEWER_PACK_COST = { skewer_shrimp: 3000, skewer_fishcake_deluxe: 2500, skewer_sausage_deluxe: 2500 }
 const SKEWER_START_STOCK = 10
+// Short skewer names for this variant (feedback 2026-09-27: "고급 어묵 꼬치" was too long); the shared
+// SKEWER_ITEMS names stay for the original flow.
+const SKEWER_LABEL = { skewer_shrimp: '새우 꼬지', skewer_fishcake_deluxe: '어묵 꼬지', skewer_sausage_deluxe: '소세지 꼬지' }
 export const SHELF_EXTRAS = [
   ...SKEWER_ITEMS.map((sk) => ({
-    id: sk.id, kind: 'skewer', name: `${sk.name} 꼬치`, shortName: sk.name, emoji: sk.emoji, // shortName: the narrow shelf slot
+    id: sk.id, kind: 'skewer', name: SKEWER_LABEL[sk.id], shortName: SKEWER_LABEL[sk.id], emoji: sk.emoji,
     packCost: SKEWER_PACK_COST[sk.id], startStock: SKEWER_START_STOCK,
-    desc: `${sk.name} 꼬치! 꼬치 1개당 1,000원이에요`,
+    desc: `${SKEWER_LABEL[sk.id]}! 1개당 1,000원이에요`,
   })),
   { id: 'cilantro', kind: 'cilantro', name: '고수', emoji: '🌿', packCost: 2000, startStock: 20, desc: '향긋한 고수 한 줌! 호불호가 갈려요' },
 ]

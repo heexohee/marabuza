@@ -19,7 +19,7 @@ import {
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
-import { CREATE_AT_SCENE, ENDING_LINE_COUNT, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine } from './story.js'
+import { CREATE_AT_SCENE, ENDING_LINE_COUNT, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine, dayStartSpeaker } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 // `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
@@ -94,7 +94,7 @@ function emptyDay(potCount, seatCount) {
     heldPot: null,
     busy: 0,
     wiltedAt: {}, // shelf id → dayTime of its last wilt (drives the slot flash)
-    ownerLine: null, // { text, until } — the owner's line at the start of the day
+    ownerLine: null, // { text, who, until } — the start-of-day line and who says it ('panda' | 'me')
     spawnTimer: SPAWN.firstDelaySec,
     nextCustomerId: 1,
     nextTicketNo: 1,
@@ -122,7 +122,7 @@ export function hiddenItems(bowl) {
   ]
 }
 
-/** Counter label for a dug-out item, always in charge units: "새우 꼬치 ×2", "소고기 ×2". */
+/** Counter label for a dug-out item, always in charge units: "새우 꼬지 ×2", "소고기 ×2". */
 export const hiddenItemLabel = (item) => `${SHELF_ITEM_BY_ID[item.id].name} ×${item.count}`
 
 /**
@@ -288,7 +288,7 @@ function whenFree(s, action) {
 /** Opens the shop for the day: fresh day state plus one box of every unlocked ingredient on the shelf. */
 export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
-  const ownerLine = { text: dayStartLine(s.day), until: DAY_LINE_SEC }
+  const ownerLine = { text: dayStartLine(s.day), who: dayStartSpeaker(s.day), until: DAY_LINE_SEC }
   const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
   const opened = openNewSides(s)
   return { ...opened, phase: 'day', story: null, rating, ...day, ownerLine, ...openShelf(opened.stock, shelfIds(opened)) }
@@ -296,6 +296,9 @@ export function startDay(s) {
 
 /** The owner's start-of-day line while it is still showing, else null. */
 export const ownerLineText = (s) => (s.ownerLine && s.dayTime < s.ownerLine.until ? s.ownerLine.text : null)
+
+/** Who is talking in the owner's row: the line's speaker while it shows, else the protagonist. */
+export const ownerLineWho = (s) => (ownerLineText(s) ? s.ownerLine.who ?? 'me' : 'me')
 
 // ---------- protagonist & opening story (design/quick-specs/story-character-2026-09-25.md) ----------
 

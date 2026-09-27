@@ -51,13 +51,14 @@ function floating(items, px) {
   }).join('')
 }
 
-// Counter bowl (feedback 2026-09-27): the scooped ingredients bob on a layer above the bowl, around and over its rim,
-// instead of being masked inside the broth where the rim hid them.
+// Counter bowl (feedback 2026-09-27): the scooped ingredients bob on their own layer (not masked by the broth, where the
+// rim hid them), but inside the bowl's mouth — the broth ellipse spans ~7–93% × 14–79% of the rim art, so with 20px
+// icons on the 164×56 rim they sit at 16–70% across and 14–41% down (feedback 2026-09-27: they floated above the bowl).
 function floatAbove(items, px) {
   const list = Object.entries(items).flatMap(([id, q]) => Array.from({ length: q }, () => id))
   return list.map((id, i) => {
-    const x = 10 + ((i * 29) % 78)
-    const y = -18 + ((i * 41) % 34) // from just above the rim down over the broth
+    const x = 16 + ((i * 23) % 55) // 23 and 17 step far apart mod 55/28, so neighbours never stack
+    const y = 14 + ((i * 17) % 28)
     return `<span class="float" style="left:${x}%;top:${y}%;animation-delay:${(i % 5) * 0.3}s">${spriteImg(INGREDIENT_BY_ID[id].emoji, px, 'float-img')}</span>`
   }).join('')
 }
@@ -222,11 +223,11 @@ function queueHtml(s) {
 /** A dug-out meat or skewer, labelled in the unit it is charged in (every skewer kind = 1,000원 each). */
 // Found items show icon + count like the vegetables, on an orange background — but that colour alone
 // didn't read as "this is a skewer, not weight" (feedback 2026-09-27), so skewers also spell it out
-// ("🦐꼬지×1"); meat keeps just the icon (🥩/🐑 are unambiguous). Full name stays in the hover title.
-const FOUND_LABEL_SUFFIX = { skewer: '꼬지' }
+// ("🦐꼬지×1"), and meat says its name too ("🥩소고기×1", feedback 2026-09-27). Full name stays in the hover title.
+const FOUND_LABEL_SUFFIX = { skewer: () => '꼬지', meat: (item) => SHELF_ITEM_BY_ID[item.id].name }
 const SIDE_CHIP_LABEL = { friedrice: '볶음밥', guobao: '꿔바로우' } // the drink (🥤) needs no word
 const foundChip = (item) =>
-  `<span class="chip found" title="${hiddenItemLabel(item)}">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${FOUND_LABEL_SUFFIX[item.kind] ?? ''}×${item.count}</span>`
+  `<span class="chip found" title="${hiddenItemLabel(item)}">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${FOUND_LABEL_SUFFIX[item.kind]?.(item) ?? ''}×${item.count}</span>`
 
 /** The protagonist behind the counter, with her start-of-day line in a speech bubble. */
 // The owner's row: a round face frame (the protagonist, or the panda while he gives his first tips) and her
