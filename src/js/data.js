@@ -69,7 +69,17 @@ export const INGREDIENTS = [
   { id: 'lamb', name: '양고기', emoji: '🍖', grams: 50, packCost: 7500, unlockCost: 8000, desc: '양고기! 마라와 찰떡궁합, 진짜 마라 러버용' },
 ]
 
-export const INGREDIENT_BY_ID = Object.fromEntries(INGREDIENTS.map((i) => [i.id, i]))
+// Self-serve only (design/quick-specs/playtest-2026-09-27.md #9): unlocked in that flow's shop. Kept out of
+// INGREDIENTS so the legacy owner-scoop flow's shop and bowls stay as they were; the lookup below knows them
+// because the shared weigh/checkout helpers resolve ids through it.
+export const SELF_SERVE_INGREDIENTS = [
+  { id: 'yubu', name: '유부', emoji: 'px:yubu', grams: 30, packCost: 1800, unlockCost: 2000, desc: '국물 머금은 유부! 가볍고 쫄깃해요' },
+  { id: 'potato', name: '감자', emoji: 'px:potato', grams: 60, packCost: 1500, unlockCost: 2500, desc: '포슬포슬 감자! 싸지만 무게가 꽤 나가요' },
+  { id: 'tofunoodle', name: '면두부', emoji: 'px:tofunoodle', grams: 50, packCost: 2000, unlockCost: 3000, desc: '면두부! 면 대신 찾는 손님이 많아요' },
+  { id: 'cornball', name: '콘치즈볼', emoji: 'px:cornball', grams: 40, packCost: 3000, unlockCost: 4000, desc: '콘치즈볼! 한입 깨물면 치즈가 쭉~' },
+]
+
+export const INGREDIENT_BY_ID = Object.fromEntries([...INGREDIENTS, ...SELF_SERVE_INGREDIENTS].map((i) => [i.id, i]))
 
 // Each upgrade: cost for the next level is costs[currentLevel - start].
 export const UPGRADES = [
@@ -105,6 +115,7 @@ export const SKEWER_ITEMS = [
   { id: 'skewer_shrimp', name: '새우', emoji: '🦐', unitsPerSkewer: 2 },
   { id: 'skewer_fishcake_deluxe', name: '고급 어묵', emoji: '🍢', unitsPerSkewer: 3 }, // 🍥 looked like a bowl, not a skewer (feedback 2026-09-27)
   { id: 'skewer_sausage_deluxe', name: '고급 소시지', emoji: '🌭', unitsPerSkewer: 3 },
+  { id: 'skewer_cheese_tteok', name: '치즈떡', emoji: 'px:cheesetteok', unitsPerSkewer: 3 }, // playtest 2026-09-27 #10
 ]
 
 export const SKEWER_ITEM_BY_ID = Object.fromEntries(SKEWER_ITEMS.map((i) => [i.id, i]))

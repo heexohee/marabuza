@@ -1,9 +1,16 @@
 /* Self-serve variant only — loaded after styles.css by self-serve.html.
    Everything is scoped under .ss (or variant-only class names) so the original flow is untouched. */
 
+/* ---------- cursors (design/quick-specs/playtest-2026-09-27.md #8) — tools/art/cursors.py, hotspots in 32px art ---------- */
+:root {
+  --cursor: url("img/cursor.png") 2 2, auto;
+  --cursor-click: url("img/cursor.png") 2 2, pointer; /* same pink arrow on clickables (no paw — feedback 2026-09-27) */
+}
+html, body { cursor: var(--cursor); }
+button:not(:disabled), a[href], [data-action] { cursor: var(--cursor-click); }
+
 /* ---------- title ---------- */
 .variant-tag { font-size: 12px; background: var(--yellow); color: var(--ink); border: 2px solid var(--ink); border-radius: 6px; padding: 1px 6px; vertical-align: middle; }
-.variant-link { color: #fff; font-size: 13px; margin-top: 4px; }
 
 /* ---------- layout: shelf | tables + kitchen | counter, one screen tall ---------- */
 .game.ss {
@@ -167,7 +174,7 @@
 .name-input { flex: 1; min-width: 120px; font: inherit; font-size: 14px; border: 3px solid var(--ink); border-radius: 8px; padding: 4px 8px; }
 
 /* opening cutscene */
-.opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: pointer; user-select: none; }
+.opening-screen { width: min(760px, 100%); display: flex; flex-direction: column; gap: 10px; cursor: var(--cursor-click); user-select: none; }
 /* fixed-ratio stage (story.js STAGE 768×304 = 384×152 art ×2): background, cast spots and sizes scale together */
 .scene { position: relative; aspect-ratio: 768 / 304; border: 4px solid var(--ink); border-radius: var(--radius); overflow: hidden; image-rendering: pixelated; }
 /* painted by tools/art/scene_office.py (384×152 art px, ~×2 here); bump ?v= when regenerating so caches refresh */
@@ -298,7 +305,7 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 
 /* title & page-level text that used to sit on the dark background */
 .title-logo { color: #ff7fa0; text-shadow: 3px 3px 0 var(--yellow), 6px 6px 0 var(--ink); }
-.title-logo span, .title-sub, .variant-link, .create-sub { color: var(--ink); }
+.title-logo span, .title-sub, .create-sub { color: var(--ink); }
 .create-screen { color: var(--ink); }
 
 /* coloured buttons and badges: dark strawberry text */
@@ -352,6 +359,23 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
 .ss .rail-title { font-size: 13px; font-weight: 700; }
 .ss .seat-tag, .ss .owner-name { font-size: 12px; font-weight: 700; }
 .ss .bubble.say { font-size: 13px; font-weight: 700; }
+/* the charged customer's patience, big enough to see while charging (playtest 2026-09-27 #3): a strip along the
+   bubble's bottom; under 25% the bubble turns red, shakes and says 빨리요… */
+.ss .bubble.say { position: relative; padding-bottom: 8px; }
+.front-patience {
+  position: absolute; left: 8px; right: 8px; bottom: 3px; height: 6px;
+  background: #eee; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden;
+}
+.front-patience b { display: block; height: 100%; background: var(--green); transition: background .2s; }
+.front-patience b[data-level="warn"] { background: var(--orange); }
+.front-patience b[data-level="bad"] { background: var(--red); }
+.ss .bubble.say:has(.front-patience b[data-level="bad"]) { background: #ffe1e1; border-color: var(--red); animation: hurry-shake .4s ease-in-out infinite; overflow: visible; }
+.ss .bubble.say:has(.front-patience b[data-level="bad"])::after {
+  content: "빨리요…"; position: absolute; right: -4px; top: -10px; padding: 0 5px; font-size: 11px; color: #fff;
+  background: var(--red); border: 2px solid var(--ink); border-radius: 6px; transform: rotate(6deg);
+}
+@keyframes hurry-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px); } 75% { transform: translateX(2px); } }
+@media (prefers-reduced-motion: reduce) { .ss .bubble.say:has(.front-patience b[data-level="bad"]) { animation: none; } }
 .ss .ticket-row, .ss .spice-pick, .ss .counter .receipt { font-size: 13px; font-weight: 700; }
 .ss .counter .keys .btn.key { font-size: 13px; font-weight: 700; }
 .ss .ss-stats .stat { font-size: 14px; font-weight: 700; }
@@ -367,7 +391,6 @@ body { background: var(--page) repeating-linear-gradient(45deg, var(--page-strip
    Same rule as the board (feedback 2026-09-25): small text 12–14px in Galmuri11 Bold.
    Covers the title, character creation, opening cutscene, modals (help / summary / pause) and shop. */
 .title-sub, .create-sub { font-size: 15px; font-weight: 700; }
-.variant-link { font-size: 13px; font-weight: 700; }
 .bubble-btn { font-weight: 700; }
 
 /* character creation */
@@ -493,7 +516,7 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .shop-scene .seat.empty .table-no { opacity: .75; }
 .shop-scene .ticket-badge { bottom: calc(var(--apx) * 46); white-space: nowrap; font-size: max(11px, calc(var(--apx) * 6)); font-weight: 700; padding: 0 5px; }
 .shop-scene .patience { bottom: calc(var(--apx) * 58); width: calc(var(--apx) * 26); height: max(6px, calc(var(--apx) * 3)); box-sizing: border-box; }
-.shop-scene .ss-table { cursor: pointer; }
+.shop-scene .ss-table { cursor: var(--cursor-click); }
 .shop-scene .ss-table:hover, .shop-scene .ss-table:focus-visible { background: rgba(255, 243, 201, .35); }
 .shop-scene .ss-table.can-serve { outline: 3px dashed var(--green-dark); outline-offset: -3px; background: rgba(143, 217, 182, .25); }
 
@@ -529,7 +552,7 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
   line-height: 1.2; text-align: center; overflow-wrap: anywhere;
 }
 .ss-kitchen .pot-label .btn.serve { display: inline-block; width: auto; max-width: 100%; box-sizing: border-box; margin: 0; padding: 2px 6px; font-size: inherit; }
-.ss-kitchen .pot.done { cursor: pointer; }
+.ss-kitchen .pot.done { cursor: var(--cursor-click); }
 .ss-kitchen .pot.done:hover, .ss-kitchen .pot.done:focus-visible { background: rgba(255, 243, 201, .45); }
 
 /* shop: menu prices section (economy story E001) — both 100g prices side by side, demand hint under them */
@@ -547,7 +570,7 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .dev-bar .dev-tag { padding: 1px 6px; border-radius: 4px; background: #ffd23f; color: #222; font-size: 11px; }
 .dev-bar button {
   font: inherit; font-size: 13px; padding: 4px 8px; border: 2px solid #111; border-radius: 6px;
-  background: #fff; color: #222; cursor: pointer;
+  background: #fff; color: #222; cursor: var(--cursor-click);
 }
 .dev-bar button:hover, .dev-bar button:focus-visible { background: #ffe9a8; }
 
@@ -618,6 +641,15 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .ss-shelf .busy { grid-area: busy; margin: 0; }
 .ss-shelf .shelf { grid-area: shelf; grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
 .ss-shelf .info { grid-area: info; height: 100%; align-self: stretch; }
+/* a full shelf (17+ slots once the playtest-2026-09-27 ingredients are unlocked) still fits one row at 1280:
+   the description box narrows and the slot text tightens, so names and counts no longer run into each other */
+.ss-shelf:has(.slot:nth-child(17)) { grid-template-columns: auto minmax(0, 1fr) 170px; column-gap: 8px; }
+.ss-shelf .shelf:has(.slot:nth-child(17)) { gap: 3px; }
+.ss-shelf .shelf:has(.slot:nth-child(17)) .slot { padding: 9px 0 3px; }
+.ss-shelf .shelf:has(.slot:nth-child(17)) .slot-name { font-size: 10px; line-height: 11px; max-height: 22px; letter-spacing: -0.05em; }
+.ss-shelf .shelf:has(.slot:nth-child(17)) .stock { font-size: 9px; padding: 0 2px; }
+.ss-shelf .shelf:has(.slot:nth-child(17)) .wh { font-size: 9px; letter-spacing: -0.05em; }
+.ss-shelf:has(.slot:nth-child(17)) .info { font-size: 11px; }
 /* narrower screens (feedback 2026-09-27): the hall spans both columns so it grows with the screen, and the shelf
    moves under the kitchen beside the tall counter, so the kitchen keeps its own height instead of stretching */
 @container app (min-width: 701px) and (max-width: 1000px) {
@@ -663,7 +695,7 @@ html, body { overflow: hidden; }
   position: relative; font: inherit; font-size: 16px; font-weight: 700; padding: 8px 18px;
   border: 4px solid var(--ink); border-bottom: none; border-radius: 12px 12px 0 0; background: #f3d6de; color: var(--ink);
 }
-.shop-tab.on { background: #fff5f7; padding-bottom: 12px; cursor: default; }
+.shop-tab.on { background: #fff5f7; padding-bottom: 12px; cursor: var(--cursor); }
 .shop-tab:not(.on):hover, .shop-tab:not(.on):focus-visible { background: #ffe9a8; }
 .shop-tab .new {
   position: absolute; top: -10px; right: -8px; padding: 1px 6px; font-size: 11px;
@@ -728,14 +760,13 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 }
 .title-item {
   position: relative; font: inherit; font-weight: 700; font-size: 32px; letter-spacing: 2px; background: none; border: 0; padding: 2px 10px;
-  color: rgba(255, 255, 255, .62); text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); cursor: pointer;
+  color: rgba(255, 255, 255, .62); text-shadow: 2px 2px 0 rgba(0, 0, 0, .45); cursor: var(--cursor-click);
 }
 .title-item.on { color: #fff; font-size: 38px; text-shadow: 0 0 10px rgba(255, 255, 255, .45), 2px 2px 0 rgba(0, 0, 0, .5); }
 .title-item.on::before { content: '▶'; position: absolute; left: -26px; top: 50%; transform: translateY(-50%); color: #ff9ec0; font-size: 22px; }
-.title-item:disabled { color: rgba(255, 255, 255, .28); cursor: default; opacity: 1; }
+.title-item:disabled { color: rgba(255, 255, 255, .28); cursor: var(--cursor); opacity: 1; }
 .title-item small { display: block; font-size: 13px; letter-spacing: 0; opacity: .8; }
 .title-ver { position: absolute; right: 18px; bottom: 12px; color: rgba(255, 255, 255, .5); font-size: 14px; }
-.modal.settings .variant-link { color: var(--ink); text-align: center; }
 .modal.settings { max-width: 340px; }
 .modal.settings .btn { white-space: nowrap; }
 
@@ -746,7 +777,6 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .music-volume .music-vol { width: 44px; padding: 6px 0; font-size: 18px; }
 .music-volume .music-level { min-width: 96px; text-align: center; font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
 /* the smaller lines under the big buttons read too faint at the fitted scale */
-.modal.settings .variant-link { font-size: 15px; font-weight: 700; }
 .modal.settings .btn.ghost { font-size: 17px; font-weight: 700; }
 
 /* ---------- owner row (feedback 2026-09-27): a round face frame + a bold speech bubble pointing at it ----------

@@ -276,7 +276,8 @@ function counterHtml(s) {
   return `
     ${ownerHtml(s)}
     ${queueHtml(s)}
-    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}</div>
+    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}
+      <i class="front-patience" title="기다릴 수 있는 시간"><b data-bar="front-patience"></b></i></div>
     <div class="bowl-art small">
       <div class="bowl-rim"><div class="broth spice-0"></div><div class="bowl-floats">${floatAbove(c.bowl.weighed, 12)}</div></div>
       <div class="bowl-body"><div class="bowl-inner"><i class="bowl-band"></i></div></div>
@@ -395,6 +396,9 @@ function updateBars(root, s) {
   const clockText = root.querySelector('[data-text="clock"]')
   if (clockText) clockText.textContent = isClosing(s) ? '마감! 남은 손님만 받아요' : `영업 ${Math.ceil(left)}초 남음`
   s.queue.forEach((c) => setLevelBar(root, `queue-${c.id}`, c.patience / c.maxPatience))
+  // the customer being charged gets a big gauge in their order bubble (playtest 2026-09-27 #3)
+  const front = frontCustomer(s)
+  if (front) setLevelBar(root, 'front-patience', front.patience / front.maxPatience)
   s.tables.forEach((t) => t && setLevelBar(root, `table-${t.ticketNo}`, t.patience / t.maxPatience))
   s.pots.forEach((p, i) => p && setBar(root, `pot-${i}`, 1 - p.remaining / p.total))
   Object.entries(s.shelf).forEach(([id, batches]) =>

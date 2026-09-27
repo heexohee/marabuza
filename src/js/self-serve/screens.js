@@ -62,7 +62,7 @@ export function musicControlsHtml(audio) {
     </div>`
 }
 
-/** Settings from the title: how to play, music, fullscreen, and the link back to the original flow. */
+/** Settings from the title: how to play, music and fullscreen (the legacy-flow link is gone — docs/flows.md). */
 export function settingsHtml(audio) {
   return `
     <div class="overlay"><div class="modal small settings">
@@ -70,7 +70,6 @@ export function settingsHtml(audio) {
       <button class="btn big" data-action="help">게임방법</button>
       ${musicControlsHtml(audio)}
       <button class="btn big" data-action="fullscreen">전체화면 켜기 / 끄기</button>
-      <a class="variant-link" href="index.html?classic">← 기존 흐름(사장이 담기)으로</a>
       <button class="btn ghost" data-action="closeSettings">닫기</button>
     </div></div>`
 }

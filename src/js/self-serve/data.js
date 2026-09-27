@@ -1,13 +1,14 @@
 // Balance constants for the self-serve flow variant only.
 // design/quick-specs/self-serve-restock-flow-2026-09-24.md
 // Shared data (ingredients, prices, upgrades) stays in ../data.js and is only imported here.
-import { INGREDIENTS, SKEWER_ITEMS } from '../data.js'
+import { INGREDIENTS, SELF_SERVE_INGREDIENTS, SKEWER_ITEMS } from '../data.js'
 
 // Weighed ingredients sold in this variant. The shared list's weighed "새우" scoop is dropped:
 // here shrimp is only sold as 새우 꼬치 (one skewer = 1,000원), so the shelf and shop show it once.
 // The original flow keeps its weighed shrimp — it has no skewer shelf.
 export const DROPPED_INGREDIENT_IDS = ['shrimp']
-export const VARIANT_INGREDIENTS = INGREDIENTS.filter((i) => !DROPPED_INGREDIENT_IDS.includes(i.id))
+// …plus the self-serve-only ingredients (유부·감자·면두부·콘치즈볼, playtest 2026-09-27 #9), unlocked in the shop.
+export const VARIANT_INGREDIENTS = [...INGREDIENTS.filter((i) => !DROPPED_INGREDIENT_IDS.includes(i.id)), ...SELF_SERVE_INGREDIENTS]
 export const VARIANT_INGREDIENT_BY_ID = Object.fromEntries(VARIANT_INGREDIENTS.map((i) => [i.id, i]))
 
 // Shelf items that are not weighed: skewers (one shelf unit = one skewer stick) and cilantro
@@ -18,11 +19,13 @@ export const VARIANT_INGREDIENT_BY_ID = Object.fromEntries(VARIANT_INGREDIENTS.m
 // (skewer 40% × 1–2 sticks over 3 kinds; cilantro 25%), but cilantro wilts: each shelved box
 // is mostly thrown away after WILT_SEC, so it needs ~3 boxes a day (15) + one spare box.
 // Checked by tests/integration/self-serve/warehouse-balance_test.mjs.
-const SKEWER_PACK_COST = { skewer_shrimp: 3000, skewer_fishcake_deluxe: 2500, skewer_sausage_deluxe: 2500 }
+const SKEWER_PACK_COST = { skewer_shrimp: 3000, skewer_fishcake_deluxe: 2500, skewer_sausage_deluxe: 2500, skewer_cheese_tteok: 2500 }
 const SKEWER_START_STOCK = 10
 // Short skewer names for this variant (feedback 2026-09-27: "고급 어묵 꼬치" was too long); the shared
 // SKEWER_ITEMS names stay for the original flow.
-const SKEWER_LABEL = { skewer_shrimp: '새우 꼬지', skewer_fishcake_deluxe: '어묵 꼬지', skewer_sausage_deluxe: '소세지 꼬지' }
+const SKEWER_LABEL = {
+  skewer_shrimp: '새우 꼬지', skewer_fishcake_deluxe: '어묵 꼬지', skewer_sausage_deluxe: '소세지 꼬지', skewer_cheese_tteok: '치즈떡 꼬지',
+}
 export const SHELF_EXTRAS = [
   ...SKEWER_ITEMS.map((sk) => ({
     id: sk.id, kind: 'skewer', name: SKEWER_LABEL[sk.id], shortName: SKEWER_LABEL[sk.id], emoji: sk.emoji,
