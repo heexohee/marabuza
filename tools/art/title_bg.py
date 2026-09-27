@@ -122,7 +122,7 @@ def brick_wall(x0, x1, top, bottom):
                 px[x, y] = BRICK_DARK if (x // 8 + row) % 5 == 0 else BRICK
 
 
-def window(x, y, w, h, lit):
+def window(x, y, w, h, lit, people=True):
     rect(x - 2, y - 2, x + w + 2, y + h + 2, PLASTER_DARK)  # frame
     rect(x - 3, y + h + 2, x + w + 3, y + h + 4, PLASTER)  # sill
     if lit:
@@ -131,7 +131,7 @@ def window(x, y, w, h, lit):
             for xx in range(x, x + w):
                 px[xx, yy] = dither(xx, yy, c, mix(c, INK, 0.25), (yy - y) / h)
         rect(x, y, x + w, y + 3, mix(c, INK, 0.45))  # curtain top
-        if rng.random() < 0.5:  # someone at home
+        if people and rng.random() < 0.5:  # someone at home
             cx = x + rng.randrange(4, w - 4)
             sil = mix(c, INK, 0.55)
             rect(cx - 2, y + h - 7, cx + 3, y + h, sil)
@@ -159,7 +159,7 @@ def ac_unit(x, y):
     rect(x + 3, y + 11, x + 4, y + 16, (80, 76, 100))
 
 
-def side_building(x0, x1, top, face_right):
+def side_building(x0, x1, top, face_right, people=True):
     brick_wall(x0, x1, top, BASE)
     rect(x0, top, x1, top + 4, PLASTER)  # cornice
     rect(x0, top + 4, x1, top + 5, INK)
@@ -167,7 +167,7 @@ def side_building(x0, x1, top, face_right):
     rect(edge, top, edge + 2, BASE, mix(BRICK, LIGHT, 0.25))  # pink rim light from the shop
     for i, wy in enumerate(range(top + 16, BASE - 60, 34)):
         for j, wx in enumerate(range(x0 + 12, x1 - 30, 40)):
-            window(wx, wy, 22, 20, rng.random() < 0.45)
+            window(wx, wy, 22, 20, rng.random() < 0.45, people)
             if (i + j) % 2 == 0:
                 ac_unit(wx + 1, wy + 26)
     pipe = x1 - 10 if face_right else x0 + 8
@@ -278,29 +278,63 @@ def awning(x0, x1, y):
             glow(x, yy, INK, 0.35 * (1 - (yy - y - 18) / 6))
 
 
-def customer(x, y, kind):
-    sil = (190, 96, 136)
-    rect(x - 8, y + 10, x + 9, y + 22, sil)  # shoulders
-    for yy in range(y - 7, y + 10):
-        for xx in range(x - 7, x + 8):
-            if ((xx - x) / 7.2) ** 2 + ((yy - y - 1) / 7.8) ** 2 <= 1:
-                put(xx, yy, sil)
+def customer(x, y, kind, counter_y):
+    """One diner seen through the window: head, ears and rounded shoulders cut by the counter, an arm reaching
+    for the bowl. Two tones plus a rim of pendant light on the top edges, and a lighter inner ear, so the shapes
+    read as bear / rabbit / cat / dog rather than flat stamps."""
+    fill, edge, rim, inner = (178, 84, 124), (132, 50, 90), (240, 160, 196), (214, 120, 158)
+    shape, ears_in = set(), set()
+
+    def ell(cx, cy, rx, ry, into=shape):
+        for yy in range(int(cy - ry) - 1, int(cy + ry) + 2):
+            for xx in range(int(cx - rx) - 1, int(cx + rx) + 2):
+                if ((xx + 0.5 - cx) / rx) ** 2 + ((yy + 0.5 - cy) / ry) ** 2 <= 1:
+                    into.add((xx, yy))
+
+    dark = set()
+    ell(x, y + 19, 12, 9.5)  # shoulders: a dome joined to the head, not a box
+    ell(x, y + 11, 3.5, 3)  # neck
+    ell(x, y + 1, 7.6, 7.8)  # head
     if kind == 'bear':
         for ex in (x - 6, x + 6):
-            for yy in range(y - 10, y - 4):
-                for xx in range(ex - 3, ex + 4):
-                    if (xx - ex) ** 2 + (yy - y + 7) ** 2 <= 9:
-                        put(xx, yy, sil)
+            ell(ex, y - 6, 3.4, 3.4)
+            ell(ex, y - 6, 1.6, 1.6, ears_in)
     elif kind == 'rabbit':
-        rect(x - 4, y - 18, x - 1, y - 5, sil)
-        rect(x + 2, y - 18, x + 5, y - 5, sil)
+        ell(x - 3, y - 11, 2.3, 7.5)  # left ear upright
+        ell(x - 3, y - 11, 0.9, 5.5, ears_in)
+        ell(x + 4, y - 9, 2.3, 5)  # right ear, folding over at the top
+        ell(x + 7, y - 14, 2.6, 2.2)
+        ell(x + 4, y - 9, 0.9, 3.5, ears_in)
     elif kind == 'cat':
-        for i in range(5):
-            rect(x - 7 + i, y - 11 + i, x - 6 + i + 1, y - 5, sil)
-            rect(x + 6 - i, y - 11 + i, x + 7 - i, y - 5, sil)
-    for sx in range(x - 4, x + 5, 4):  # steam off their bowl
-        for k in range(4):
-            glow(sx + k % 2, y + 8 - k * 3 + 18, (255, 255, 255), 0.35)
+        for sx in (-1, 1):
+            for k in range(8):  # triangular ears
+                for w in range(-(7 - k) // 2, (7 - k) // 2 + 1):
+                    px_ = x + sx * 5 + w
+                    shape.add((px_, y - 4 - k))
+                    if k < 5 and abs(w) <= (4 - k) // 2:
+                        ears_in.add((px_, y - 4 - k))
+    elif kind == 'dog':
+        for sx in (-1, 1):  # floppy ears hanging at the sides, a shade darker than the head
+            ell(x + sx * 7.8, y + 2, 3, 6.2)
+            ell(x + sx * 8.2, y + 3, 2, 5, dark)
+        ell(x, y + 5, 3.8, 2.8)  # muzzle
+    arm_dir = -1 if kind in ('rabbit', 'dog') else 1  # which side their bowl sits
+    shape = {p for p in shape if p[1] < counter_y}
+    for (xx, yy) in shape:
+        exposed_up = (xx, yy - 1) not in shape
+        outline = any((xx + dx, yy + dy) not in shape for dx, dy in ((1, 0), (-1, 0), (0, 1)))
+        c = rim if exposed_up and yy < y + 12 else edge if outline else fill
+        if (xx, yy) in ears_in and not exposed_up:
+            c = inner
+        elif (xx, yy) in dark and not exposed_up:
+            c = edge
+        put(xx, yy, c)
+    bx = x + arm_dir * 12  # their bowl on the counter, steaming
+    rect(bx - 6, counter_y - 4, bx + 7, counter_y - 3, (255, 244, 236))
+    rect(bx - 5, counter_y - 3, bx + 6, counter_y, (236, 96, 90))
+    rect(bx - 4, counter_y - 4, bx + 5, counter_y - 3, (250, 150, 110))
+    for k in range(6):
+        glow(bx - 2 + (k % 3) * 2 + (k // 3), counter_y - 7 - k * 2, (255, 255, 255), 0.45 - k * 0.05)
 
 
 def shop_window(x0, y0, x1, y1):
@@ -314,8 +348,7 @@ def shop_window(x0, y0, x1, y1):
         rect(lx - 4, y0 + 8, lx + 5, y0 + 12, (220, 90, 140))
         pool(lx, y0 + 14, 18, 10, (255, 240, 248), 0.4)
     rect(x0, y1 - 22, x1, y1 - 19, (200, 110, 140))  # counter
-    for i, (cx, kind) in enumerate(((x0 + 26, 'bear'), (x0 + 64, 'rabbit'), (x0 + 104, 'cat'), (x0 + 142, 'bear'))):
-        customer(cx, y1 - 42, kind)
+    # no diners in the window (feedback 2026-09-27: keep the shop interior empty); customer() kept for later use
     for y in range(y1 - 18, y1):  # fogged lower glass
         for x in range(x0, x1):
             glow(x, y, (255, 255, 255), 0.25 * (y - y1 + 18) / 18)
@@ -339,7 +372,7 @@ def shop_window(x0, y0, x1, y1):
 def door(x0, y0, x1):
     rect(x0 - 3, y0 - 3, x1 + 3, BASE, PINK_DEEP)
     rect(x0, y0, x1, BASE, (246, 160, 192))
-    for py in (y0 + 58, y0 + 84):  # panels
+    for py in (y0 + 48, y0 + 72):  # panels, both inside the door (it ends at the sidewalk)
         rect(x0 + 5, py, x1 - 5, py + 20, (230, 136, 172))
         rect(x0 + 5, py, x1 - 5, py + 1, (255, 196, 216))
     rect(x0 + 6, y0 + 8, x1 - 6, y0 + 50, (255, 206, 226))  # door glass
@@ -402,7 +435,7 @@ def shop():
         rect(x, BASE - 12, x + 1, BASE, (140, 54, 90))
     rect(x0 + 10, BASE - 7, x0 + 202, BASE - 6, (140, 54, 90))
     door(x1 - 110, top + 86, x1 - 62)
-    props(x1 - 54, x0 + 208)
+    props(x1 - 54, x0 + 182)  # plants under the window's corner, clear of the door
     pink_lantern(x0 - 14, top + 50)
     pink_lantern(x1 + 12, top + 50)
 
@@ -500,8 +533,11 @@ def rain():
 
 LAYOUTS = {
     # shop x, side buildings (x0, x1, top, facing the shop on its right), wire span, street lamp x
-    'center': dict(shop=230, sides=((0, 196, 110, True), (604, W, 98, False)), wires=(196, 604), lamp=120),
-    'left': dict(shop=64, sides=((620, W, 80, False), (0, 40, 130, True)), wires=(404, 620), lamp=500),
+    'center': dict(shop=230, sides=((0, 196, 110, True, True), (604, W, 98, False, True)), wires=(196, 604), lamp=120),
+    # shop moved right (feedback 2026-09-27: too far left full screen); no figures in the right building's windows
+    # feedback 2026-09-27 (2nd): shop 10px further left, the left building narrowed to keep its gap to the
+    # lantern, and no figures in either building's windows
+    'left': dict(shop=118, sides=((620, W, 80, False, False), (0, 94, 112, True, False)), wires=(460, 620), lamp=548),
 }
 
 
@@ -513,8 +549,8 @@ def build(layout):
     SHOP_X = L['shop']
     sky()
     far_skyline()
-    for x0, x1, top, face_right in L['sides']:
-        side_building(x0, x1, top, face_right)
+    for x0, x1, top, face_right, people in L['sides']:
+        side_building(x0, x1, top, face_right, people)
     wires(*L['wires'])
     street()
     street_lamp(L['lamp'])
