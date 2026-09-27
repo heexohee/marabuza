@@ -5,6 +5,8 @@ Run: python3 tools/art/scene_regular.py [--preview]  -> writes the shop in three
   morning -> src/img/scene-takeover.png        scene 4, the takeover morning (준비중 board, sunlight)
   open    -> src/img/scene-takeover-open.png   scene 4's last line: 영업중 neon and lanterns lit, and the
                                                board swapped to her pink "마라부자" (the title drop)
+  sunday  -> src/img/scene-sunday.png          the Sunday off day (economy E003): her pink "마라부자" board,
+                                               a "휴무" board in the window, lanterns off, pots cold
 
 Inside the panda's shop in the scene's original warm browns (orange wall / brown floor, as the old
 .scene-regular gradient was) — an old, well-loved place, unlike the protagonist's pink shop to come:
@@ -20,8 +22,10 @@ from pathlib import Path
 from pixel_scene import Canvas, mix
 
 ROOT = Path(__file__).resolve().parents[2]
-MODES = {'night': 'scene-regular', 'morning': 'scene-takeover', 'open': 'scene-takeover-open'}
-DAYLIGHT = {'morning', 'open'}
+MODES = {'night': 'scene-regular', 'morning': 'scene-takeover', 'open': 'scene-takeover-open', 'sunday': 'scene-sunday'}
+DAYLIGHT = {'morning', 'open', 'sunday'}
+CLOSED = {'morning', 'sunday'}  # hanging board in the window, lanterns off
+PINK_BOARD = {'open', 'sunday'}  # the shop board under her name
 SUN = (255, 244, 210)
 
 BG_W, BG_H = 384, 152
@@ -72,13 +76,13 @@ def window():
         for x in range(x0, x1):
             if (x - y) % 23 < 2:
                 glow(x, y, (255, 255, 255), 0.10)
-    if MODE == 'morning':  # hanging wooden board: not open yet
+    if MODE in CLOSED:  # hanging wooden board: not open yet / closed for the day
         bx0, by0, bx1, by1 = x0 + 20, y1 - 19, x1 - 20, y1 - 5
         rect(bx0 + 10, y0 + 30, bx0 + 11, by0, INK)
         rect(bx1 - 11, y0 + 30, bx1 - 10, by0, INK)
         rect(bx0 - 1, by0 - 1, bx1 + 1, by1 + 1, WOOD_DARK)
         rect(bx0, by0, bx1, by1, (232, 210, 166))
-        cv.sign_text('준비중', (x0 + x1) // 2, (by0 + by1) // 2, (110, 66, 44), None, size=10)
+        cv.sign_text('휴무' if MODE == 'sunday' else '준비중', (x0 + x1) // 2, (by0 + by1) // 2, (110, 66, 44), None, size=10)
     else:
         cv.sign_text('영업중', (x0 + x1) // 2, y1 - 12, (255, 120, 110), (150, 50, 60), size=10)
     rect(x0 - 5, y1 + 3, x1 + 5, y1 + 5, WOOD_LIGHT)  # sill
@@ -167,7 +171,7 @@ def fridge():
 
 def shop_board():
     x0, y0, x1, y1 = 190, 12, 296, 36
-    if MODE == 'open':  # first opening under her name: pink neon "마라부자" (same colours as tools/art/scene_shop.py)
+    if MODE in PINK_BOARD:  # her name on the board: pink neon "마라부자" (same colours as tools/art/scene_shop.py)
         for y in range(y0 - 7, y1 + 7):
             for x in range(x0 - 8, x1 + 8):
                 glow(x, y, (255, 120, 170), 0.12)
@@ -203,6 +207,8 @@ def pot(x0, y):
         put(bx, y + 3, (250, 200, 90))
     rect(x0 - 3, y + 5, x0 + 1, y + 7, STEEL_DARK)
     rect(x0 + 33, y + 5, x0 + 37, y + 7, STEEL_DARK)
+    if MODE == 'sunday':  # no business today: the broth is cold
+        return
     for i in range(10):  # steam
         sx = x0 + 8 + (i * 7) % 20
         for sy in range(y - 4 - i * 3, y - 1 - i * 3):
@@ -238,7 +244,7 @@ def lights():
     """Lanterns; lit ones pool warm light on the floor (not in the morning, before opening)."""
     for cx in LANTERN_X:
         cv.lantern(cx, BEAM_H + 1, cord=10)
-        if MODE == 'morning':
+        if MODE in CLOSED:
             continue
         for y in range(FLOOR_Y, BG_H):  # warm pools on the floor
             for x in range(cx - 40, cx + 42):

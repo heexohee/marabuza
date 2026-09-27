@@ -2,9 +2,13 @@
 // protagonist sprite used on the counter and in the day summary.
 // design/quick-specs/story-character-2026-09-25.md
 import { spriteImg } from '../sprites.js'
+import { won } from '../ui.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
-import { NAME_MAX_LEN } from './data.js'
-import { OPENING_SCENES, STAGE, castSpot, lineText, sceneBg, sceneCast, speakerName, storyName } from './story.js'
+import { NAME_MAX_LEN, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
+import {
+  OPENING_SCENES, STAGE, SUNDAY_BG, SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast,
+  speakerName, storyName, sundayLine,
+} from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
 
@@ -88,3 +92,70 @@ export function openingHtml(s) {
 }
 
 export const openingKey = (s) => `opening|${s.story.scene}|${s.story.line}`
+
+// ---------- Sunday off day (economy E003) ----------
+
+// The week's ledger, one row at a time (CSS animation-delay stamps each row in turn). Rent is already
+// settled (logic.js enterSunday); this only shows the frozen snapshot in s.ledger.
+function ledgerHtml(s) {
+  const { weekRevenue, rentDue, rentPaid, bankrupt } = s.ledger ?? { weekRevenue: 0, rentDue: RENT, rentPaid: true }
+  const stamp = rentPaid ? '완납 ✓' : bankrupt ? '폐업' : '연체 !'
+  const rows = [
+    [`${weekOf(s.day)}주차 매출 (월~토)`, won(weekRevenue), ''],
+    ['임대료 (건물주)', `−${won(rentDue)}`, stamp],
+  ]
+  const rowsHtml = rows.map(([label, value, stamp], i) => `
+        <tr class="ledger-row" style="animation-delay:${i * 0.35}s">
+          <td>${label}</td><td>${value}</td>
+          <td>${stamp ? `<span class="stamp ${stamp.startsWith('완납') ? 'ok' : 'bad'}">${stamp}</span>` : ''}</td>
+        </tr>`).join('')
+  return `
+      <div class="ledger-panel">
+        <b class="speaker">📒 장부</b>
+        <table class="summary ledger">${rowsHtml}
+          <tr class="total ledger-row" style="animation-delay:${rows.length * 0.35}s"><td colspan="2">남은 돈</td><td>${won(s.money)}</td></tr>
+        </table>
+        <span class="next-hint">▶ 클릭 / Space</span>
+      </div>`
+}
+
+/**
+ * Sunday off day, played like the opening in the closed shop: caption → her line → the ledger → who has
+ * the last word (her, or the landlord when rent was short). Clicking advances; on the last beat it goes on
+ * to the shop.
+ */
+export function sundayHtml(s) {
+  const step = s.sundayStep ?? 0
+  const line = sundayLine(step, s.ledger)
+  const isLast = step >= SUNDAY_LAST_STEP
+  const cast = `<span class="cast cast-me ${line?.who === 'me' ? 'talking' : ''}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>`
+  const body = step === SUNDAY_LEDGER_STEP ? ledgerHtml(s) : `
+      <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
+        ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
+        <p>${esc(lineText(line.text, s.character.name))}</p>
+        <span class="next-hint">${isLast ? '' : '▶ 클릭 / Space'}</span>
+      </div>`
+  return `
+    <div class="opening-screen sunday-screen" data-action="${isLast ? 'toShop' : 'sundayNext'}">
+      <div class="scene ${SUNDAY_BG}">${cast}<span class="day-tag">DAY ${s.day} · ${weekOf(s.day)}주차 ${WEEKDAY_LABEL[weekdayOf(s.day)]}요일</span></div>
+      ${body}
+      <div class="opening-foot">
+        <span></span>
+        ${isLast ? `<button class="bubble-btn" data-action="toShop">${s.ledger?.bankrupt ? '…' : '상점으로 →'}</button>` : ''}
+      </div>
+    </div>`
+}
+
+export const sundayKey = (s) => `sunday|${s.day}|${s.sundayStep ?? 0}|${s.money}`
+
+/**
+ * The shop closed for missed rent: the same closed Sunday shop behind the closed-down modal, so the run
+ * ends where it was decided (reputation closures stay over the business screen).
+ */
+export function closedSceneHtml(s, modal) {
+  const cast = `<span class="cast cast-me" style="${castStyle('me')}">${castSprite('me', s.character)}</span>`
+  return `
+    <div class="opening-screen sunday-screen">
+      <div class="scene ${SUNDAY_BG}">${cast}</div>
+    </div>${modal}`
+}

@@ -34,6 +34,16 @@ const clampLevel = (u, level) => Math.min(u.start + u.multiples.length, Math.max
 const loadUpgrades = (d) => Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, clampLevel(u, d[u.id])]))
 const isInterior = (v) => v === undefined || (Number.isInteger(v) && v >= 0 && v <= INTERIOR_STAGES.length)
 
+// Weekly rent (economy E003). Saves from before carry neither field — 0 on load, same as a fresh game.
+const isRentOverdue = (v) => v === undefined || v === 0 || v === 1
+const isWeekRevenue = (v) => v === undefined || isNonNegInt(v)
+// A save made while the 'sunday' screen was open keeps that phase + its frozen ledger, so reopening the
+// game resumes there instead of skipping ahead to the shop (every other phase resumes at the shop — see
+// `resumeShop` in logic.js). No other phase is ever saved.
+const isSavedPhase = (p) => p === undefined || p === 'sunday'
+const isLedger = (l) => l === undefined || l === null ||
+  (typeof l === 'object' && isNonNegInt(l.weekRevenue) && isNonNegInt(l.rentDue) && typeof l.rentPaid === 'boolean')
+
 const isNumberMap = (obj, validKeys, check) =>
   obj !== null && typeof obj === 'object' &&
   Object.entries(obj).every(([k, v]) => validKeys[k] !== undefined && check(v))
@@ -50,7 +60,11 @@ export function isValidSave(d) {
     Array.isArray(d.unlocked) && d.unlocked.every((id) => INGREDIENT_BY_ID[id] !== undefined) &&
     isNumberMap(d.upgrades, UPGRADE_BY_ID, isNonNegInt) &&
     isInterior(d.interior) &&
-    isSideGifts(d.sideGifts)
+    isSideGifts(d.sideGifts) &&
+    isRentOverdue(d.rentOverdue) &&
+    isWeekRevenue(d.weekRevenue) &&
+    isSavedPhase(d.phase) &&
+    isLedger(d.ledger)
 }
 
 /** Saves between-days progress; returns false when storage is unavailable. */
@@ -67,6 +81,11 @@ export function saveGame(s) {
     interior: s.interior,
     sideGifts: s.sideGifts,
     character: s.character,
+    rentOverdue: s.rentOverdue,
+    weekRevenue: s.weekRevenue,
+    // Only the 'sunday' screen is saved as its own phase (see isSavedPhase) — every other phase resumes at
+    // the shop via resumeShop, so recording it would be dead weight.
+    ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
   }
   try {
     localStorage.setItem(SAVE_KEY, JSON.stringify(data))
@@ -96,6 +115,9 @@ export function loadGame() {
       interior: d.interior ?? 0,
       sideGifts: d.sideGifts ?? [],
       character: normalizeCharacter(d.character), // saves from before characters get the default
+      rentOverdue: d.rentOverdue ?? 0,
+      weekRevenue: d.weekRevenue ?? 0,
+      ...(d.phase === 'sunday' ? { phase: 'sunday', ledger: d.ledger ?? null } : {}),
     }
   } catch {
     return null
@@ -103,3 +125,13 @@ export function loadGame() {
 }
 
 export const hasSave = () => loadGame() !== null
+
+/** Deletes the save (economy E003: a closed-down shop ends the run — "이어하기" must not bring it back). */
+export function clearSave() {
+  try {
+    localStorage.removeItem(SAVE_KEY)
+    return true
+  } catch {
+    return false
+  }
+}

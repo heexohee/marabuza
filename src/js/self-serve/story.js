@@ -2,7 +2,7 @@
 // Pure data and text helpers; `{name}` is replaced with the protagonist's name.
 // design/game-brief.md "Story — 최애 한 그릇" · design/quick-specs/story-character-2026-09-25.md §B, §C
 
-const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문' }
+const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주' }
 
 /**
  * Opening scenes in order. bg = CSS scene class, props = emoji sprites drawn in the scene,
@@ -120,6 +120,25 @@ const OWN_LINES = [
 /** One line said at the start of `day`. */
 export const dayStartLine = (day) =>
   (day <= TIPS.length ? TIPS[day - 1] : OWN_LINES[(day - TIPS.length - 1) % OWN_LINES.length])
+
+// ---------- Sunday off day (economy E003) ----------
+// A short scene in the closed shop (scene-sunday: her board, "휴무" in the window, lanterns off), played
+// like the opening: a caption, her line, the week's ledger, then who has the last word. Rent goes to the
+// landlord (건물주) — the panda only collects 권리금 (E004), so he stays out of this scene.
+export const SUNDAY_BG = 'scene-sunday'
+export const SUNDAY_LEDGER_STEP = 2
+export const SUNDAY_LAST_STEP = 3
+
+/** The Sunday scene's line at `step` (the ledger step has none), given the week's settled ledger. */
+export function sundayLine(step, ledger) {
+  if (step === 0) return { who: 'caption', text: '오늘은 일요일! 쉬는 날.' }
+  if (step === 1) return { who: 'me', text: '한 주 동안 수고했어. 장부부터 정리하자.' }
+  if (step === SUNDAY_LEDGER_STEP) return null
+  if (ledger?.bankrupt) return { who: 'landlord', text: '두 주 연속이면… 더는 어렵겠어요. 가게를 비워 주셔야겠어요.' }
+  return ledger?.rentPaid === false
+    ? { who: 'landlord', text: '임대료가 모자라네요… 이번 주는 봐 드릴게요. 다음 주엔 두 주 치, 꼭이요!' }
+    : { who: 'me', text: '임대료 완납! 이번 주도 잘 버텼다.' }
+}
 
 /** One line at closing time, picked from how the finished day went (its stats). */
 export function dayEndLine(st) {

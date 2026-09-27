@@ -1,11 +1,11 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
-  addToast, adjustCharge, advanceStory, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
-  fadeToasts, finishCharacter, openShop, pickPot, resetCharge, restock, serveTable, setCharacterName,
+  addToast, adjustCharge, advanceStory, advanceSunday, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
+  fadeToasts, finishCharacter, isSundayDone, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
-import { hasSave, loadGame, saveGame } from './save.js'
+import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
@@ -33,7 +33,7 @@ const gameActions = {
   cookNext: (s) => cookNext(s),
   pick: (s, arg) => pickPot(s, Number(arg)),
   table: (s, arg) => serveTable(s, Number(arg)),
-  toShop: (s) => persist(openShop(s)),
+  toShop: (s) => persist(afterSummary(s)),
   buy: (s, arg) => persist(buyPack(s, arg)),
   unlock: (s, arg) => persist(unlockIngredient(s, arg)),
   upgrade: (s, arg) => persist(buyUpgrade(s, arg)),
@@ -52,9 +52,10 @@ const gameActions = {
   charDone: (s) => finishCharacter(s),
   storyNext: (s) => advanceStory(s),
   storySkip: (s) => skipStory(s),
+  sundayNext: (s) => (isSundayDone(s) ? persist(afterSummary(s)) : advanceSunday(s)),
   continue: (s) => {
     const loaded = loadGame()
-    return loaded ? openShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
+    return loaded ? resumeShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
   },
 }
 
@@ -100,6 +101,7 @@ const KEY_ACTIONS = {
   // e.code = physical key, so P / C also work while a Korean IME is on (ㅔ / ㅊ)
   day: { Enter: 'chargeConfirm', Space: 'dig', Escape: 'pause', KeyP: 'pause', KeyC: 'cookNext' },
   opening: { Enter: 'storyNext', Space: 'storyNext', Escape: 'storySkip' },
+  sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
 }
 
 window.addEventListener('keydown', (e) => {
@@ -135,6 +137,8 @@ function frame(now) {
   state = isRunning ? tick(state, dt) : fadeToasts(state, dt)
   // every visit to the shop starts on the order tab
   if (state.phase === 'shop' && lastPhase !== 'shop') view = { ...view, shopTab: DEFAULT_SHOP_TAB }
+  // a closed-down shop ends the run: drop the save so "이어하기" cannot skip past it (economy E003)
+  if (state.phase === 'closed' && lastPhase !== 'closed' && clearSave()) view = { ...view, hasSave: false }
   lastPhase = state.phase
   render(root, state, view)
   requestAnimationFrame(frame)

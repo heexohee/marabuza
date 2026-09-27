@@ -15,8 +15,8 @@ export function isDevMode(loc = window.location) {
   return LOCAL_HOSTS.includes(loc.hostname)
 }
 
-const PLAYABLE = new Set(['day', 'summary', 'shop'])
-const notPlayable = (s) => addToast(s, '영업·정산·상점 화면에서만 쓸 수 있어요 (개발 모드)', 'info')
+const PLAYABLE = new Set(['day', 'summary', 'shop', 'sunday'])
+const notPlayable = (s) => addToast(s, '영업·정산·일요일·상점 화면에서만 쓸 수 있어요 (개발 모드)', 'info')
 
 // Plays `days` business days from the current screen and stops on the last day's summary.
 // From a business day the rest of today counts as the first day.

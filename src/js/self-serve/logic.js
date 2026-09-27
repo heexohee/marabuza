@@ -10,16 +10,16 @@ import {
 } from '../data.js'
 import {
   addToast, checkoutBasePrice, checkoutBowlPrice, checkoutBowlWeight, checkoutOutcome, clamp, cookTime, freePotIndex, isClosing,
-  maxPatience as sharedMaxPatience, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
+  maxPatience as sharedMaxPatience, openShop, round100, toCheckoutBowl, unlockIngredient as unlockSharedIngredient,
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
-  RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
-  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId,
+  RENT, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId, weekdayOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
-import { CREATE_AT_SCENE, OPENING_SCENES, dayStartLine } from './story.js'
+import { CREATE_AT_SCENE, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 // `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
@@ -66,6 +66,10 @@ export function createNewGame() {
     upgrades: Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, u.start])),
     interior: 0, // interior stages bought, 0–6 (INTERIOR_STAGES)
     sideGifts: [], // side ids whose opening-day gift box was handed over
+    rentOverdue: 0, // 1 after a missed Sunday payment — this week owes double, another miss closes the shop
+    weekRevenue: 0, // this week's net so far (revenue+tips−refunds), accumulated at each day's close
+    ledger: null, // { weekRevenue, rentDue, rentPaid } shown on the 'sunday' screen (economy E003)
+    closedReason: null, // 'rent' | 'rating' — which failure closed the shop (phase 'closed')
     toasts: [],
     nextToastId: 1,
     character: DEFAULT_CHARACTER,
@@ -328,6 +332,50 @@ export function skipStory(s) {
 }
 export const startNextDay = (s) => startDay({ ...s, day: s.day + 1 })
 
+// ---------- weekly rent + Sunday off day (economy story E003) ----------
+
+/**
+ * Settles the week's rent and enters the 'sunday' screen. On a second miss running the ledger is marked
+ * bankrupt, and leaving the scene (afterSummary) closes the shop instead of opening it.
+ * The whole week's arithmetic resolves in this one pure step; the ledger screen just displays it, stamp by
+ * stamp. `s.day` must already be the Sunday's own day number.
+ */
+export function enterSunday(s) {
+  const due = RENT * (s.rentOverdue ? 2 : 1)
+  const rentPaid = s.money >= due
+  const bankrupt = !rentPaid && s.rentOverdue === 1
+  // A second miss still plays the Sunday scene (its ledger stamps 폐업); leaving it closes the shop.
+  return {
+    ...s,
+    phase: 'sunday',
+    money: rentPaid ? s.money - due : s.money,
+    rentOverdue: bankrupt ? s.rentOverdue : (rentPaid ? 0 : 1),
+    ledger: { weekRevenue: s.weekRevenue ?? 0, rentDue: due, rentPaid, bankrupt },
+    weekRevenue: 0,
+    sundayStep: 0, // which beat of the Sunday scene is showing (story.js sundayLine)
+  }
+}
+
+/** Next beat of the Sunday scene; stays on the last one (leaving is afterSummary's job). */
+export const advanceSunday = (s) =>
+  (s.phase === 'sunday' ? { ...s, sundayStep: Math.min((s.sundayStep ?? 0) + 1, SUNDAY_LAST_STEP) } : s)
+
+/** True on the Sunday scene's last beat, where a click leaves for the shop. */
+export const isSundayDone = (s) => (s.sundayStep ?? 0) >= SUNDAY_LAST_STEP
+
+/**
+ * From a day's summary to the shop — unless the day just finished was Saturday, in which case the week's
+ * Sunday settlement comes first. Also the way out of the 'sunday' screen itself: called again from there
+ * (day is already Sunday's own number, so it just falls through to the shop).
+ */
+export function afterSummary(s) {
+  if (s.phase === 'sunday' && s.ledger?.bankrupt) return { ...s, phase: 'closed', closedReason: 'rent' }
+  return weekdayOf(s.day) === 6 ? enterSunday({ ...s, day: s.day + 1 }) : openShop(s)
+}
+
+/** Resumes a save into the shop, unless it was made mid-'sunday' (that phase is saved as-is; see save.js). */
+export const resumeShop = (s) => (s.phase === 'sunday' ? s : openShop(s))
+
 /** Picks the ingredients a new customer would like: distinct unlocked ids × 1..maxQty. */
 export function generateWish(unlocked, rng) {
   const pool = [...unlocked]
@@ -454,8 +502,14 @@ export function tick(s, dt, rng = Math.random) {
     toasts: s.toasts.map((t) => ({ ...t, ttl: t.ttl - dt })).filter((t) => t.ttl > 0),
   }
   const next = advanceSpawn(syncCounter(departTables(departQueue(wiltShelf(aged, dt)))), dt, rng)
+  // Reputation hitting 0 closes the shop outright (economy E003), same screen as two missed rents.
+  if (next.rating <= 0) return { ...next, phase: 'closed', closedReason: 'rating' }
   if (!isClosing(next) || !isEveryoneGone(next)) return next
-  return { ...next, phase: 'summary', stock: closeShelf(next.stock, next.shelf), shelf: {}, heldPot: null }
+  const net = next.stats.revenue + next.stats.tips - next.stats.refunds
+  return {
+    ...next, phase: 'summary', stock: closeShelf(next.stock, next.shelf), shelf: {}, heldPot: null,
+    weekRevenue: (s.weekRevenue ?? 0) + net,
+  }
 }
 
 // ---------- restock ----------

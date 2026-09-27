@@ -4,8 +4,8 @@ import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import {
-  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, SIDE_ITEMS, VARIANT_INGREDIENTS, WILT_SEC,
-  sideStockId,
+  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, SIDE_ITEMS, VARIANT_INGREDIENTS, WEEKDAY_LABEL, WILT_SEC,
+  daysUntilRent, sideStockId, weekOf, weekdayOf,
 } from './data.js'
 import { demandFactor, nextInterior, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
@@ -75,13 +75,16 @@ export function helpHtml() {
     </div></div>`
 }
 
+// "N주차 화요일" — used on the summary and Sunday screens (economy E003: calendar day count).
+const weekdayLine = (day) => `${weekOf(day)}주차 ${WEEKDAY_LABEL[weekdayOf(day)]}요일`
+
 /** End-of-day summary: sales, register accuracy and shelf waste. */
 export function summaryHtml(s) {
   const st = s.stats
   const net = st.revenue + st.tips - st.refunds
   return `
     <div class="overlay"><div class="modal">
-      <h2>DAY ${s.day} 마감!</h2>
+      <h2>DAY ${s.day} 마감! <small>${weekdayLine(s.day)} · 임대료까지 ${daysUntilRent(s.day)}일</small></h2>
       <p class="end-line">${heroImg(s.character, 'hero-small')}<span><b>${esc(s.character.name)}</b> "${esc(dayEndLine(st))}"</span></p>
       <table class="summary">
         <tr><td>${spriteImg('😋', 16, 'stat-img')} 서빙한 손님</td><td>${st.served}명</td></tr>
@@ -97,6 +100,20 @@ export function summaryHtml(s) {
         <tr><td>평판</td><td>${stars(s.rating)} ${s.rating.toFixed(1)}</td></tr>
       </table>
       <button class="btn big" data-action="toShop">상점으로 →</button>
+    </div></div>`
+}
+
+/** Bankruptcy: rent missed two weeks running, or reputation hit 0 (economy E003). Warm tone, one way out. */
+export function closedHtml(s) {
+  const line = s.closedReason === 'rating'
+    ? '평판이 바닥나서 손님 발길이 끊겼어요…'
+    : '임대료를 두 주 연속 내지 못했어요…'
+  return `
+    <div class="overlay"><div class="modal">
+      <h2>폐업 😢</h2>
+      <p class="end-line">${line}</p>
+      <p class="hint center">다시 해 볼까요?</p>
+      <button class="btn big" data-action="new">새로 시작</button>
     </div></div>`
 }
 

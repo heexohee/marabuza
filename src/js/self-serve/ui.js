@@ -9,16 +9,16 @@ import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, WOK_DAY, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
-  WILT_SEC,
+  WEEKDAY_LABEL, WILT_SEC, weekdayOf,
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
   ownerLineText,
 } from './logic.js'
-import { helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
+import { closedHtml, helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
-import { createHtml, createKey, esc, heroImg, openingHtml, openingKey } from './story-ui.js'
+import { createHtml, createKey, esc, heroImg, closedSceneHtml, openingHtml, openingKey, sundayHtml, sundayKey } from './story-ui.js'
 
 const LOW_SHELF = 2
 
@@ -329,6 +329,7 @@ function sideHtml(s, view) {
 
 function overlayHtml(s, view) {
   if (s.phase === 'summary') return summaryHtml(s)
+  if (s.phase === 'closed') return closedHtml(s)
   if (view.help) return helpHtml()
   if (view.paused) {
     return '<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button><button class="btn ghost" data-action="menu">타이틀로</button></div></div>'
@@ -368,7 +369,8 @@ function updateBars(root, s) {
 
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
-  const screen = ['menu', 'shop', 'create', 'opening'].includes(s.phase) ? s.phase : 'game'
+  const isRentClosed = s.phase === 'closed' && s.closedReason === 'rent'
+  const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
     root.__key = null
@@ -379,11 +381,13 @@ export function render(root, s, view) {
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
+  if (screen === 'sunday') return patch(root, sundayKey(s), () => sundayHtml(s))
+  if (screen === 'closed') return patch(root, 'closed|rent', () => closedSceneHtml(s, closedHtml(s)))
   if (screen === 'shop') {
     const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`
     return patch(root, key, () => shopHtml(s, view.shopTab))
   }
-  patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day}`)
+  patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day} <small>${WEEKDAY_LABEL[weekdayOf(s.day)]}</small>`)
   patch(slot(root, 'tables'), tablesKey(s), () => tablesHtml(s))
   patch(slot(root, 'rail'), s.rail.map((o) => o.ticketNo).join(','), () => railHtml(s))
   patch(slot(root, 'pots'), potsKey(s), () => potsHtml(s))

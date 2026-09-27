@@ -1,7 +1,7 @@
 # Story E002: 기준 D 측정 + 가격표 재정렬
 
 > **Epic**: economy (경제 레벨링)
-> **Status**: In Progress
+> **Status**: Complete
 > **Layer**: Core
 > **Type**: Logic
 > **Estimate**: M

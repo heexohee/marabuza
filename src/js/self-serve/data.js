@@ -85,6 +85,19 @@ export const ECONOMY_MULTIPLE = {
   premium: 30, // 권리금 total (economy story E004)
   premiumMinWeekly: 0.5, // minimum 권리금 instalment each Sunday
 }
+/** Weekly rent in 원 (economy story E003; 권리금 constants stay unused here — E004's job). */
+export const RENT = priceOf(ECONOMY_MULTIPLE.rent)
+
+// ---------- calendar (economy story E003, decision 2026-09-27: calendar day count) ----------
+// DAY counts every calendar day, never skipping one: day 1 is Monday, so day 7/14/21/28…
+// (day % 7 === 0) is always Sunday, the one day with no business. weekdayOf follows JS's own
+// Sunday-first convention (0=일 .. 6=토) so isSunday is just `=== 0`.
+export const WEEKDAY_LABEL = ['일', '월', '화', '수', '목', '금', '토']
+export const weekdayOf = (day) => day % 7
+export const isSunday = (day) => weekdayOf(day) === 0
+export const weekOf = (day) => Math.ceil(day / 7)
+/** Days left until the next rent payment (0 on Sunday itself). */
+export const daysUntilRent = (day) => (isSunday(day) ? 0 : 7 - weekdayOf(day))
 
 // Shop upgrades for this flow (the original flow keeps ../data.js UPGRADES). The old "인테리어 +15%"
 // upgrade is replaced by the 6 interior stages below; tables go 2 → 4.

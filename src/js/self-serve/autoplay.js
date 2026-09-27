@@ -5,7 +5,7 @@
 // story E002 (measuring the average daily profit D).
 import { DAY_LENGTH_SEC } from '../data.js'
 import {
-  adjustCharge, buyPack, buySidePack, confirmCharge, cookNext, counterPrice, frontCustomer, openShop, pickPot, restock, serveTable,
+  adjustCharge, afterSummary, buyPack, buySidePack, confirmCharge, cookNext, counterPrice, frontCustomer, pickPot, restock, serveTable,
   openSides, setTicketMode, setTicketSpice, shelfIds, startNextDay, tick,
 } from './logic.js'
 import { sideStockId } from './data.js'
@@ -154,15 +154,27 @@ export function restockWarehouse(s) {
   return { ...cur, toasts: s.toasts }
 }
 
+// From a summary, a Sunday screen or the shop, walks forward to the next business day — the Sunday rent
+// settlement (economy E003) is a free pass-through here, same as the shop always is: `afterSummary` from
+// 'summary' lands on 'sunday' only on a Saturday close, and calling it again from 'sunday' falls through
+// to the shop, so a week boundary never costs an extra iteration of the caller's day-counting loop below.
+function resolveToDay(s) {
+  let cur = s
+  if (cur.phase === 'summary') cur = afterSummary(cur)
+  if (cur.phase === 'sunday') cur = afterSummary(cur)
+  if (cur.phase === 'shop') cur = startNextDay(restockWarehouse(cur))
+  return cur
+}
+
 /**
- * Plays `days` business days in a row from a day, summary or shop state; ends on the last day's summary.
+ * Plays `days` business days in a row from a day, summary, sunday or shop state; ends on the last day's
+ * summary (or earlier, on 'closed', if the week's rent or reputation ran out).
  * Between days the shop is opened, the warehouse is topped up (restockWarehouse), and nothing else is bought.
  */
 export function autoPlayDays(s, days = 1, rng = Math.random, mistakes = BOT_MISTAKES) {
   let cur = s
   for (let d = 0; d < days; d++) {
-    if (cur.phase === 'summary') cur = openShop(cur)
-    if (cur.phase === 'shop') cur = startNextDay(restockWarehouse(cur))
+    cur = resolveToDay(cur)
     if (cur.phase !== 'day') return cur
     cur = autoPlayDay(cur, rng, mistakes)
   }
