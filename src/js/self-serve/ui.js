@@ -15,7 +15,7 @@ import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
   ownerLineText, ownerLineWho,
 } from './logic.js'
-import { closedHtml, helpHtml, menuHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
+import { closedHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import { createHtml, createKey, esc, heroImg, closedSceneHtml, openingHtml, openingKey, sundayHtml, sundayKey } from './story-ui.js'
@@ -352,7 +352,7 @@ function overlayHtml(s, view) {
   if (s.phase === 'closed') return closedHtml(s)
   if (view.help) return helpHtml()
   if (view.paused) {
-    return '<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button><button class="btn ghost" data-action="menu">타이틀로</button></div></div>'
+    return `<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button>${musicControlsHtml(view.audio)}<button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
   }
   return ''
 }
@@ -387,6 +387,8 @@ function updateBars(root, s) {
 
 // ---------- entry ----------
 
+const audioKey = (view) => `${view.audio.muted}|${view.audio.volume}`
+
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
   const isRentClosed = s.phase === 'closed' && s.closedReason === 'rent'
@@ -398,8 +400,8 @@ export function render(root, s, view) {
     root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.titleSel}`, () =>
-      menuHtml(view) + (view.settings ? settingsHtml() : '') + (view.help ? helpHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.titleSel}|${audioKey(view)}`, () =>
+      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.help ? helpHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
@@ -425,6 +427,6 @@ export function render(root, s, view) {
   patch(slot(root, 'side'), `${s.money}|${s.rating.toFixed(2)}|${JSON.stringify(s.stats)}|${view.paused}`, () => sideHtml(s, view))
   patch(slot(root, 'toasts'), s.toasts.map((t) => t.id).join(','), () =>
     s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join(''))
-  patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.help}`, () => overlayHtml(s, view))
+  patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.help}|${audioKey(view)}`, () => overlayHtml(s, view))
   return updateBars(root, s)
 }

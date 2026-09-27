@@ -44,12 +44,30 @@ export function menuHtml(view) {
     </div>`
 }
 
-/** Settings from the title: how to play, fullscreen, and the link back to the original flow. */
-export function settingsHtml() {
+/**
+ * Music on/off and volume − / + — shared by the title settings and the pause menu.
+ * @param {{muted: boolean, volume: number}} audio
+ */
+export function musicControlsHtml(audio) {
+  const level = `${Math.round(audio.volume * 100)}%`
+  return `
+    <div class="music-controls" role="group" aria-label="배경음악">
+      <button class="btn big music-toggle" data-action="musicToggle" aria-pressed="${!audio.muted}">배경음악 ${audio.muted ? '꺼짐' : '켜짐'} <kbd>M</kbd></button>
+      <div class="music-volume">
+        <button class="btn music-vol" data-action="musicVol" data-arg="-1" aria-label="음량 줄이기" ${audio.volume <= 0 ? 'disabled' : ''}>−</button>
+        <span class="music-level" aria-live="polite">${audio.muted ? '음소거' : level}</span>
+        <button class="btn music-vol" data-action="musicVol" data-arg="1" aria-label="음량 키우기" ${audio.volume >= 1 ? 'disabled' : ''}>+</button>
+      </div>
+    </div>`
+}
+
+/** Settings from the title: how to play, music, fullscreen, and the link back to the original flow. */
+export function settingsHtml(audio) {
   return `
     <div class="overlay"><div class="modal small settings">
       <h2>설정</h2>
       <button class="btn big" data-action="help">게임방법</button>
+      ${musicControlsHtml(audio)}
       <button class="btn big" data-action="fullscreen">전체화면 켜기 / 끄기</button>
       <a class="variant-link" href="index.html?classic">← 기존 흐름(사장이 담기)으로</a>
       <button class="btn ghost" data-action="closeSettings">닫기</button>

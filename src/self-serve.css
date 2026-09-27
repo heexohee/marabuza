@@ -735,3 +735,10 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .modal.settings .variant-link { color: var(--ink); text-align: center; }
 .modal.settings { max-width: 340px; }
 .modal.settings .btn { white-space: nowrap; }
+
+/* music on/off + volume — title settings and the pause menu */
+.music-controls { display: flex; flex-direction: column; gap: 8px; }
+.music-controls .music-toggle { white-space: nowrap; }
+.music-volume { display: flex; align-items: center; justify-content: center; gap: 10px; }
+.music-volume .music-vol { width: 44px; padding: 6px 0; font-size: 18px; }
+.music-volume .music-level { min-width: 64px; text-align: center; font-size: 16px; font-variant-numeric: tabular-nums; }

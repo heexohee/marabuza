@@ -10,13 +10,41 @@ import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
+import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted } from './audio.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
 
+// localStorage can throw on access (blocked site data); the audio prefs module treats undefined as "no storage"
+function storageOrUndefined() {
+  try {
+    return window.localStorage
+  } catch {
+    return undefined
+  }
+}
+const storage = storageOrUndefined()
+
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, settings: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB }
+let view = { hover: null, paused: false, help: false, settings: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
 view = { ...view, titleSel: defaultTitleSel(view) }
+
+const audio = createAudioPlayer({
+  AudioContextClass: window.AudioContext ?? window.webkitAudioContext,
+  fetchFn: (url) => fetch(url),
+  onError: (msg) => { state = addToast(state, msg, 'bad') },
+})
+audio.setPrefs(view.audio)
+
+function setAudioPrefs(prefs) {
+  view = { ...view, audio: prefs }
+  audio.setPrefs(prefs)
+  saveAudioPrefs(storage, prefs) // a failed save only loses the preference next launch
+}
+
+// Browsers keep audio locked until the first user gesture.
+window.addEventListener('pointerdown', () => audio.unlock(), { capture: true })
+window.addEventListener('keydown', () => audio.unlock(), { capture: true })
 
 function persist(s) {
   return saveGame(s) ? s : addToast(s, '저장에 실패했어요 (브라우저 저장소를 확인하세요)', 'bad')
@@ -80,6 +108,8 @@ function run(action, arg) {
     toggleFullscreen()
     return
   }
+  if (action === 'musicToggle') return setAudioPrefs(toggleMuted(view.audio))
+  if (action === 'musicVol') return setAudioPrefs(changeVolume(view.audio, Number(arg) * VOLUME_STEP))
   if (viewActions[action]) {
     view = viewActions[action](view, arg)
     return
@@ -136,6 +166,11 @@ function toggleFullscreen() {
 }
 
 window.addEventListener('keydown', (e) => {
+  // M mutes music anywhere, except while typing (the shop owner's name field)
+  if (e.code === 'KeyM' && !e.target.closest?.('input, textarea')) {
+    e.preventDefault()
+    return run('musicToggle')
+  }
   if (state.phase === 'menu') {
     if (titleKey(e.code)) e.preventDefault()
     return
@@ -175,6 +210,7 @@ function frame(now) {
   // a closed-down shop ends the run: drop the save so "이어하기" cannot skip past it (economy E003)
   if (state.phase === 'closed' && lastPhase !== 'closed' && clearSave()) view = { ...view, hasSave: false, titleSel: defaultTitleSel({ hasSave: false }) }
   lastPhase = state.phase
+  audio.setPhase(state.phase)
   render(root, state, view)
   requestAnimationFrame(frame)
 }
