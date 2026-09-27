@@ -1,6 +1,6 @@
 // Full-screen / modal HTML specific to the self-serve variant: title, help, summary and shop.
 // The shop mirrors the original flow's layout (../screens.js) but also sells skewers and cilantro.
-import { CHECKOUT_PRICE, CUSTOMER_FACES, PACK_SIZE } from '../data.js'
+import { CHECKOUT_PRICE, PACK_SIZE } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import {
@@ -11,23 +11,49 @@ import { demandFactor, nextInterior, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
 import { esc, heroImg } from './story-ui.js'
 
-/** Title screen, with a link back to the original flow for side-by-side playtests. */
+/**
+ * Title menu (feedback 2026-09-27, Dave the Diver style): white pixel-font items in a column on the right of the
+ * rainy-alley background (tools/art/title_bg.py → img/title-bg.png, whose roof sign is the logo). `action` is the
+ * data-action it runs; 불러오기 waits for multiple save slots, so it has none yet.
+ */
+export const TITLE_MENU = [
+  { id: 'new', label: '새 게임', action: 'new' },
+  { id: 'continue', label: '이어서 하기', action: 'continue', needsSave: true },
+  { id: 'load', label: '불러오기', action: null, note: '준비 중' },
+  { id: 'settings', label: '설정', action: 'settings' },
+]
+
+/** True when a title item can be chosen right now (it has an action, and a save if it needs one). */
+export const titleItemEnabled = (item, view) => Boolean(item.action) && (!item.needsSave || view.hasSave)
+
+/** Which item starts highlighted: 이어서 하기 when there is a save, else 새 게임. */
+export const defaultTitleSel = (view) => TITLE_MENU.findIndex((it) => it.id === (view.hasSave ? 'continue' : 'new'))
+
+/** Title screen: the logo is painted on the background's roof sign; this is the menu over it. */
 export function menuHtml(view) {
-  const parade = CUSTOMER_FACES.slice(0, 8).map((f, i) =>
-    `<span class="parade-item" style="animation-delay:${i * 0.15}s">${spriteImg(f, 20, 'parade-img')}</span>`).join('')
+  const sel = view.titleSel ?? defaultTitleSel(view)
+  const items = TITLE_MENU.map((it, i) => {
+    const on = titleItemEnabled(it, view)
+    return `<button class="title-item ${i === sel ? 'on' : ''}" data-action="${it.action ?? ''}" data-title-sel="${i}" ${on ? '' : 'disabled'}>${it.label}${it.note ? `<small>${it.note}</small>` : ''}</button>`
+  }).join('')
   return `
     <div class="title-screen">
-      <h1 class="title-logo">마라부자</h1>
-      <p class="title-sub">: 셀프 담기 버전 <small class="variant-tag">실험</small></p>
-      <div class="title-bowl">${spriteImg('🍲', 24, 'title-bowl-img')}</div>
-      <div class="parade">${parade}</div>
-      <div class="title-buttons">
-        <button class="bubble-btn" data-action="new">게임하기</button>
-        <button class="bubble-btn alt" data-action="continue" ${view.hasSave ? '' : 'disabled'}>이어하기</button>
-        <button class="bubble-btn alt2" data-action="help">게임방법</button>
-        <a class="variant-link" href="index.html?classic">← 기존 흐름(사장이 담기)으로</a>
-      </div>
+      <h1 class="sr-only">마라부자 — 퇴사하고 마라탕집 사장님</h1>
+      <nav class="title-menu" aria-label="타이틀 메뉴">${items}</nav>
+      <span class="title-ver">v0.1 · 셀프 담기</span>
     </div>`
+}
+
+/** Settings from the title: how to play, fullscreen, and the link back to the original flow. */
+export function settingsHtml() {
+  return `
+    <div class="overlay"><div class="modal small settings">
+      <h2>설정</h2>
+      <button class="btn big" data-action="help">게임방법</button>
+      <button class="btn big" data-action="fullscreen">전체화면 켜기 / 끄기</button>
+      <a class="variant-link" href="index.html?classic">← 기존 흐름(사장이 담기)으로</a>
+      <button class="btn ghost" data-action="closeSettings">닫기</button>
+    </div></div>`
 }
 
 // How-to-play: short "title — one line" steps in groups, prices from CHECKOUT_PRICE so they never drift.

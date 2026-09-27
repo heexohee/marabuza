@@ -9,13 +9,14 @@ import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
-import { DEFAULT_SHOP_TAB } from './screens.js'
+import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
 
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB }
+let view = { hover: null, paused: false, help: false, settings: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB }
+view = { ...view, titleSel: defaultTitleSel(view) }
 
 function persist(s) {
   return saveGame(s) ? s : addToast(s, '저장에 실패했어요 (브라우저 저장소를 확인하세요)', 'bad')
@@ -61,7 +62,9 @@ const gameActions = {
 
 const viewActions = {
   pause: (v) => ({ ...v, paused: !v.paused }),
-  help: (v) => ({ ...v, help: true }),
+  help: (v) => ({ ...v, help: true, settings: false }),
+  settings: (v) => ({ ...v, settings: true }),
+  closeSettings: (v) => ({ ...v, settings: false }),
   closeHelp: (v) => ({ ...v, help: false }),
   shopTab: (v, arg) => ({ ...v, shopTab: arg }),
 }
@@ -69,7 +72,12 @@ const viewActions = {
 function run(action, arg) {
   if (action === 'menu') {
     state = createNewGame()
-    view = { ...view, paused: false, help: false, hasSave: hasSave() }
+    view = { ...view, paused: false, help: false, settings: false, hasSave: hasSave() }
+    view = { ...view, titleSel: defaultTitleSel(view) }
+    return
+  }
+  if (action === 'fullscreen') {
+    toggleFullscreen()
     return
   }
   if (viewActions[action]) {
@@ -92,6 +100,8 @@ root.addEventListener('input', (e) => {
 })
 
 root.addEventListener('mouseover', (e) => {
+  const item = e.target.closest('[data-title-sel]')
+  if (item && !item.disabled && Number(item.dataset.titleSel) !== view.titleSel) view = { ...view, titleSel: Number(item.dataset.titleSel) }
   const target = e.target.closest('[data-hover]')
   const hover = target ? target.dataset.hover : null
   if (hover !== view.hover) view = { ...view, hover }
@@ -104,7 +114,32 @@ const KEY_ACTIONS = {
   sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
 }
 
+// Title menu by keyboard: ↑/↓ move between the items that can be chosen, Enter/Space runs the highlighted one.
+function titleKey(code) {
+  if (code === 'Escape' && (view.help || view.settings)) return run(view.help ? 'closeHelp' : 'closeSettings'), true
+  if (view.help || view.settings) return false
+  const usable = TITLE_MENU.map((it, i) => (titleItemEnabled(it, view) ? i : -1)).filter((i) => i >= 0)
+  const at = usable.indexOf(view.titleSel)
+  if (code === 'ArrowDown' || code === 'ArrowUp') {
+    const step = code === 'ArrowDown' ? 1 : -1
+    view = { ...view, titleSel: usable[(Math.max(at, 0) + step + usable.length) % usable.length] }
+    return true
+  }
+  if ((code === 'Enter' || code === 'Space') && at >= 0) return run(TITLE_MENU[view.titleSel].action), true
+  return false
+}
+
+function toggleFullscreen() {
+  const doc = document
+  const req = doc.fullscreenElement ? doc.exitFullscreen?.() : doc.documentElement.requestFullscreen?.()
+  req?.catch?.(() => { state = addToast(state, '이 브라우저에서는 전체화면을 쓸 수 없어요', 'bad') })
+}
+
 window.addEventListener('keydown', (e) => {
+  if (state.phase === 'menu') {
+    if (titleKey(e.code)) e.preventDefault()
+    return
+  }
   const action = KEY_ACTIONS[state.phase]?.[e.code]
   if (!action) return
   e.preventDefault()
@@ -138,7 +173,7 @@ function frame(now) {
   // every visit to the shop starts on the order tab
   if (state.phase === 'shop' && lastPhase !== 'shop') view = { ...view, shopTab: DEFAULT_SHOP_TAB }
   // a closed-down shop ends the run: drop the save so "이어하기" cannot skip past it (economy E003)
-  if (state.phase === 'closed' && lastPhase !== 'closed' && clearSave()) view = { ...view, hasSave: false }
+  if (state.phase === 'closed' && lastPhase !== 'closed' && clearSave()) view = { ...view, hasSave: false, titleSel: defaultTitleSel({ hasSave: false }) }
   lastPhase = state.phase
   render(root, state, view)
   requestAnimationFrame(frame)

@@ -15,7 +15,7 @@ import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
   ownerLineText,
 } from './logic.js'
-import { closedHtml, helpHtml, menuHtml, shopHtml, summaryHtml } from './screens.js'
+import { closedHtml, helpHtml, menuHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import { createHtml, createKey, esc, heroImg, closedSceneHtml, openingHtml, openingKey, sundayHtml, sundayKey } from './story-ui.js'
@@ -373,11 +373,13 @@ export function render(root, s, view) {
   const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
+    document.documentElement.dataset.screen = screen // the title's background covers the whole window
     root.__key = null
     root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}`, () => menuHtml(view) + (view.help ? helpHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.titleSel}`, () =>
+      menuHtml(view) + (view.settings ? settingsHtml() : '') + (view.help ? helpHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
