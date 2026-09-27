@@ -82,11 +82,23 @@ export const BASELINE_D = 97000
 export const priceOf = (multiple, d = BASELINE_D) => Math.round((multiple * d) / 100) * 100
 export const ECONOMY_MULTIPLE = {
   rent: 2, // weekly 임대료, paid on Sunday (economy story E003)
-  premium: 30, // 권리금 total (economy story E004)
-  premiumMinWeekly: 0.5, // minimum 권리금 instalment each Sunday
+  // 권리금 total (economy story E004, decision 2026-09-27: part 1 = 28 days, paid in 4 Sunday instalments).
+  // Starting value; confirmed by the 28-day bot sim (economy B001).
+  premium: 8,
 }
-/** Weekly rent in 원 (economy story E003; 권리금 constants stay unused here — E004's job). */
+/** Weekly rent in 원 (economy story E003). */
 export const RENT = priceOf(ECONOMY_MULTIPLE.rent)
+
+// ---------- 권리금 + part 1 (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §A) ----------
+/** Part 1 ends on this Sunday: the last instalment, then the ending. */
+export const PART1_LAST_DAY = 28
+/** Sundays 7 · 14 · 21 · 28. */
+export const PREMIUM_WEEKS = 4
+export const PREMIUM_TOTAL = priceOf(ECONOMY_MULTIPLE.premium)
+/** One Sunday's 권리금 (day 28 takes whatever is left instead). */
+export const PREMIUM_INSTALMENT = Math.round(PREMIUM_TOTAL / PREMIUM_WEEKS / 100) * 100
+/** "더 갚기" buttons on the Sunday ledger; 'all' pays as much as money and the balance allow. */
+export const PREMIUM_EXTRA_STEPS = [10_000, 50_000, 'all']
 
 // ---------- calendar (economy story E003, decision 2026-09-27: calendar day count) ----------
 // DAY counts every calendar day, never skipping one: day 1 is Monday, so day 7/14/21/28…

@@ -4,7 +4,7 @@
 // original flow's validator (../save.js) does not know about.
 import { INGREDIENT_BY_ID, MAX_RATING, UPGRADE_BY_ID } from '../data.js'
 import {
-  DROPPED_INGREDIENT_IDS, INTERIOR_STAGES, MENU_PRICE, SAVE_KEY, SELF_UPGRADES, SHELF_ITEM_BY_ID, SIDE_BY_ID, SIDE_STOCK_IDS,
+  DROPPED_INGREDIENT_IDS, INTERIOR_STAGES, MENU_PRICE, SAVE_KEY, SELF_UPGRADES, SHELF_ITEM_BY_ID, SIDE_BY_ID, SIDE_STOCK_IDS, PART1_LAST_DAY, PREMIUM_TOTAL,
 } from './data.js'
 import { createNewGame, setMenuPrice } from './logic.js'
 import { normalizeCharacter } from './character.js'
@@ -37,6 +37,9 @@ const isInterior = (v) => v === undefined || (Number.isInteger(v) && v >= 0 && v
 // Weekly rent (economy E003). Saves from before carry neither field — 0 on load, same as a fresh game.
 const isRentOverdue = (v) => v === undefined || v === 0 || v === 1
 const isWeekRevenue = (v) => v === undefined || isNonNegInt(v)
+// 권리금 + part-1 ending (economy E004). Saves from before carry none of these — see loadPremium.
+const isOptNonNegInt = (v) => v === undefined || isNonNegInt(v)
+const isOptBool = (v) => v === undefined || typeof v === 'boolean'
 // A save made while the 'sunday' screen was open keeps that phase + its frozen ledger, so reopening the
 // game resumes there instead of skipping ahead to the shop (every other phase resumes at the shop — see
 // `resumeShop` in logic.js). No other phase is ever saved.
@@ -63,6 +66,8 @@ export function isValidSave(d) {
     isSideGifts(d.sideGifts) &&
     isRentOverdue(d.rentOverdue) &&
     isWeekRevenue(d.weekRevenue) &&
+    isOptNonNegInt(d.premiumLeft) && isOptNonNegInt(d.premiumCarry) &&
+    isOptBool(d.endingSeen) && isOptBool(d.premiumPaidInFull) &&
     isSavedPhase(d.phase) &&
     isLedger(d.ledger)
 }
@@ -83,6 +88,10 @@ export function saveGame(s) {
     character: s.character,
     rentOverdue: s.rentOverdue,
     weekRevenue: s.weekRevenue,
+    premiumLeft: s.premiumLeft,
+    premiumCarry: s.premiumCarry,
+    endingSeen: s.endingSeen,
+    premiumPaidInFull: s.premiumPaidInFull,
     // Only the 'sunday' screen is saved as its own phase (see isSavedPhase) — every other phase resumes at
     // the shop via resumeShop, so recording it would be dead weight.
     ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
@@ -117,11 +126,30 @@ export function loadGame() {
       character: normalizeCharacter(d.character), // saves from before characters get the default
       rentOverdue: d.rentOverdue ?? 0,
       weekRevenue: d.weekRevenue ?? 0,
+      ...loadPremium(d),
       ...(d.phase === 'sunday' ? { phase: 'sunday', ledger: d.ledger ?? null } : {}),
     }
   } catch {
     return null
   }
+}
+
+/**
+ * 권리금 state from a save. A save from before E004 has none: before day 28 it starts from the full
+ * 권리금 (nothing was ever collected under the old rule); past day 28 part 1 counts as over, since
+ * its Sunday has already gone by.
+ */
+function loadPremium(d) {
+  if (d.premiumLeft !== undefined) {
+    return {
+      premiumLeft: d.premiumLeft,
+      premiumCarry: d.premiumCarry ?? 0,
+      endingSeen: d.endingSeen ?? false,
+      premiumPaidInFull: d.premiumPaidInFull ?? false,
+    }
+  }
+  const past = d.day > PART1_LAST_DAY
+  return { premiumLeft: past ? 0 : PREMIUM_TOTAL, premiumCarry: 0, endingSeen: past, premiumPaidInFull: false }
 }
 
 export const hasSave = () => loadGame() !== null

@@ -56,7 +56,9 @@ test('test_afterSummary_on_a_weekday_goes_straight_to_the_shop', () => {
 })
 
 test('test_afterSummary_on_saturday_enters_sunday_with_the_week_settled', () => {
-  const s = atDay(6, { phase: 'summary', weekRevenue: 50000 })
+  // Past part 1 (endingSeen) so only rent moves — the 권리금 row (economy E004) has its own tests in
+  // premium_ending_test.mjs.
+  const s = atDay(6, { phase: 'summary', weekRevenue: 50000, endingSeen: true })
   const after = afterSummary(s)
   assert.equal(after.phase, 'sunday')
   assert.equal(after.day, 7, 'Sunday is its own calendar day, not skipped')
@@ -171,7 +173,8 @@ test('test_autoplay_crosses_the_sunday_boundary_and_keeps_serving_on_monday', ()
 })
 
 test('test_autoplay_pays_rent_on_the_sunday_it_crosses', () => {
-  const saturday = { ...startDay(createNewGame()), day: 6, money: RICH }
+  // endingSeen: rent only (the 권리금 instalment is covered in premium_ending_test.mjs)
+  const saturday = { ...startDay(createNewGame()), day: 6, money: RICH, endingSeen: true }
   const summary = autoPlayDay(saturday, seeded()) // plays out the bot's Saturday
   const sunday = afterSummary(summary)
   assert.equal(sunday.phase, 'sunday')

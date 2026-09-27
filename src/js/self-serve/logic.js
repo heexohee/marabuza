@@ -14,12 +14,12 @@ import {
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA,
-  RENT, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId, weekdayOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
 import { DEFAULT_CHARACTER, sanitizeName, withCharacterOption } from './character.js'
-import { CREATE_AT_SCENE, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine } from './story.js'
+import { CREATE_AT_SCENE, ENDING_LINE_COUNT, OPENING_SCENES, SUNDAY_LAST_STEP, dayStartLine } from './story.js'
 
 // Shared, flow-independent actions re-exported so the variant UI imports from one place.
 // `setPrice`/`demandFactor` are NOT re-exported: this variant has its own mode-aware versions
@@ -68,7 +68,11 @@ export function createNewGame() {
     sideGifts: [], // side ids whose opening-day gift box was handed over
     rentOverdue: 0, // 1 after a missed Sunday payment — this week owes double, another miss closes the shop
     weekRevenue: 0, // this week's net so far (revenue+tips−refunds), accumulated at each day's close
-    ledger: null, // { weekRevenue, rentDue, rentPaid } shown on the 'sunday' screen (economy E003)
+    ledger: null, // { weekRevenue, rentDue, rentPaid, premiumDue?, premiumPaid?, premiumSettled? } on the 'sunday' screen
+    premiumLeft: PREMIUM_TOTAL, // 권리금 still owed to the panda (economy E004)
+    premiumCarry: 0, // instalments missed so far — added to the next Sunday's, never a reason to close
+    endingSeen: false, // the day-28 part-1 ending has played
+    premiumPaidInFull: false, // …and 권리금 was fully paid by then (false = forgiven)
     closedReason: null, // 'rent' | 'rating' — which failure closed the shop (phase 'closed')
     toasts: [],
     nextToastId: 1,
@@ -344,17 +348,86 @@ export function enterSunday(s) {
   const due = RENT * (s.rentOverdue ? 2 : 1)
   const rentPaid = s.money >= due
   const bankrupt = !rentPaid && s.rentOverdue === 1
-  // A second miss still plays the Sunday scene (its ledger stamps 폐업); leaving it closes the shop.
-  return {
+  const afterRent = {
     ...s,
-    phase: 'sunday',
     money: rentPaid ? s.money - due : s.money,
     rentOverdue: bankrupt ? s.rentOverdue : (rentPaid ? 0 : 1),
-    ledger: { weekRevenue: s.weekRevenue ?? 0, rentDue: due, rentPaid, bankrupt },
+  }
+  // A second miss still plays the Sunday scene (its ledger stamps 폐업); leaving it closes the shop.
+  const { state, premium } = settlePremium(afterRent, rentPaid)
+  return {
+    ...state,
+    phase: 'sunday',
+    ledger: { weekRevenue: s.weekRevenue ?? 0, rentDue: due, rentPaid, bankrupt, ...premium },
     weekRevenue: 0,
     sundayStep: 0, // which beat of the Sunday scene is showing (story.js sundayLine)
   }
 }
+
+// ---------- 권리금 4주 분할 (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §A) ----------
+
+/**
+ * The Sunday's 권리금 row, taken after rent. Rent comes first: when rent was short, all the money stays owed
+ * to the landlord and the whole instalment carries over. A short instalment pays what it can and carries the
+ * rest to next Sunday — 권리금 never closes the shop. Day 28 takes everything left (the ending forgives any
+ * remainder). After part 1 there is no row at all.
+ */
+function settlePremium(s, rentPaid) {
+  if (s.endingSeen || s.day > PART1_LAST_DAY) return { state: s, premium: {} }
+  if (s.premiumLeft <= 0) return { state: s, premium: { premiumDue: 0, premiumPaid: 0, premiumSettled: true } }
+  const isLastWeek = s.day >= PART1_LAST_DAY
+  const premiumDue = isLastWeek ? s.premiumLeft : Math.min(s.premiumLeft, PREMIUM_INSTALMENT + s.premiumCarry)
+  const premiumPaid = rentPaid ? Math.min(premiumDue, s.money) : 0
+  return {
+    state: {
+      ...s,
+      money: s.money - premiumPaid,
+      premiumLeft: s.premiumLeft - premiumPaid,
+      premiumCarry: isLastWeek ? 0 : premiumDue - premiumPaid,
+    },
+    premium: { premiumDue, premiumPaid },
+  }
+}
+
+/**
+ * "더 갚기" on the Sunday ledger: pays `amount` (or 'all') toward 권리금, capped by money and the balance.
+ * Clears carried-over arrears first. Only on the Sunday screen during part 1.
+ */
+export function payPremium(s, amount) {
+  if (s.phase !== 'sunday' || s.endingSeen || s.premiumLeft <= 0) return s
+  const want = amount === 'all' ? Infinity : Math.max(0, Number(amount) || 0)
+  const paid = Math.min(want, s.money, s.premiumLeft)
+  if (paid <= 0) return s
+  return {
+    ...s,
+    money: s.money - paid,
+    premiumLeft: s.premiumLeft - paid,
+    premiumCarry: Math.max(0, s.premiumCarry - paid),
+  }
+}
+
+/**
+ * Day 28's ledger closes part 1: the panda walks in. Whatever 권리금 is left is forgiven (the scene runs the
+ * same either way; story.js endingLine picks the branch).
+ */
+function enterEnding(s) {
+  return {
+    ...s,
+    phase: 'ending',
+    endingStep: 0,
+    endingSeen: true,
+    premiumPaidInFull: s.premiumLeft <= 0,
+    premiumLeft: 0,
+    premiumCarry: 0,
+  }
+}
+
+/** Next beat of the ending scene; stays on the last one (leaving is afterSummary's job). */
+export const advanceEnding = (s) =>
+  (s.phase === 'ending' ? { ...s, endingStep: Math.min((s.endingStep ?? 0) + 1, ENDING_LINE_COUNT - 1) } : s)
+
+/** True on the ending's last beat, where a click leaves for the shop. */
+export const isEndingDone = (s) => (s.endingStep ?? 0) >= ENDING_LINE_COUNT - 1
 
 /** Next beat of the Sunday scene; stays on the last one (leaving is afterSummary's job). */
 export const advanceSunday = (s) =>
@@ -370,6 +443,8 @@ export const isSundayDone = (s) => (s.sundayStep ?? 0) >= SUNDAY_LAST_STEP
  */
 export function afterSummary(s) {
   if (s.phase === 'sunday' && s.ledger?.bankrupt) return { ...s, phase: 'closed', closedReason: 'rent' }
+  if (s.phase === 'sunday' && s.day === PART1_LAST_DAY && !s.endingSeen) return enterEnding(s)
+  if (s.phase === 'ending') return openShop(s)
   return weekdayOf(s.day) === 6 ? enterSunday({ ...s, day: s.day + 1 }) : openShop(s)
 }
 

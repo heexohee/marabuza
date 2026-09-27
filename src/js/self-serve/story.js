@@ -148,3 +148,42 @@ export function dayEndLine(st) {
   if (st.exactCharges < st.served) return '계산이 몇 번 틀렸어. 뒤적이기를 잊지 말자.'
   return '오늘도 수고했어. 내일도 한 그릇씩!'
 }
+
+// ---------- 권리금 + part-1 ending (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §A·§C) ----------
+// The panda collects 권리금 on the Sunday ledger by phone — he only walks into the shop for the ending.
+const PREMIUM_WEEK_LINES = {
+  7: '첫 할부 잘 받았어. 천천히 해~',
+  14: '반 왔네. 가게 냄새가 좋아졌다던데?',
+  21: '하나 남았다. 무리하지 말고.',
+}
+
+/** The panda's word on the ledger's 권리금 row, or null (no row, or day 28 — the ending speaks instead). */
+export function premiumLine(l) {
+  if (!l || l.day >= 28) return null
+  if (l.premiumSettled) return { who: 'panda', text: '벌써? 28일에 보자.' }
+  if (l.premiumDue === undefined) return null
+  if (l.premiumPaid < l.premiumDue) return { who: 'panda', text: '괜찮아, 다음 주에 같이 줘.' }
+  const text = PREMIUM_WEEK_LINES[l.day]
+  return text ? { who: 'panda', text } : null
+}
+
+// Day 28, Sunday evening: the panda comes in for the first time since the takeover. Paid in full or not,
+// the scene runs the same — only lines 1–3 change (and the frame gets a "완납" plate when paid).
+const ENDING_LINES = [
+  { who: 'caption', text: '28일차, 일요일 저녁.' },
+  { who: 'panda', paid: '장부 봤어. …다 갚았네.', forgiven: '장부 봤어. 조금 남았네.' },
+  { who: 'me', paid: '사장님 덕분이에요.', forgiven: '죄송해요… 조금만 더 시간을 주시면—' },
+  { who: 'panda', paid: '아니. 이제 네 가게구나.', forgiven: '됐어. 나머지는 그동안 손님들한테 내준 한 그릇으로 받았다 치자. …이제 네 가게구나.' },
+  { who: 'panda', text: '이건 가져가려다 말았어. 여기 두는 게 맞겠다.' },
+  { who: 'me', text: '{name} 사장의 마라부자. 내일도 한 그릇씩!' },
+  { who: 'caption', text: '마라부자 1부 — 끝' },
+]
+export const ENDING_LINE_COUNT = ENDING_LINES.length
+/** Beat where the old "마라판다" sign goes up as a frame on the wall. */
+export const ENDING_FRAME_STEP = 4
+
+/** Line `step` of the ending, in the paid-in-full or forgiven branch. */
+export function endingLine(step, paidInFull) {
+  const l = ENDING_LINES[Math.min(Math.max(step, 0), ENDING_LINES.length - 1)]
+  return { who: l.who, text: l.text ?? (paidInFull ? l.paid : l.forgiven) }
+}

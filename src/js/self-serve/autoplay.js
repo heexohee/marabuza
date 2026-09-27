@@ -162,6 +162,7 @@ function resolveToDay(s) {
   let cur = s
   if (cur.phase === 'summary') cur = afterSummary(cur)
   if (cur.phase === 'sunday') cur = afterSummary(cur)
+  if (cur.phase === 'ending') cur = afterSummary(cur) // day-28 part-1 ending (economy E004): skip the scene
   if (cur.phase === 'shop') cur = startNextDay(restockWarehouse(cur))
   return cur
 }
