@@ -29,3 +29,9 @@
 | Developer (implemented) | Claude | 2026-09-27 | [x] Approved |
 | Designer / Art Lead | | | [ ] Approved |
 | QA Lead | | | [ ] Approved |
+
+## 2026-09-27 — 엔딩 배경 = 내 가게 + 작은 액자
+
+- `06-ending-own-hall-stage4.png` — 인테리어 4단계 세이브의 28일차 엔딩: 배경이 그 사용자의 홀 그림, 마라판다·완납 액자가 마라부자 간판 아래 작게 (61×30px / 무대 692px)
+- `07-hall-wall-frame-day29.png` — 엔딩 뒤 29일차 영업 화면: 홀 벽에 액자가 남고 영업중 팻말이 그 아래로 내려감 (겹침 없음: 액자 y90–126, 팻말 y143–185)
+- 7단계 비교 시안: `design/art/ending-mockups/ending-stages-sheet.png`

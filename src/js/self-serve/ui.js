@@ -20,6 +20,7 @@ import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
   createHtml, createKey, esc, heroImg, closedSceneHtml, endingHtml, endingKey, openingHtml, openingKey, sundayHtml, sundayKey,
+  wallFrameHtml,
 } from './story-ui.js'
 
 const LOW_SHELF = 2
@@ -74,6 +75,7 @@ const GAME_SKELETON = `
     <section class="shop-scene" aria-label="마라부자 홀 — 식탁">
       <div class="shop-stage">
         <div class="open-board" data-slot="open-board"></div>
+        <div class="wall-frame-slot" data-slot="wall-frame"></div>
         <div class="seats" data-slot="tables"></div>
       </div>
     </section>
@@ -222,6 +224,7 @@ function queueHtml(s) {
 // didn't read as "this is a skewer, not weight" (feedback 2026-09-27), so skewers also spell it out
 // ("🦐꼬지×1"); meat keeps just the icon (🥩/🐑 are unambiguous). Full name stays in the hover title.
 const FOUND_LABEL_SUFFIX = { skewer: '꼬지' }
+const SIDE_CHIP_LABEL = { friedrice: '볶음밥', guobao: '꿔바로우' } // the drink (🥤) needs no word
 const foundChip = (item) =>
   `<span class="chip found" title="${hiddenItemLabel(item)}">${spriteImg(SHELF_ITEM_BY_ID[item.id].emoji, 16, 'chip-img')}${FOUND_LABEL_SUFFIX[item.kind] ?? ''}×${item.count}</span>`
 
@@ -248,8 +251,10 @@ function counterHtml(s) {
   const found = hidden.slice(0, s.counter.revealed).map(foundChip).join('')
   const weighed = Object.entries(c.bowl.weighed).map(([id, q]) =>
     `<span class="chip" title="${INGREDIENT_BY_ID[id].name}">${spriteImg(INGREDIENT_BY_ID[id].emoji, 16, 'chip-img')}×${q}</span>`).join('')
-  const cilantro = c.bowl.cilantro ? `<span class="chip found" title="고수">${spriteImg('🌿', 16, 'chip-img')}</span>` : ''
-  const side = c.side ? `<span class="chip found side">${spriteImg(SIDE_BY_ID[c.side].emoji, 16, 'chip-img')} ${SIDE_BY_ID[c.side].name}</span>` : ''
+  // cilantro spells itself out like the skewers ("🌿고수×1"); sides too ("🍳볶음밥×1") so 🍖 is not read as 🥩 —
+  // only the drink keeps just its icon ("🥤×1"). Full name stays in the title.
+  const cilantro = c.bowl.cilantro ? `<span class="chip found" title="고수">${spriteImg('🌿', 16, 'chip-img')}고수×1</span>` : ''
+  const side = c.side ? `<span class="chip found side" title="${SIDE_BY_ID[c.side].name}">${spriteImg(SIDE_BY_ID[c.side].emoji, 16, 'chip-img')}${SIDE_CHIP_LABEL[c.side] ?? ''}×1</span>` : ''
   const modes = Object.keys(MODE_LABEL).map((m) =>
     `<button class="mode-btn ${s.counter.mode === m ? 'on' : ''}" data-action="mode" data-arg="${m}">${MODE_LABEL[m]}</button>`).join('')
   const spice = SPICE_LEVELS.map((l) =>
@@ -424,6 +429,8 @@ export function render(root, s, view) {
   const centre = root.querySelector('.ss-center')
   if (centre && centre.dataset.interior !== String(s.interior ?? 0)) centre.dataset.interior = String(s.interior ?? 0)
   patch(slot(root, 'open-board'), `${!isClosing(s)}`, () => openBoardHtml(!isClosing(s)))
+  // after the part-1 ending the old 마라판다 frame hangs under the sign; the open board steps down under it (economy E004)
+  patch(slot(root, 'wall-frame'), `${s.endingSeen}|${s.premiumPaidInFull}`, () => (s.endingSeen ? wallFrameHtml(s.premiumPaidInFull) : ''))
   patch(slot(root, 'counter'), counterKey(s), () => counterHtml(s))
   patch(slot(root, 'shelf'), shelfKey(s, view), () => shelfHtml(s, view))
   patch(slot(root, 'info'), `${view.hover}|${shelfKey(s, view)}`, () => infoHtml(s, view))

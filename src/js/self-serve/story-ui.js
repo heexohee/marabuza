@@ -194,13 +194,19 @@ export const sundayKey = (s) => `sunday|${s.day}|${s.sundayStep ?? 0}|${s.money}
 
 // ---------- day-28 ending (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §C) ----------
 
-// The old "마라판다" sign as a frame on the wall (CSS-drawn for now; pixel art is a later art task).
-const endingFrameHtml = (paidInFull) => `
-      <span class="ending-frame"><b>마라판다</b>${paidInFull ? '<i class="ending-plate">완납</i>' : ''}</span>`
+/**
+ * The old "마라판다" sign as a small frame under the 마라부자 sign (CSS-drawn for now; pixel art is a later
+ * art task). Hung in the ending, then stays on the hall wall for the rest of the game.
+ * @param {boolean} paidInFull shows the gold "완납" plate
+ * @param {boolean} [drop] plays the hang-up animation (only the moment it goes up in the ending)
+ */
+export const wallFrameHtml = (paidInFull, drop = false) =>
+  `<span class="wall-frame${drop ? ' drop' : ''}"><b>마라판다</b>${paidInFull ? '<i class="wall-plate">완납</i>' : ''}</span>`
 
 /**
- * The part-1 ending: the panda walks into the closed Sunday shop for the first time since the takeover.
- * Same stage and dialogue box as the Sunday scene; the frame goes up at ENDING_FRAME_STEP.
+ * The part-1 ending: the panda walks into the closed shop for the first time since the takeover. The stage is
+ * the player's own hall at their interior stage (scene-shop(-N).png), so every run ends in the shop they built.
+ * Same dialogue box as the Sunday scene; the frame goes up at ENDING_FRAME_STEP.
  */
 export function endingHtml(s) {
   const step = s.endingStep ?? 0
@@ -212,7 +218,7 @@ export function endingHtml(s) {
       ${step >= 1 ? `<span class="cast cast-panda ${talking('panda')}" style="${castStyle('panda')}">${castSprite('panda')}</span>` : ''}`
   return `
     <div class="opening-screen sunday-screen ending-screen" data-action="endingNext">
-      <div class="scene ${SUNDAY_BG}">${step >= ENDING_FRAME_STEP ? endingFrameHtml(s.premiumPaidInFull) : ''}${cast}</div>
+      <div class="scene ending-hall" data-interior="${s.interior ?? 0}">${step >= ENDING_FRAME_STEP ? wallFrameHtml(s.premiumPaidInFull, step === ENDING_FRAME_STEP) : ''}${cast}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>

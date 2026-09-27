@@ -571,6 +571,8 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 
 /* side menu (side-menu story 001): the order chip at the counter and the wok at the kitchen strip's right end */
 .ss .counter .chip.side { background: #fff3c9; color: var(--on-pastel); border-color: var(--ink); font-weight: 700; }
+/* the legacy sidebar rule `.side` (styles.css: column flex, 4px border, 10px padding) also matches this chip — undo it */
+.ss .counter .chip.side { flex-direction: row; border-width: 2px; border-radius: 6px; overflow: visible; }
 .ss .counter .chip.side .chip-img { filter: none; }
 .ss-kitchen .wok { width: 52px; margin-bottom: var(--counter-h); pointer-events: none; }
 .ss-kitchen .wok:empty { display: none; }
@@ -758,16 +760,31 @@ html[data-screen="menu"], html[data-screen="menu"] body {
 .pay-extra-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .pay-extra-row .btn.pay-extra { flex: none; padding: 4px 8px; }
 /* the old "마라판다" sign hung as a frame on the wall (CSS stand-in until the pixel-art frame) */
-.ending-frame {
-  position: absolute; left: 14%; top: 4%; transform: translateX(-50%); /* wall above the window, clear of the sign and cast */
-  display: inline-flex; flex-direction: column; align-items: center; gap: 4px;
-  padding: 6px 12px; background: #6b4226; border: 6px solid #3a1f14; box-shadow: 0 0 0 3px #c49a6c inset, 0 6px 0 rgba(0, 0, 0, .35);
-  animation: frame-drop .5s ease-out both;
+/* the ending is played in the player's own hall: the interior-stage art (scene-shop(-N).png, 320×120) stretched
+   to the story stage, so each run ends in the shop it built (design/art/ending-mockups/) */
+.ending-hall { --apx: calc(100cqw / 320); container-type: inline-size; background: #d99a5a url("img/scene-shop.png?v=5") center / 100% 100% no-repeat; }
+.ending-hall[data-interior="1"] { background-image: url("img/scene-shop-1.png?v=3"); }
+.ending-hall[data-interior="2"] { background-image: url("img/scene-shop-2.png?v=3"); }
+.ending-hall[data-interior="3"] { background-image: url("img/scene-shop-3.png?v=3"); }
+.ending-hall[data-interior="4"] { background-image: url("img/scene-shop-4.png?v=3"); }
+.ending-hall[data-interior="5"] { background-image: url("img/scene-shop-5.png?v=3"); }
+.ending-hall[data-interior="6"] { background-image: url("img/scene-shop-6.png?v=3"); }
+/* the old 마라판다 sign, small, under the 마라부자 sign between the left window and the menu board (art x≈123, y≈34).
+   Sized in art px (--apx) so it is the same spot in the ending and on the hall; % top because the ending stretches y. */
+.wall-frame {
+  position: absolute; left: 38.5%; top: 28.3%; transform: translateX(-50%); z-index: 1;
+  display: inline-flex; flex-direction: column; align-items: center; gap: calc(var(--apx) * .6);
+  padding: calc(var(--apx) * .8) calc(var(--apx) * 2.6); background: #6b4226;
+  border: max(2px, calc(var(--apx) * 1.3)) solid #3a1f14; box-shadow: 0 0 0 1px #c49a6c inset, 0 2px 0 rgba(0, 0, 0, .35);
+  pointer-events: none; white-space: nowrap; line-height: 1;
 }
-.ending-frame b { font-size: 18px; color: #f3dcb5; letter-spacing: 4px; text-shadow: 2px 2px 0 #2a150c; }
-.ending-plate { font-style: normal; font-size: 12px; font-weight: 700; color: #3a2a00; background: linear-gradient(#ffe27a, #d9a520); border: 2px solid #7a5a00; border-radius: 3px; padding: 1px 8px; }
+.wall-frame b { font-size: max(7px, calc(var(--apx) * 4.8)); color: #f3dcb5; letter-spacing: 1px; text-shadow: 1px 1px 0 #2a150c; }
+.wall-plate { font-style: normal; font-size: max(6px, calc(var(--apx) * 3.4)); font-weight: 700; color: #3a2a00; background: linear-gradient(#ffe27a, #d9a520); border: 1px solid #7a5a00; border-radius: 2px; padding: 0 calc(var(--apx) * 2); }
+.wall-frame.drop { animation: frame-drop .5s ease-out both; }
 @keyframes frame-drop { from { transform: translate(-50%, -20px); opacity: 0; } to { transform: translate(-50%, 0); opacity: 1; } }
-@media (prefers-reduced-motion: reduce) { .ending-frame { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .wall-frame.drop { animation: none; } }
+/* on the hall the frame takes the open board's spot, so the board steps down under it */
+.shop-stage:has(.wall-frame) .open-board { top: calc(var(--apx) * 54); }
 /* the 권리금 row + the panda's word + the bar must fit the fixed Sunday box (--sunday-box-h) */
 .sunday-screen .ledger td { padding-top: 1px; padding-bottom: 1px; }
 .premium-foot { display: flex; align-items: center; gap: 10px; margin-top: 2px; padding-right: 110px; } /* room for the ▶ hint */
