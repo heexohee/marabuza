@@ -14,7 +14,7 @@
   --broth: #c9401e;
   --shadow: 0 4px 0 var(--ink);
   --radius: 10px;
-  --font: 'Galmuri11', 'Galmuri9', system-ui, sans-serif;
+  --font: 'Galmuri11', 'Galmuri9', 'Marabuza Emoji', system-ui, sans-serif;
 }
 
 * { box-sizing: border-box; }

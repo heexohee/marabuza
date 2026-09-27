@@ -1,0 +1,27 @@
+/* Bundled fonts — no CDN, so the game runs offline and looks the same on every device.
+ * Galmuri 2.40.3 (c) Lee Minseo, SIL OFL 1.1 — OFL-Galmuri.md
+ * Noto Color Emoji 2.047 subset (c) Google, SIL OFL 1.1 — OFL-NotoColorEmoji.md
+ *   Rebuild after adding an emoji: python3 tools/fonts/build_emoji_subset.py */
+@font-face {
+  font-family: Galmuri11;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./Galmuri11.woff2') format('woff2');
+}
+@font-face {
+  font-family: Galmuri11;
+  font-weight: 700;
+  font-display: swap;
+  src: url('./Galmuri11-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: Galmuri9;
+  font-weight: 400;
+  font-display: swap;
+  src: url('./Galmuri9.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Marabuza Emoji';
+  font-display: block;
+  src: url('./noto-emoji-subset.ttf') format('truetype');
+}

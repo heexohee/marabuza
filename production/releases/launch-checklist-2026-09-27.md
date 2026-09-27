@@ -46,8 +46,8 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] 1–28일 처음부터 끝까지 사람 플레이테스트 1회 이상
 
 ### Assets
-- [ ] **이모지 대체 그림** ⛔ — 동물·재료·아이콘을 사용자 기기의 이모지 글꼴에서 실시간 도트화 중(`src/js/sprites.js`). 윈도우(스팀 이용자 대다수)에서는 Segoe 이모지로 바뀌어 보임. → 직접 그린 도트 스프라이트로 교체, 또는 Noto Color Emoji(OFL)를 게임에 내장해 모든 기기에서 같은 그림
-- [ ] **글꼴 내장** ⛔ — Galmuri를 jsDelivr CDN에서 불러옴. 오프라인 실행을 위해 로컬 파일로
+- [x] **이모지 대체 그림** — Noto Color Emoji 2.047(OFL)을 게임이 쓰는 79자만 잘라 내장(`src/fonts/noto-emoji-subset.ttf`, 159KB). `sprites.js`가 이 글꼴이 로드된 뒤 도트화 → 윈도우·맥 모두 같은 그림. 이모지를 새로 쓰면 `python3 tools/fonts/build_emoji_subset.py` 다시 실행. 증거: `production/qa/evidence/emoji-bundled-sprites.png`
+- [x] **글꼴 내장** — Galmuri 2.40.3(Galmuri11 보통·굵게, Galmuri9)을 `src/fonts/`에 woff2로 두고 `fonts/fonts.css`에서 불러옴. 외부 요청 0건 확인. 증거: `production/qa/evidence/fonts-bundled-title.png`
 - [x] 임시 에셋 없음 — `placeholder|temp_|WIP_` 0건(입력칸 안내 문구 1건 제외), `src/img` 15개 중 임시 파일명 없음
 - [x] **사운드** — 배경음악(화면별 곡)·징글·클릭 효과음 + 음소거·볼륨 설정 (b0541c8, 07f40a1). 음원 라이선스 표기는 Legal 항목에서
 
@@ -107,7 +107,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Legal
 - [ ] EULA — 스팀 기본 EULA 사용 가능
-- [ ] 서드파티 라이선스 표기 — Galmuri(OFL), (Noto 이모지 채택 시 OFL), Electron/Tauri(MIT)
+- [ ] 서드파티 라이선스 표기 — Galmuri(OFL), Noto Color Emoji(OFL), Electron/Tauri(MIT) · 글꼴 라이선스 원문은 `src/fonts/OFL-*.md`에 동봉, 크레딧 화면 표기는 남음
 - [ ] 음악·효과음 라이선스 (사운드 결정 후)
 - [ ] 상표 확인 — "마라부자" 이름 검색
 
@@ -135,13 +135,13 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ## Go / No-Go Decision
 
-**Overall Status**: **NOT READY** (출시일 미정 — 준비 단계) · 2026-09-27 갱신: 차단 14 → 12 (E004·N001 완료)
+**Overall Status**: **NOT READY** (출시일 미정 — 준비 단계) · 2026-09-27 갱신: 차단 14 → 10 (E004·N001·이모지 그림·글꼴 내장 완료)
 
 ### Blocking Items (⛔ 14)
 1. 데스크톱 앱 포장
 2. 개발 모드 출시판에서 제거
-3. 이모지 대체 그림 (기기마다 다르게 보임)
-4. 글꼴 내장 (오프라인)
+3. ~~이모지 대체 그림 (기기마다 다르게 보임)~~ ✅
+4. ~~글꼴 내장 (오프라인)~~ ✅
 5. 파일 저장 + 스팀 클라우드
 6. ~~E004 권리금 4주 분할 + 28일 엔딩~~ ✅
 7. ~~N001 날짜별 아침 한마디~~ ✅
@@ -159,8 +159,8 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### 추천 순서
 1. **1부 콘텐츠** (E004 → N001 → N002 → N003 → B001) — 게임 본체
-2. **출시 기술 기반** — 데스크톱 포장 + 개발 모드 제거 + 글꼴 내장 + 파일 저장 (한 묶음)
-3. **이모지 대체 그림** — 가장 품이 큼, 1과 병행 가능
+2. **출시 기술 기반** — 데스크톱 포장 + 개발 모드 제거 + 파일 저장 (한 묶음, 글꼴 내장은 완료)
+3. ~~**이모지 대체 그림**~~ ✅ Noto 서브셋 내장으로 해결
 4. **상점 페이지 "출시 예정" 공개** — 스크린샷이 나오는 즉시, 찜 모으기 시작
 5. 스팀 기능(도전과제·클라우드) → 체험판 → QA → 출시일 확정
 

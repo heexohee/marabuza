@@ -2,11 +2,19 @@
 // Drawn tiny on a canvas, alpha-quantized, colour-posterized, then outlined,
 // so CSS `image-rendering: pixelated` upscaling gives a retro pixel look.
 
-const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
+// 'Marabuza Emoji' is the bundled Noto subset (src/fonts/fonts.css), so every device pixelates
+// the same glyphs; the system fonts after it only cover an emoji missing from the subset.
+const EMOJI_FONT = '"Marabuza Emoji","Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
 const ALPHA_CUTOFF = 110
 const POSTERIZE_STEP = 28
 const OUTLINE = [58, 31, 43]
 const cache = new Map()
+
+// Canvas text never waits for a web font: drawing before it loads would bake (and cache) the
+// system emoji. Every importer waits here instead; a failed load falls back to system fonts.
+try {
+  await document.fonts.load('16px "Marabuza Emoji"', '🐼')
+} catch { /* offline file missing or blocked: system emoji fonts still draw */ }
 
 const posterize = (v) => Math.min(255, Math.round(v / POSTERIZE_STEP) * POSTERIZE_STEP)
 
