@@ -363,12 +363,14 @@ export function skipStory(s) {
 }
 
 /**
- * Opens the next business day — except the first morning after the part-1 ending, when the part-2 teaser
- * (story N003) plays first. The teaser keeps day 28's number (day 29 opens when it ends) and marks itself seen
- * on entry, so a save made then never replays it.
+ * Opens the next business day. The part-2 teaser (story N003) normally plays straight after the ending
+ * (afterSummary); a save made in the day-28 shop before that order still gets it here, once, before day 29.
+ * Either way it goes teaser → credits → shop.
  */
-export const startNextDay = (s) =>
-  (isPart2TeaserDue(s) ? { ...s, phase: 'teaser', teaserStep: 0, part2TeaserSeen: true } : startDay({ ...s, day: s.day + 1 }))
+export const startNextDay = (s) => (isPart2TeaserDue(s) ? enterTeaser(s) : startDay({ ...s, day: s.day + 1 }))
+
+/** The teaser, marked seen on entry so a save made then never replays it. */
+const enterTeaser = (s) => ({ ...s, phase: 'teaser', teaserStep: 0, part2TeaserSeen: true })
 
 const isPart2TeaserDue = (s) => s.endingSeen && !s.part2TeaserSeen && s.day >= PART1_LAST_DAY
 
@@ -381,8 +383,11 @@ export const advanceTeaser = (s) =>
 /** True on the teaser's last beat, where a click opens day 29. */
 export const isTeaserDone = (s) => (s.teaserStep ?? 0) >= PART2_TEASER_LINE_COUNT - 1
 
-/** Leaves the teaser into the next day's business, same loop as before (part 2 content comes later). */
-export const finishTeaser = (s) => (s.phase === 'teaser' ? startDay({ ...s, day: s.day + 1, teaserStep: 0 }) : s)
+/** Leaves the teaser for the ending credits. */
+export const finishTeaser = (s) => (s.phase === 'teaser' ? { ...s, phase: 'credits', teaserStep: 0 } : s)
+
+/** Leaves the ending credits for the day-28 shop; day 29 then opens as usual (part 2 content comes later). */
+export const finishCredits = (s) => (s.phase === 'credits' ? openShop(s) : s)
 
 // ---------- weekly rent + Sunday off day (economy story E003) ----------
 
@@ -519,7 +524,7 @@ export const isSundayDone = (s) => (s.sundayStep ?? 0) >= SUNDAY_LAST_STEP
 export function afterSummary(s) {
   if (s.phase === 'sunday' && s.ledger?.bankrupt) return { ...s, phase: 'closed', closedReason: 'rent' }
   if (s.phase === 'sunday' && s.day === PART1_LAST_DAY && !s.endingSeen) return enterEnding(s)
-  if (s.phase === 'ending') return openShop(s)
+  if (s.phase === 'ending') return enterTeaser(s) // ending → teaser → credits → shop (order 2026-09-28)
   return weekdayOf(s.day) === 6 ? enterSunday({ ...s, day: s.day + 1 }) : openShop(s)
 }
 

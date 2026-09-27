@@ -6,6 +6,7 @@ import {
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
+import { queueFaceImg, seatedCustomerHtml } from './animal-faces.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
@@ -102,9 +103,9 @@ const GAME_SKELETON = `
 
 // ---------- hall: tables ----------
 
-// Side-view table on the shop floor: chair, customer seated behind the table top, number stand on the table.
+// Front-facing furniture; the tabletop conceals the customer's lower torso.
 // Spots come from tableSpots (art px); CSS multiplies by one art px (--apx) so they scale with the stage.
-const TABLE_FURNITURE = '<i class="chair"></i><i class="table-top"></i><i class="table-leg"></i>'
+const TABLE_FURNITURE = '<i class="chair"></i><i class="table-top"></i>'
 
 function tablesHtml(s) {
   const isHolding = s.heldPot !== null
@@ -119,13 +120,13 @@ function tablesHtml(s) {
         <div class="patience"><div class="patience-fill" data-bar="table-${t.ticketNo}"></div></div>
         <div class="ticket-badge">🎫${t.ticketNo}</div>
         ${TABLE_FURNITURE}
-        <div class="animal">${spriteImg(t.face, 20, 'animal-img')}</div>
+        ${seatedCustomerHtml(t.face)}
         ${plate}
       </button>`
   }).join('')
 }
 
-const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(',')}|${s.heldPot !== null}`
+const tablesKey = (s) => `${s.tables.map((t) => (t ? `${t.ticketNo}:${t.face}` : '-')).join(',')}|${s.heldPot !== null}`
 
 // ---------- kitchen: ticket rail + pots ----------
 
@@ -133,7 +134,7 @@ const tablesKey = (s) => `${s.tables.map((t) => (t ? t.ticketNo : '-')).join(','
 const spiceTag = (level) => (level === 0 ? '순한' : `${spriteImg('🌶️', 10, 'chili')}${level}`)
 
 // The rail holds at most one ticket per table (paid customers are seated), and tables top out
-// at 5, so the rail is laid out as 5 fixed slots and never needs to scroll.
+// at 4. The rail has spare room and never needs to scroll.
 function railHtml(s) {
   const tickets = s.rail.map((o) => `
     <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기 · ${MODE_LABEL[o.mode]} ${o.spice}단계">
@@ -218,7 +219,7 @@ const potsKey = (s) => `${s.pots.map((p) => (p ? `${p.ticketNo}:${p.remaining <=
 
 function queueHtml(s) {
   return `<div class="q-line">${s.queue.map((c, i) => `
-    <span class="q-face ${i === 0 ? 'front' : ''}">${spriteImg(c.face, 16, 'mini-face')}
+    <span class="q-face ${i === 0 ? 'front' : ''}">${queueFaceImg(c.face)}
       <i class="q-bar"><b data-bar="queue-${c.id}"></b></i></span>`).join('') || '<span class="hint">줄이 비었어요</span>'}</div>`
 }
 
@@ -234,7 +235,7 @@ const foundChip = (item) =>
 /** The protagonist behind the counter, with her start-of-day line in a speech bubble. */
 // The owner's row: a round face frame (the protagonist, or the panda while he gives his first tips) and her
 // start-of-day line in a speech bubble pointing at it (feedback 2026-09-27: the full sprite felt cramped).
-const PANDA_FACE = '<img class="owner-face-img panda" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+const PANDA_FACE = '<img class="owner-face-img panda" src="img/animal-faces/panda.png?v=1" alt="판다 사장님" draggable="false">'
 
 function ownerHtml(s) {
   // a regular at the front of the queue takes the row: their face in the frame, name + line in the bubble (story N002)
@@ -277,7 +278,7 @@ function counterHtml(s) {
   return `
     ${ownerHtml(s)}
     ${queueHtml(s)}
-    <div class="bubble say">${spriteImg(c.face, 16, 'mini-face')} "${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}
+    <div class="bubble say">"${MODE_LABEL[c.mode]} ${spiceSay(c.spice)}요!"${c.bowl.cilantro ? ' 고수 넣어주세요🌿' : ''}${c.side ? ` ${SIDE_BY_ID[c.side].name}도 주세요!` : ''}
       <i class="front-patience" title="기다릴 수 있는 시간"><b data-bar="front-patience"></b></i></div>
     <div class="bowl-art small">
       <div class="bowl-rim"><div class="broth spice-0"></div><div class="bowl-floats">${floatAbove(c.bowl.weighed, 12)}</div></div>
@@ -416,7 +417,7 @@ const audioKey = (view) => `${view.audio.muted}|${view.audio.sfxMuted}|${view.au
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
   const isRentClosed = s.phase === 'closed' && s.closedReason === 'rent'
-  const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday', 'ending', 'teaser'].includes(s.phase) ? s.phase : 'game'
+  const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday', 'ending', 'teaser', 'credits'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
     document.documentElement.dataset.screen = screen // the title's background covers the whole window
@@ -432,6 +433,8 @@ export function render(root, s, view) {
   if (screen === 'sunday') return patch(root, sundayKey(s), () => sundayHtml(s))
   if (screen === 'ending') return patch(root, endingKey(s), () => endingHtml(s))
   if (screen === 'teaser') return patch(root, teaserKey(s), () => teaserHtml(s))
+  // end of part 1 (story N003): ending → teaser → these credits → the day-28 shop
+  if (screen === 'credits') return patch(root, 'credits|part1', () => creditsHtml({ action: 'creditsDone', label: '29일차 준비 →' }))
   if (screen === 'closed') return patch(root, 'closed|rent', () => closedSceneHtml(s, closedHtml(s)))
   if (screen === 'shop') {
     const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.sideGifts}|${view.ledger}|${s.toasts.map((t) => t.id)}`

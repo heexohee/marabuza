@@ -168,13 +168,13 @@ test('test_bankrupt_on_day_28_closes_the_shop_instead_of_ending', () => {
   assert.equal(s.phase, 'closed')
 })
 
-test('test_ending_steps_then_opens_the_shop', () => {
+test('test_ending_steps_then_leads_into_the_part2_teaser', () => {
   let s = afterSummary(sundayOf(28))
   for (let i = 0; i < ENDING_LINE_COUNT + 3; i++) s = advanceEnding(s)
   assert.equal(isEndingDone(s), true)
-  const shop = afterSummary(s)
-  assert.equal(shop.phase, 'shop')
-  assert.equal(shop.day, 28)
+  const next = afterSummary(s) // ending → teaser → credits → shop (part1-story N003, order 2026-09-28)
+  assert.equal(next.phase, 'teaser')
+  assert.equal(next.day, 28)
 })
 
 // ---------- lines ----------

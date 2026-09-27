@@ -55,8 +55,8 @@ export const createKey = (s) => `create|${s.character.hair}|${s.character.hairCo
 
 // ---------- opening cutscene ----------
 
-// panda owner: 96×160 pixel sprite painted by tools/art/panda_sprite.py; bump ?v= when regenerating
-const PANDA_IMG = '<img class="panda-sprite" src="img/panda.png?v=2" alt="판다 사장님" draggable="false">'
+// Approved A design, 96×160; tools/art/panda_sprite.py restores the approved PNG.
+const PANDA_IMG = '<img class="panda-sprite" src="img/panda.png?v=3" alt="판다 사장님" draggable="false">'
 const pct = (v, of) => `${((v / of) * 100).toFixed(3)}%`
 /** Stage px → % of the scene, so the cast scales with the background and keeps its painted spot. */
 const castStyle = (who) => {
@@ -170,7 +170,7 @@ function payExtraHtml(s) {
  */
 export function sundayHtml(s) {
   const step = s.sundayStep ?? 0
-  const line = sundayLine(step, s.ledger)
+  const line = sundayLine(step, s.ledger, s.day)
   const isLast = step >= SUNDAY_LAST_STEP
   const cast = `<span class="cast cast-me ${line?.who === 'me' ? 'talking' : ''}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>`
   const body = step === SUNDAY_LEDGER_STEP ? ledgerHtml(s) : `
@@ -226,7 +226,7 @@ export function endingHtml(s) {
       </div>
       <div class="opening-foot">
         <span></span>
-        ${isLast ? '<button class="bubble-btn" data-action="endingNext">계속 영업하기 →</button>' : ''}
+        ${isLast ? '<button class="bubble-btn" data-action="endingNext">계속 →</button>' : ''}
       </div>
     </div>`
 }
@@ -263,7 +263,7 @@ export function teaserHtml(s) {
       </div>
       <div class="opening-foot">
         <span></span>
-        ${isLast ? '<button class="bubble-btn" data-action="teaserNext">29일차 영업 시작 →</button>' : ''}
+        ${isLast ? '<button class="bubble-btn" data-action="teaserNext">엔딩 크레딧 →</button>' : ''}
       </div>
     </div>`
 }

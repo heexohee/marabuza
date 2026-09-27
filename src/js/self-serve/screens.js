@@ -76,10 +76,12 @@ export function settingsHtml(audio) {
 }
 
 /**
- * Ending credits from the settings (request 2026-09-27): CREDITS rolls up inside a fixed window, looping,
- * so the page never scrolls; with reduced motion the list simply stands still.
+ * Ending credits (request 2026-09-27): CREDITS rolls up inside a fixed window, looping, so the page never
+ * scrolls; with reduced motion the list simply stands still. Opened from the settings (닫기 → back to them), and
+ * after the part-2 teaser at the end of part 1 (story N003: its button goes on to the day-28 shop).
+ * @param {{ action?: string, label?: string }} [close] the bottom button
  */
-export function creditsHtml() {
+export function creditsHtml({ action = 'closeCredits', label = '닫기' } = {}) {
   const roll = CREDITS.map((c) => `
           <div class="credit"><b>${esc(c.role)}</b>${c.names.map((n) => `<span>${esc(n)}</span>`).join('')}</div>`).join('')
   return `
@@ -88,7 +90,7 @@ export function creditsHtml() {
           <h2 class="title-logo small">마라부자</h2>${roll}
           <p class="credits-end">감사합니다!</p>
       </div></div>
-      <button class="btn ghost" data-action="closeCredits">닫기</button>
+      <button class="btn ghost" data-action="${action}">${label}</button>
     </div></div>`
 }
 

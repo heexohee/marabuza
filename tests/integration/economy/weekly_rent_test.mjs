@@ -223,3 +223,10 @@ test('test_save_clear_ends_the_run_so_continue_has_nothing_to_load', () => {
   assert.equal(hasSave(), false)
   assert.equal(loadGame(), null)
 })
+
+test('test_sunday_day_28_line_says_a_month_other_sundays_a_week', () => {
+  // day 28 closes part 1 — four weeks, so "한 달 동안" (feedback 2026-09-28)
+  assert.match(sundayLine(1, null, 28).text, /^한 달 동안 수고했어/)
+  assert.match(sundayLine(1, null, 21).text, /^한 주 동안 수고했어/)
+  assert.match(sundayLine(1, null).text, /^한 주 동안 수고했어/)
+})

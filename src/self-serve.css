@@ -60,6 +60,7 @@ button:not(:disabled), a[href], [data-action] { cursor: var(--cursor-click); }
 .q-line { display: flex; gap: 6px; justify-content: center; min-height: 30px; }
 .q-face { display: flex; flex-direction: column; align-items: center; gap: 2px; opacity: .6; }
 .q-face.front { opacity: 1; transform: scale(1.15); }
+.q-face .queue-portrait { width: 28px; height: 28px; object-fit: contain; image-rendering: pixelated; }
 .q-bar { display: block; width: 28px; height: 5px; background: #ddd; border: 1px solid var(--ink); border-radius: 3px; overflow: hidden; }
 .q-bar b { display: block; height: 100%; background: var(--green); }
 .q-bar b[data-level="warn"] { background: var(--orange); }
@@ -483,39 +484,57 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .shop-scene .seats { display: block; position: absolute; inset: 0; pointer-events: none; }
 .shop-scene .seat {
   position: absolute; left: calc(var(--apx) * var(--x)); width: calc(var(--apx) * var(--w));
-  bottom: calc(var(--apx) * 8); height: calc(var(--apx) * 64);
+  bottom: calc(var(--apx) * 8); height: calc(var(--apx) * 80);
   display: block; min-height: 0; padding: 0; margin: 0; background: none; border: 0; border-radius: 6px;
   opacity: 1; pointer-events: auto; font: inherit; color: var(--on-pastel);
 }
 .shop-scene .seat.empty { pointer-events: none; }
 .shop-scene .seat > * { position: absolute; left: 50%; transform: translateX(-50%); }
+/* Approved local-tone contours and slender legs are baked into the sprites. */
 .shop-scene .chair {
-  bottom: 0; margin-left: calc(var(--apx) * -9); width: calc(var(--apx) * 4); height: calc(var(--apx) * 36);
-  background: #7a4428; border: 2px solid var(--ink); box-sizing: border-box;
+  z-index: 0; bottom: calc(var(--apx) * 33); width: calc(var(--apx) * 36); height: calc(var(--apx) * 16);
+  /* Backrest-only asset: no hidden chair legs to overlap the table legs. */
+  background: url("img/seating/chair-wood.png?v=2") center / 100% 100% no-repeat; image-rendering: pixelated;
 }
-.shop-scene .chair::after {
-  content: ""; position: absolute; left: 0; bottom: calc(var(--apx) * 12); width: calc(var(--apx) * 12); height: calc(var(--apx) * 3);
-  background: #7a4428; border: 2px solid var(--ink); box-sizing: border-box;
-}
-.shop-scene .animal { bottom: calc(var(--apx) * 20); width: calc(var(--apx) * 24); height: calc(var(--apx) * 24); }
-.shop-scene .animal-img { width: 100%; height: 100%; }
 .shop-scene .table-top {
-  z-index: 1; bottom: calc(var(--apx) * 20); width: calc(var(--apx) * 30); height: calc(var(--apx) * 4);
-  background: #c98a52; border: 2px solid var(--ink); box-sizing: border-box;
+  z-index: 3; bottom: 0; width: calc(var(--apx) * 52); height: calc(var(--apx) * 35);
+  background: url("img/seating/table-wood.png?v=2") center / 100% 100% no-repeat; image-rendering: pixelated;
+
 }
-.shop-scene .table-leg {
-  bottom: 0; width: calc(var(--apx) * 4); height: calc(var(--apx) * 20);
-  background: #8a5230; border: 2px solid var(--ink); border-top: 0; box-sizing: border-box;
+.shop-scene .seated-customer { inset: 0; left: 0; transform: none; pointer-events: none; }
+.shop-scene .seated-customer > * { position: absolute; left: 50%; transform: translateX(-50%); }
+.shop-scene .customer-torso {
+  z-index: 1; bottom: calc(var(--apx) * 32); width: calc(var(--apx) * 24); height: calc(var(--apx) * 10);
+  background: var(--customer-fur); border: var(--apx) solid #594236; box-sizing: border-box;
+  border-radius: calc(var(--apx) * 6) calc(var(--apx) * 6) 0 0;
 }
+.shop-scene .dining-bib {
+  position: absolute; top: var(--apx); bottom: 0; left: calc(var(--apx) * 4); right: calc(var(--apx) * 4);
+  background: #f5e7c5; border: var(--apx) solid #c4a778; box-shadow: inset 0 calc(var(--apx) * -1) #e1cea7;
+  clip-path: polygon(0 0, 25% 0, 35% 20%, 65% 20%, 75% 0, 100% 0, 100% 100%, 0 100%);
+}
+.shop-scene .seated-head { z-index: 2; bottom: calc(var(--apx) * 37); width: calc(var(--apx) * 32); height: calc(var(--apx) * 32); }
+/* Tall ears extend upward; rabbit cheeks must stay as large as the other faces. */
+.shop-scene .seated-customer[data-animal="rabbit"] .seated-head { width: calc(var(--apx) * 40); height: calc(var(--apx) * 40); margin-left: calc(var(--apx) * 1.67); }
+/* Align the chin, rather than the asymmetric ear silhouette, to the bib. */
+.shop-scene .seated-customer[data-animal="panda"] .seated-head { margin-left: calc(var(--apx) * 3); }
+.shop-scene .seated-head img { display: block; width: 100%; height: 100%; image-rendering: pixelated; }
+.shop-scene .customer-paw {
+  z-index: 5; bottom: calc(var(--apx) * 32); width: calc(var(--apx) * 6); height: calc(var(--apx) * 6);
+  background: var(--customer-paw); border: var(--apx) solid #594236; box-sizing: border-box;
+  border-radius: calc(var(--apx) * 2) calc(var(--apx) * 2) var(--apx) var(--apx); box-shadow: inset 0 calc(var(--apx) * -1) #0002;
+}
+.shop-scene .paw-left { margin-left: calc(var(--apx) * -10); }
+.shop-scene .paw-right { margin-left: calc(var(--apx) * 10); }
 /* number stand on the table (the table's own number, not the ticket) */
 .shop-scene .table-no {
-  z-index: 2; bottom: calc(var(--apx) * 23); margin-left: calc(var(--apx) * 10);
+  z-index: 6; bottom: calc(var(--apx) * 20); margin-left: calc(var(--apx) * -17);
   min-width: calc(var(--apx) * 8); padding: 0 2px; box-sizing: border-box; text-align: center;
-  font-size: max(10px, calc(var(--apx) * 5)); line-height: 1.25; background: #fff3d6; border: 2px solid var(--ink); border-radius: 3px;
+  font-size: max(10px, calc(var(--apx) * 5)); line-height: 1.25; background: #fff3d6; border: 2px solid #b39a7a; border-radius: 3px;
 }
 .shop-scene .seat.empty .table-no { opacity: .75; }
-.shop-scene .ticket-badge { bottom: calc(var(--apx) * 46); white-space: nowrap; font-size: max(11px, calc(var(--apx) * 6)); font-weight: 700; padding: 0 5px; }
-.shop-scene .patience { bottom: calc(var(--apx) * 58); width: calc(var(--apx) * 26); height: max(6px, calc(var(--apx) * 3)); box-sizing: border-box; }
+.shop-scene .ticket-badge { z-index: 7; bottom: calc(var(--apx) * 79); white-space: nowrap; font-size: max(11px, calc(var(--apx) * 6)); font-weight: 700; padding: 0 5px; }
+.shop-scene .patience { z-index: 7; bottom: calc(var(--apx) * 89); width: calc(var(--apx) * 26); height: max(6px, calc(var(--apx) * 3)); box-sizing: border-box; }
 .shop-scene .ss-table { cursor: var(--cursor-click); }
 .shop-scene .ss-table:hover, .shop-scene .ss-table:focus-visible { background: rgba(255, 243, 201, .35); }
 .shop-scene .ss-table.can-serve { outline: 3px dashed var(--green-dark); outline-offset: -3px; background: rgba(143, 217, 182, .25); }
@@ -587,10 +606,8 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 .ss-center[data-interior="4"] .shop-stage { background-image: url("img/scene-shop-4.png?v=3"); }
 .ss-center[data-interior="5"] .shop-stage { background-image: url("img/scene-shop-5.png?v=3"); }
 .ss-center[data-interior="6"] .shop-stage { background-image: url("img/scene-shop-6.png?v=3"); }
-.ss-center:is([data-interior="5"], [data-interior="6"]) .table-top { background: #fff6f0; }
-.ss-center:is([data-interior="5"], [data-interior="6"]) .table-leg { background: #ec96b0; }
-.ss-center:is([data-interior="5"], [data-interior="6"]) .chair,
-.ss-center:is([data-interior="5"], [data-interior="6"]) .chair::after { background: #8fd9b6; }
+.ss-center:is([data-interior="5"], [data-interior="6"]) .chair { background-image: url("img/seating/chair-mint.png?v=2"); }
+.ss-center:is([data-interior="5"], [data-interior="6"]) .table-top { background-image: url("img/seating/table-pink.png?v=2"); }
 
 /* side menu (side-menu story 001): the order chip at the counter and the wok at the kitchen strip's right end */
 .ss .counter .chip.side { background: #fff3c9; color: var(--on-pastel); border-color: var(--ink); font-weight: 700; }
@@ -799,8 +816,7 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 
 /* ---------- owner row (feedback 2026-09-27): a round face frame + a bold speech bubble pointing at it ----------
    44px row (was 40) = the bubble's two lines of 13px bold. The counter only has 1px to spare (its content
-   ended at 633 of 634px), so the small bowl art gives back 4px below. The frame crops the 64×112 sprite
-   (or the panda's 96×160) at ×1 to its face. */
+   ended at 633 of 634px), so the small bowl art gives back 4px below. The protagonist frame crops the 64×112 sprite; the panda uses a dedicated face portrait. */
 .ss .owner { height: 44px; gap: 10px; padding-bottom: 0; margin-bottom: 4px; }
 .ss .bowl-art.small { margin-top: -16px; margin-bottom: -23px; }
 .owner-face {
@@ -808,7 +824,7 @@ html[data-screen="menu"] .title-anim.on { display: block; }
   border: 3px solid var(--ink); border-radius: 50%; background: #ffe3ec;
 }
 .owner-face .owner-face-img { position: absolute; left: -15px; top: -8px; width: 64px; height: 112px; image-rendering: pixelated; }
-.owner-face .owner-face-img.panda { left: -30px; top: -6px; width: 96px; height: 160px; }
+.owner-face .owner-face-img.panda { left: 1px; top: 1px; width: 32px; height: 32px; object-fit: contain; }
 .owner-face .owner-face-img.regular { left: 1px; top: 1px; width: 32px; height: 32px; } /* a regular's own face (story N002) */
 .owner-say .regular-name { color: var(--red); }
 .ss .owner-say {

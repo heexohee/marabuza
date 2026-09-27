@@ -2,8 +2,9 @@
 // (interior, pots, shop) without playing every day by hand. On by default on localhost; `?dev` turns it
 // on anywhere, `?dev=0` turns it off (e.g. for clean evidence screenshots). Never on in a release build.
 import { IS_RELEASE } from '../build-flags.js'
-import { addToast } from './logic.js'
+import { addToast, afterSummary } from './logic.js'
 import { autoPlayDay, autoPlayDays } from './autoplay.js'
+import { PART1_LAST_DAY, PREMIUM_INSTALMENT, RENT } from './data.js'
 
 const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 export const DEV_MONEY_STEP = 100000
@@ -28,18 +29,35 @@ const autoPlay = (days) => (s) => {
   return autoPlayDays(s, days)
 }
 
+/**
+ * "엔딩 보기" (request 2026-09-28): from any screen, straight to Sunday 28's ledger scene — the step before the
+ * part-1 ending — with the last instalment in hand, so clicking on runs the real ending → teaser → credits →
+ * day-28 shop → day 29. Keeps the character and interior (the ending hall shows it); works again after the end.
+ */
+function jumpToEnding(s) {
+  const saturday = {
+    ...s,
+    phase: 'summary', day: PART1_LAST_DAY - 1, story: null, toasts: [],
+    money: Math.max(s.money, RENT + PREMIUM_INSTALMENT), premiumLeft: PREMIUM_INSTALMENT, premiumCarry: 0,
+    rentOverdue: 0, endingSeen: false, part2TeaserSeen: false,
+  }
+  return afterSummary(saturday) // Saturday 27's close → Sunday 28
+}
+
 /** Dev actions: state in, state out. */
 export const DEV_ACTIONS = {
   autoDay: autoPlay(1),
   autoWeek: autoPlay(WEEK_DAYS),
   money: (s) => addToast({ ...s, money: s.money + DEV_MONEY_STEP }, `개발 모드: +${DEV_MONEY_STEP.toLocaleString()}원`, 'good'),
+  ending: jumpToEnding,
 }
 
 const BAR_HTML = `
   <span class="dev-tag">DEV</span>
   <button type="button" data-dev="autoDay" title="오늘(상점에서는 다음 날) 영업을 봇이 끝까지 진행하고 정산으로">⏩ 하루 자동</button>
   <button type="button" data-dev="autoWeek" title="영업 ${WEEK_DAYS}일을 연달아 자동 진행 (날 사이 창고 재료만 보충)">⏩ ${WEEK_DAYS}일 자동</button>
-  <button type="button" data-dev="money" title="돈 +${DEV_MONEY_STEP.toLocaleString()}원">💰 +10만</button>`
+  <button type="button" data-dev="money" title="돈 +${DEV_MONEY_STEP.toLocaleString()}원">💰 +10만</button>
+  <button type="button" data-dev="ending" title="28일차 일요일 장부로 바로 — 엔딩 → 2부 예고 → 크레딧 → 상점 → 29일차">🎬 엔딩 보기</button>`
 
 /**
  * Adds the dev bar to the page (outside the game root, so screen re-renders never remove it).
