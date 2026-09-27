@@ -24,3 +24,6 @@ framework:
 # Per-developer preferences belong in `project.local.yaml` (gitignored), not
 # here. `/settings <key>=<value>` writes there. See
 # `.claude/docs/config-resolution.md` for the full precedence order.
+
+platform:
+  cert_tier: steam           # none | itch | steam | console — Steam release decided 2026-09-27
