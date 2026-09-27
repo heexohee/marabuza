@@ -1,7 +1,7 @@
 // Entry point for the self-serve variant: owns the current state, maps UI actions to logic, runs the loop.
 import {
   addToast, adjustCharge, advanceEnding, advanceStory, advanceSunday, advanceTeaser, afterSummary, beginNewGame, buyInterior, buyPack, buySidePack, buyUpgrade, confirmCharge, cookNext, createNewGame, dig,
-  fadeToasts, finishCharacter, finishTeaser, isEndingDone, isSundayDone, isTeaserDone, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
+  fadeToasts, finishCharacter, finishTeaser, isEndingDone, isSundayDone, isTeaserDone, openSide, payPremium, pickPot, resetCharge, restock, resumeShop, serveTable, setCharacterName,
   setCharacterOption, setMenuPrice, setTicketMode, setTicketSpice, skipStory, startCooking, startNextDay, tick,
   unlockIngredient,
 } from './logic.js'
@@ -28,7 +28,7 @@ function storageOrUndefined() {
 const storage = storageOrUndefined()
 
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, settings: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
+let view = { hover: null, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
 view = { ...view, titleSel: defaultTitleSel(view) }
 
 const audio = createAudioPlayer({
@@ -70,6 +70,7 @@ const gameActions = {
   upgrade: (s, arg) => persist(buyUpgrade(s, arg)),
   interior: (s) => persist(buyInterior(s)),
   sidePack: (s, arg) => persist(buySidePack(s, arg)),
+  openSide: (s, arg) => persist(openSide(s, arg)),
   price: (s, arg) => {
     const [mode, delta] = String(arg).split(':')
     return persist(setMenuPrice(s, mode, s.prices[mode] + Number(delta)))
@@ -104,13 +105,17 @@ const viewActions = {
   settings: (v) => ({ ...v, settings: true }),
   closeSettings: (v) => ({ ...v, settings: false }),
   closeHelp: (v) => ({ ...v, help: false }),
+  credits: (v) => ({ ...v, credits: true, settings: false }),
+  closeCredits: (v) => ({ ...v, credits: false, settings: true }), // back to the settings it was opened from
   shopTab: (v, arg) => ({ ...v, shopTab: arg }),
+  ledger: (v) => ({ ...v, ledger: !v.ledger }), // the shop's 📒 장부 popup (playtest 2026-09-27 #7)
+  closeLedger: (v) => ({ ...v, ledger: false }),
 }
 
 function run(action, arg) {
   if (action === 'menu') {
     state = createNewGame()
-    view = { ...view, paused: false, help: false, settings: false, hasSave: hasSave() }
+    view = { ...view, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave() }
     view = { ...view, titleSel: defaultTitleSel(view) }
     return
   }
@@ -134,6 +139,7 @@ function run(action, arg) {
   const prev = state
   state = gameActions[action](state, arg)
   audio.playSfx(sfxForAction(action, prev, state))
+  if (state.phase !== 'shop' && view.ledger) view = { ...view, ledger: false } // the popup belongs to this shop visit
 }
 
 root.addEventListener('click', (e) => {
@@ -161,12 +167,13 @@ const KEY_ACTIONS = {
   sunday: { Enter: 'sundayNext', Space: 'sundayNext' },
   ending: { Enter: 'endingNext', Space: 'endingNext' },
   teaser: { Enter: 'teaserNext', Space: 'teaserNext' },
+  shop: { Escape: 'closeLedger' },
 }
 
 // Title menu by keyboard: ↑/↓ move between the items that can be chosen, Enter/Space runs the highlighted one.
 function titleKey(code) {
-  if (code === 'Escape' && (view.help || view.settings)) return run(view.help ? 'closeHelp' : 'closeSettings'), true
-  if (view.help || view.settings) return false
+  if (code === 'Escape' && (view.help || view.settings || view.credits)) return run(view.credits ? 'closeCredits' : view.help ? 'closeHelp' : 'closeSettings'), true
+  if (view.help || view.settings || view.credits) return false
   const usable = TITLE_MENU.map((it, i) => (titleItemEnabled(it, view) ? i : -1)).filter((i) => i >= 0)
   const at = usable.indexOf(view.titleSel)
   if (code === 'ArrowDown' || code === 'ArrowUp') {

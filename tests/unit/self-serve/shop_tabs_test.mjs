@@ -57,14 +57,15 @@ test('test_shop_tabs_new_on_decor_when_an_interior_stage_opened_today', () => {
   assert.ok(!shopTabBadges({ ...s, interior: 2 }).has('decor'), 'not once it is bought')
 })
 
-test('test_shop_tabs_new_on_menu_when_a_side_opened_today', () => {
+test('test_shop_tabs_new_on_menu_the_night_before_a_side_can_be_added', () => {
   const side = SIDE_ITEMS[0]
-  assert.ok(shopTabBadges(shopOn(side.unlockDay)).has('menu'))
-  assert.ok(!shopTabBadges(shopOn(side.unlockDay - 1)).has('menu'))
+  assert.ok(shopTabBadges(shopOn(side.unlockDay - 1)).has('menu'))
+  assert.ok(!shopTabBadges(shopOn(side.unlockDay - 2)).has('menu'))
+  assert.ok(!shopTabBadges({ ...shopOn(side.unlockDay - 1), sideGifts: [side.id] }).has('menu'), 'not once it is added')
 })
 
 test('test_shop_tabs_new_mark_hidden_on_the_tab_you_are_on', () => {
-  const s = shopOn(SIDE_ITEMS[0].unlockDay)
+  const s = shopOn(SIDE_ITEMS[0].unlockDay - 1)
   assert.match(shopHtml(s, 'order'), /가격 · 사이드<span class="new">NEW/)
   assert.doesNotMatch(shopHtml(s, 'menu'), /class="new"/)
 })

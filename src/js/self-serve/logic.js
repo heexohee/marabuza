@@ -68,7 +68,7 @@ export function createNewGame() {
     unlocked: starters,
     upgrades: Object.fromEntries(SELF_UPGRADES.map((u) => [u.id, u.start])),
     interior: 0, // interior stages bought, 0–6 (INTERIOR_STAGES)
-    sideGifts: [], // side ids whose opening-day gift box was handed over
+    sideGifts: [], // side ids added in the shop (each came with the panda's gift box) — the open side menu
     rentOverdue: 0, // 1 after a missed Sunday payment — this week owes double, another miss closes the shop
     weekRevenue: 0, // this week's net so far (revenue+tips−refunds), accumulated at each day's close
     ledger: null, // { weekRevenue, rentDue, rentPaid, premiumDue?, premiumPaid?, premiumSettled? } on the 'sunday' screen
@@ -176,19 +176,28 @@ function spawnInterval(s) {
 
 // ---------- side menu (production/epics/side-menu/story-001) ----------
 
-/** Sides open on this business day (SIDE_ITEMS unlock days). */
-export const openSides = (s) => SIDE_ITEMS.filter((i) => s.day >= i.unlockDay)
+/** Sides the player has added in the shop (`sideGifts` = added ids; each came with its gift box). */
+export const openSides = (s) => SIDE_ITEMS.filter((i) => (s.sideGifts ?? []).includes(i.id))
+/** True when the shop can add this side now: from the night before its first business day, once. */
+export const canOpenSide = (s, side) => s.day + 1 >= side.unlockDay && !(s.sideGifts ?? []).includes(side.id)
+/** True once a cooked side is on the menu: the wok stands in the kitchen. */
+export const hasWok = (s) => openSides(s).some((i) => i.cooked)
 /** Price the register must add for a customer's side (0 without one). */
 export const sidePrice = (c) => (c?.side ? SIDE_BY_ID[c.side].price : 0)
 
-/** Morning of a side's opening day (or the first day after it): its gift box and a notice, once. */
-function openNewSides(s) {
-  const fresh = openSides(s).filter((i) => !(s.sideGifts ?? []).includes(i.id))
-  return fresh.reduce((cur, i) => addToast({
-    ...cur,
-    stock: { ...cur.stock, [sideStockId(i.id)]: (cur.stock[sideStockId(i.id)] ?? 0) + SIDE_GIFT },
-    sideGifts: [...(cur.sideGifts ?? []), i.id],
-  }, `새 메뉴 ${i.emoji} ${i.name} 시작! 첫 박스 ${SIDE_GIFT}개는 판다 사장님 선물 🎁`, 'good'), s)
+/** 메뉴 추가 in the shop (playtest 2026-09-27 #2): pays openCost, adds the side and the panda's gift box. */
+export function openSide(s, id) {
+  const side = SIDE_BY_ID[id]
+  if (!side || (s.sideGifts ?? []).includes(id)) return s
+  if (!canOpenSide(s, side)) return addToast(s, `${side.name}는 ${side.unlockDay - 1}일차 상점부터 추가할 수 있어요`, 'info')
+  if (s.money < side.openCost) return addToast(s, '돈이 부족해요 💸', 'bad')
+  const key = sideStockId(id)
+  return addToast({
+    ...s,
+    money: s.money - side.openCost,
+    stock: { ...s.stock, [key]: (s.stock[key] ?? 0) + SIDE_GIFT },
+    sideGifts: [...(s.sideGifts ?? []), id],
+  }, `새 메뉴 ${side.emoji} ${side.name} 추가! 첫 박스 ${SIDE_GIFT}개는 판다 사장님 선물 🎁`, 'good')
 }
 
 /**
@@ -207,7 +216,7 @@ function withSide(s, customer, rng) {
 /** Buys a box of an open side's stock for the warehouse. */
 export function buySidePack(s, id) {
   const side = SIDE_BY_ID[id]
-  if (!side || s.day < side.unlockDay) return s
+  if (!side || !(s.sideGifts ?? []).includes(id)) return s
   if (s.money < side.packCost) return addToast(s, '돈이 부족해요 💸', 'bad')
   const key = sideStockId(id)
   return addToast({ ...s, money: s.money - side.packCost, stock: { ...s.stock, [key]: (s.stock[key] ?? 0) + PACK_SIZE } },
@@ -295,9 +304,8 @@ export function startDay(s) {
   const day = emptyDay(s.upgrades.pots, s.upgrades.seats)
   const ownerLine = { text: dayStartLine(s.day), who: dayStartSpeaker(s.day), until: DAY_LINE_SEC }
   const rating = hasInterior(s, 1) ? clamp(s.rating + INTERIOR_EFFECT.morningRating, 0, MAX_RATING) : s.rating
-  const opened = openNewSides(s)
   const regularsDue = regularVisits(s.day).map((v) => v.who)
-  return { ...opened, phase: 'day', story: null, rating, ...day, ownerLine, regularsDue, ...openShelf(opened.stock, shelfIds(opened)) }
+  return { ...s, phase: 'day', story: null, rating, ...day, ownerLine, regularsDue, ...openShelf(s.stock, shelfIds(s)) }
 }
 
 /** The owner's start-of-day line while it is still showing, else null. */
@@ -416,7 +424,7 @@ function settlePremium(s, rentPaid) {
   if (s.endingSeen || s.day > PART1_LAST_DAY) return { state: s, premium: {} }
   if (s.premiumLeft <= 0) return { state: s, premium: { premiumDue: 0, premiumPaid: 0, premiumSettled: true } }
   const isLastWeek = s.day >= PART1_LAST_DAY
-  const premiumDue = isLastWeek ? s.premiumLeft : Math.min(s.premiumLeft, PREMIUM_INSTALMENT + s.premiumCarry)
+  const premiumDue = premiumDueOn(s, s.day)
   const premiumPaid = rentPaid ? Math.min(premiumDue, s.money) : 0
   return {
     state: {
@@ -426,6 +434,33 @@ function settlePremium(s, rentPaid) {
       premiumCarry: isLastWeek ? 0 : premiumDue - premiumPaid,
     },
     premium: { premiumDue, premiumPaid },
+  }
+}
+
+/** 권리금 the Sunday `sunday` will ask for (day 28 takes the whole rest), or null when there is no row to pay. */
+function premiumDueOn(s, sunday) {
+  if (s.endingSeen || sunday > PART1_LAST_DAY || s.premiumLeft <= 0) return null
+  return sunday >= PART1_LAST_DAY ? s.premiumLeft : Math.min(s.premiumLeft, PREMIUM_INSTALMENT + s.premiumCarry)
+}
+
+/**
+ * The shop's 📒 장부 (playtest 2026-09-27 #7): what the coming Sunday will take, from the shop after `s.day`.
+ * @returns {{ sunday: number, daysLeft: number, rent: number, rentOverdue: boolean, premium: number|null,
+ *   premiumLeft: number, money: number, shortfall: number }} premium null = no 권리금 row that Sunday
+ */
+export function upcomingSunday(s) {
+  const sunday = (Math.floor(s.day / 7) + 1) * 7
+  const rent = RENT * (s.rentOverdue ? 2 : 1)
+  const premium = premiumDueOn(s, sunday)
+  return {
+    sunday,
+    daysLeft: sunday - s.day,
+    rent,
+    rentOverdue: Boolean(s.rentOverdue),
+    premium,
+    premiumLeft: s.endingSeen ? 0 : Math.max(0, s.premiumLeft ?? 0),
+    money: s.money,
+    shortfall: Math.max(0, rent + (premium ?? 0) - s.money),
   }
 }
 

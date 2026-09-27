@@ -8,15 +8,15 @@ import {
 import { spriteImg } from '../sprites.js'
 import { chiliRow, stars, won } from '../ui.js'
 import {
-  EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, WOK_DAY, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
+  EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
   WEEKDAY_LABEL, WILT_SEC, weekdayOf,
 } from './data.js'
 import {
   checkoutBowlWeight, counterPrice, frontCustomer, hiddenItemLabel, hiddenItems, isClosing, isJustWilted, meatCount,
-  frontRegular, ownerLineText, ownerLineWho,
+  frontRegular, hasWok, ownerLineText, ownerLineWho,
 } from './logic.js'
 import { REGULARS } from './story.js'
-import { closedHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
+import { closedHtml, creditsHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { potZoom, tableSpots } from './shop-stage.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
@@ -199,11 +199,11 @@ function fitPots(el, count) {
   el.style.setProperty('--pot-zoom', String(potZoom(width, count)))
 }
 
-/** The wok (side-menu story 001): shows from WOK_DAY; lit while a pot cooks an order with a cooked side. */
+/** The wok (side-menu story 001): shows once a cooked side is on the menu; lit while a pot cooks an order with a cooked side. */
 const isWokCooking = (s) => s.pots.some((p) => p && p.remaining > 0 && p.order.side && SIDE_BY_ID[p.order.side].cooked)
-const wokKey = (s) => `${s.day >= WOK_DAY}|${isWokCooking(s)}`
+const wokKey = (s) => `${hasWok(s)}|${isWokCooking(s)}`
 function wokHtml(s) {
-  if (s.day < WOK_DAY) return ''
+  if (!hasWok(s)) return ''
   const on = isWokCooking(s)
   return `<div class="wok-art ${on ? 'on' : ''}" title="사이드는 냄비와 함께 자동 조리돼요">${spriteImg('🥘', 20, 'wok-img')}${on ? '<i class="wok-fire"></i>' : ''}</div>`
 }
@@ -423,8 +423,8 @@ export function render(root, s, view) {
     root.innerHTML = screen === 'game' ? GAME_SKELETON : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.titleSel}|${audioKey(view)}`, () =>
-      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.help ? helpHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}`, () =>
+      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.help ? helpHtml() : '') + (view.credits ? creditsHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
@@ -433,8 +433,8 @@ export function render(root, s, view) {
   if (screen === 'teaser') return patch(root, teaserKey(s), () => teaserHtml(s))
   if (screen === 'closed') return patch(root, 'closed|rent', () => closedSceneHtml(s, closedHtml(s)))
   if (screen === 'shop') {
-    const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.toasts.map((t) => t.id)}`
-    return patch(root, key, () => shopHtml(s, view.shopTab))
+    const key = `shop|${view.shopTab}|${s.money}|${JSON.stringify(s.prices)}|${JSON.stringify(s.stock)}|${s.unlocked}|${JSON.stringify(s.upgrades)}|${s.interior}|${s.day}|${s.sideGifts}|${view.ledger}|${s.toasts.map((t) => t.id)}`
+    return patch(root, key, () => shopHtml(s, view.shopTab, view.ledger))
   }
   patch(slot(root, 'day'), `${s.day}`, () => `DAY ${s.day} <small>${WEEKDAY_LABEL[weekdayOf(s.day)]}</small>`)
   patch(slot(root, 'tables'), tablesKey(s), () => tablesHtml(s))

@@ -4,10 +4,10 @@ import { CHECKOUT_PRICE, PACK_SIZE } from '../data.js'
 import { spriteImg } from '../sprites.js'
 import { stars, won } from '../ui.js'
 import {
-  BOX_SIZE, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, SIDE_ITEMS, VARIANT_INGREDIENTS, WEEKDAY_LABEL, WILT_SEC,
+  BOX_SIZE, CREDITS, INTERIOR_STAGES, MENU_PRICE, MODE_LABEL, SELF_UPGRADES, SHELF_EXTRAS, SIDE_ITEMS, VARIANT_INGREDIENTS, WEEKDAY_LABEL, WILT_SEC,
   daysUntilRent, sideStockId, weekOf, weekdayOf,
 } from './data.js'
-import { demandFactor, nextInterior, upgradeCost } from './logic.js'
+import { canOpenSide, demandFactor, nextInterior, openSides, upcomingSunday, upgradeCost } from './logic.js'
 import { dayEndLine } from './story.js'
 import { esc, heroImg, premiumBarHtml } from './story-ui.js'
 
@@ -70,7 +70,25 @@ export function settingsHtml(audio) {
       <button class="btn big" data-action="help">게임방법</button>
       ${musicControlsHtml(audio)}
       <button class="btn big" data-action="fullscreen">전체화면 켜기 / 끄기</button>
+      <button class="btn big" data-action="credits">엔딩 크레딧</button>
       <button class="btn ghost" data-action="closeSettings">닫기</button>
+    </div></div>`
+}
+
+/**
+ * Ending credits from the settings (request 2026-09-27): CREDITS rolls up inside a fixed window, looping,
+ * so the page never scrolls; with reduced motion the list simply stands still.
+ */
+export function creditsHtml() {
+  const roll = CREDITS.map((c) => `
+          <div class="credit"><b>${esc(c.role)}</b>${c.names.map((n) => `<span>${esc(n)}</span>`).join('')}</div>`).join('')
+  return `
+    <div class="overlay"><div class="modal credits" role="dialog" aria-label="엔딩 크레딧">
+      <div class="credits-window"><div class="credits-roll">
+          <h2 class="title-logo small">마라부자</h2>${roll}
+          <p class="credits-end">감사합니다!</p>
+      </div></div>
+      <button class="btn ghost" data-action="closeCredits">닫기</button>
     </div></div>`
 }
 
@@ -242,15 +260,18 @@ function interiorSection(s) {
       </section>`
 }
 
-// Side menu stock (side-menu story 001): one card per side — open ones order a box, later ones show their day.
+// Side menu (side-menu story 001, playtest 2026-09-27 #2): one card per side — added ones order a box, the one
+// whose day comes next is added for its openCost (gift box included), later ones show their day.
 function sideCard(s, side) {
-  const isOpen = s.day >= side.unlockDay
+  const isOpen = openSides(s).includes(side)
   const stock = s.stock[sideStockId(side.id)] ?? 0
   const action = isOpen
     ? `<button class="btn buy" data-action="sidePack" data-arg="${side.id}" ${s.money < side.packCost ? 'disabled' : ''}>+${PACK_SIZE}개<br>${won(side.packCost)}</button>`
-    : `<button class="btn buy" disabled>${side.unlockDay}일차에 열림</button>`
+    : canOpenSide(s, side)
+      ? `<button class="btn buy" data-action="openSide" data-arg="${side.id}" ${s.money < side.openCost ? 'disabled' : ''}><span>🔓 메뉴 추가</span><span>${won(side.openCost)}</span></button>`
+      : `<button class="btn buy" disabled>${side.unlockDay - 1}일차 상점부터</button>`
   return `
-    <div class="card side-card ${isOpen ? '' : 'later'}">
+    <div class="card side-card ${isOpen || canOpenSide(s, side) ? '' : 'later'}">
       <div class="card-art">${spriteImg(side.emoji, 20, 'card-img')}</div>
       <div class="card-name">${side.name}</div>
       <div class="card-sub">${won(side.price)} · 창고 ${stock}개</div>
@@ -311,14 +332,15 @@ export const SHOP_TABS = [
 export const DEFAULT_SHOP_TAB = SHOP_TABS[0].id
 
 /**
- * Tabs with something that opened today (s.day is the day just played): an interior stage or a side menu.
+ * Tabs with something that opened today (s.day is the day just played): an interior stage, or a side that can be
+ * added for tomorrow.
  * @returns {Set<string>} tab ids that get a NEW mark
  */
 export function shopTabBadges(s) {
   const badges = new Set()
   const next = nextInterior(s)
   if (next && next.isOpen && next.unlockDay === s.day) badges.add('decor')
-  if (SIDE_ITEMS.some((side) => side.unlockDay === s.day)) badges.add('menu')
+  if (SIDE_ITEMS.some((side) => side.unlockDay === s.day + 1 && canOpenSide(s, side))) badges.add('menu')
   return badges
 }
 
@@ -334,8 +356,34 @@ function shopTabsHtml(s, tab) {
  * Between-days shop, one tab at a time: orders into the warehouse, shop upgrades + interior, or prices + sides.
  * @param {object} s state in phase 'shop'
  * @param {string} tab SHOP_TABS id (unknown ids fall back to the order tab)
+ * @param {boolean} isLedgerOpen the 📒 장부 popup is showing
  */
-export function shopHtml(s, tab = DEFAULT_SHOP_TAB) {
+/**
+ * The shop's 📒 장부 popup (playtest 2026-09-27 #7): the coming Sunday's rent (D-n), its 권리금 instalment,
+ * what is left of 권리금, money now, and the shortfall if the money would not cover that Sunday yet.
+ */
+export function shopLedgerHtml(s) {
+  const u = upcomingSunday(s)
+  const rows = [
+    [`임대료 <small>(${u.sunday}일차 일요일 · D-${u.daysLeft})</small>`, `${won(u.rent)}${u.rentOverdue ? ' <small>(연체분 포함)</small>' : ''}`],
+    ...(u.premium === null ? [] : [['권리금 할부 <small>(판다 사장님)</small>', won(u.premium)]]),
+    ...(u.premiumLeft > 0 ? [['남은 권리금', won(u.premiumLeft)]] : []),
+    ['지금 가진 돈', won(u.money)],
+  ]
+  const verdict = u.shortfall > 0
+    ? `<p class="shop-ledger-note bad">일요일까지 ${won(u.shortfall)} 더 벌어야 해요</p>`
+    : '<p class="shop-ledger-note ok">일요일 낼 돈은 충분해요 ✓</p>'
+  return `
+      <div class="overlay shop-ledger" data-action="ledger">
+        <div class="modal small ledger-modal" role="dialog" aria-label="장부">
+          <h2>📒 장부</h2>
+          <table class="summary">${rows.map(([label, value]) => `<tr><td>${label}</td><td>${value}</td></tr>`).join('')}</table>${verdict}
+          <button class="btn big" data-action="ledger">닫기</button>
+        </div>
+      </div>`
+}
+
+export function shopHtml(s, tab = DEFAULT_SHOP_TAB, isLedgerOpen = false) {
   const current = SHOP_TABS.find((t) => t.id === tab) ?? SHOP_TABS[0]
   const toasts = s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join('')
   return `
@@ -343,6 +391,7 @@ export function shopHtml(s, tab = DEFAULT_SHOP_TAB) {
       <header class="shop-head">
         <h1 class="title-logo small">마라부자 <span>: 상점 · 셀프 담기</span></h1>
         <div class="shop-money">${spriteImg('🪙', 16, 'stat-img')} × ${s.money.toLocaleString()}</div>${premiumBarHtml(s)}
+        <button class="btn ledger-btn" data-action="ledger" title="장부 — 다음 일요일에 낼 돈" aria-label="장부">📒</button>
       </header>${shopTabsHtml(s, current.id)}
       <div class="shop-tab-body" role="tabpanel">${current.html(s)}
       </div>
@@ -350,6 +399,6 @@ export function shopHtml(s, tab = DEFAULT_SHOP_TAB) {
         <button class="bubble-btn alt2" data-action="menu">타이틀</button>
         <button class="bubble-btn" data-action="nextDay">DAY ${s.day + 1} 영업 시작!</button>
       </footer>
-      <div class="toasts shop-toasts">${toasts}</div>
+      <div class="toasts shop-toasts">${toasts}</div>${isLedgerOpen ? shopLedgerHtml(s) : ''}
     </div>`
 }

@@ -163,20 +163,31 @@ export const INTERIOR_EFFECT = {
 }
 
 // ---------- side menu (design/game-brief.md §사이드 메뉴, production/epics/side-menu/story-001) ----------
-// Open on business days 8 / 10 / 12; prices are reachable with the register keys (3,000 ×1 · 4,000 ×2 · 4,000 ×3).
+// Sold from business days 8 / 10 / 12; prices are reachable with the register keys (3,000 ×1 · 4,000 ×2 · 4,000 ×3).
+// Playtest 2026-09-27 #2: a side no longer opens by itself — from the shop the night before its day, a 메뉴 추가 card
+// opens it for `openCost` (a D multiple, tuning), and the panda's first box (SIDE_GIFT) comes with it.
 // Stock lives in the warehouse under `side_<id>` and never goes on the shelf. `cooked` sides are made in the wok
 // automatically while their order's pot cooks and go out with the main pot; drinks go out at the counter.
 export const SIDE_ITEMS = [
-  { id: 'drink', name: '중국음료', emoji: '🥤', price: 3000, unlockDay: 8, cooked: false, packCost: 9000 },
-  { id: 'friedrice', name: '달걀볶음밥', emoji: '🍳', price: 8000, unlockDay: 10, cooked: true, packCost: 24000 },
-  { id: 'guobao', name: '꿔바로우', emoji: '🍖', price: 12000, unlockDay: 12, cooked: true, packCost: 36000 },
+  { id: 'drink', name: '중국음료', emoji: '🥤', price: 3000, unlockDay: 8, openCost: priceOf(0.3), cooked: false, packCost: 9000 },
+  { id: 'friedrice', name: '달걀볶음밥', emoji: '🍳', price: 8000, unlockDay: 10, openCost: priceOf(0.5), cooked: true, packCost: 24000 },
+  { id: 'guobao', name: '꿔바로우', emoji: '🍖', price: 12000, unlockDay: 12, openCost: priceOf(0.8), cooked: true, packCost: 36000 },
 ]
 export const SIDE_BY_ID = Object.fromEntries(SIDE_ITEMS.map((i) => [i.id, i]))
 export const sideStockId = (id) => `side_${id}`
 export const SIDE_STOCK_IDS = SIDE_ITEMS.map((i) => sideStockId(i.id))
 export const SIDE_CHANCE = 0.35 // share of customers who add one open side (tuning)
-export const SIDE_GIFT = 10 // first box of each side, from the panda, on its opening day
-export const WOK_DAY = Math.min(...SIDE_ITEMS.filter((i) => i.cooked).map((i) => i.unlockDay)) // the wok appears
+export const SIDE_GIFT = 10 // first box of each side, from the panda, when it is added in the shop
+
+// Ending credits (settings → 엔딩 크레딧, request 2026-09-27): role → names, in roll order. Edit freely.
+export const CREDITS = [
+  { role: '기획 · 개발', names: ['heexohee'] },
+  { role: '도트 그래픽', names: ['자체 제작 (tools/art)'] },
+  { role: '음악 · 효과음', names: ['자체 제작 (tools/audio)'] },
+  { role: '글꼴', names: ['갈무리 Galmuri — © Lee Minseo', 'SIL Open Font License 1.1'] },
+  { role: '개발 도움', names: ['Claude Code'] },
+  { role: '그리고', names: ['플레이해 주신 여러분 🙏'] },
+]
 
 // Story & protagonist (design/quick-specs/story-character-2026-09-25.md)
 export const NAME_MAX_LEN = 8 // fits the narrow counter panel

@@ -774,6 +774,18 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 .title-item small { display: block; font-size: 13px; letter-spacing: 0; opacity: .8; }
 .title-ver { position: absolute; right: 18px; bottom: 12px; color: rgba(255, 255, 255, .5); font-size: 14px; }
 .modal.settings { max-width: 340px; }
+/* ending credits (settings → 엔딩 크레딧): the roll climbs through a fixed window and loops; the page never scrolls */
+.modal.credits { max-width: 420px; display: flex; flex-direction: column; gap: 10px; }
+.credits-window { height: min(360px, 60vh); overflow: hidden; position: relative;
+  mask-image: linear-gradient(transparent, #000 12%, #000 88%, transparent); }
+.credits-roll { display: flex; flex-direction: column; gap: 18px; padding: 100% 0; animation: credits-roll 26s linear infinite; }
+.credits-roll .title-logo { margin: 0; }
+.credit { display: flex; flex-direction: column; gap: 2px; }
+.credit b { font-size: 13px; opacity: .7; }
+.credit span { font-size: 17px; font-weight: 700; }
+.credits-end { margin: 0; font-weight: 700; }
+@keyframes credits-roll { from { transform: translateY(0); } to { transform: translateY(-100%); } }
+@media (prefers-reduced-motion: reduce) { .credits-roll { animation: none; padding: 0; } }
 .modal.settings .btn { white-space: nowrap; }
 
 /* music on/off + volume — title settings and the pause menu */
@@ -836,6 +848,15 @@ html[data-screen="menu"] .title-anim.on { display: block; }
 .premium-left { white-space: nowrap; }
 .shop-head .premium-bar { min-width: 220px; margin-top: 0; color: var(--ink); font-weight: 700; }
 .premium-note { margin: 6px 0 0; font-size: 13px; text-align: left; }
+/* the shop's 📒 장부 (playtest 2026-09-27 #7): top-right of the header, a popup of what the coming Sunday takes */
+.shop-head .ledger-btn { flex: none; font-size: 20px; line-height: 1; padding: 4px 8px; }
+.ledger-modal { max-width: 380px; }
+.ledger-modal .summary td { text-align: left; }
+.ledger-modal .summary td small { display: block; font-size: 12px; opacity: .8; }
+.ledger-modal .summary td:last-child { text-align: right; white-space: nowrap; }
+.shop-ledger-note { margin: 0; font-size: 14px; font-weight: 700; }
+.shop-ledger-note.ok { color: #1d7a3c; }
+.shop-ledger-note.bad { color: #b3261e; }
 .pay-extra-row { display: flex; align-items: center; gap: 6px; font-size: 13px; }
 .pay-extra-row .btn.pay-extra { flex: none; padding: 4px 8px; }
 /* the old "마라판다" sign hung as a frame on the wall (CSS stand-in until the pixel-art frame) */

@@ -49,7 +49,7 @@ export const ACTION_SFX = {
   chargeConfirm: 'pay',
   restock: 'restock',
   buy: 'buy', sidePack: 'buy', upgrade: 'buy', interior: 'buy', payPremium: 'pay',
-  unlock: 'unlock',
+  unlock: 'unlock', openSide: 'unlock',
   cook: 'cook', cookNext: 'cook',
   table: 'serve',
   charge: 'tap', chargeReset: 'tap', mode: 'tap', spice: 'tap', price: 'tap', pick: 'tap', dig: 'tap',

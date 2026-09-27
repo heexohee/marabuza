@@ -12,9 +12,9 @@
 //   good    — no slips, pays 권리금 off first (keeps the whole balance back, pays it on Sundays), then decorates
 // Deterministic (seeded). Observations only — the §E goals are printed next to the numbers, not judged here.
 import { PACK_SIZE } from '../../src/js/data.js'
-import { BASELINE_D, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, VARIANT_INGREDIENTS } from '../../src/js/self-serve/data.js'
+import { BASELINE_D, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, SIDE_ITEMS, VARIANT_INGREDIENTS } from '../../src/js/self-serve/data.js'
 import {
-  afterSummary, buyInterior, buyUpgrade, createNewGame, finishTeaser, nextInterior, payPremium, startNextDay,
+  afterSummary, buyInterior, buyUpgrade, canOpenSide, createNewGame, finishTeaser, nextInterior, openSide, payPremium, startNextDay,
   unlockIngredient, upgradeCost,
 } from '../../src/js/self-serve/logic.js'
 import { BOT_MISTAKES, BOT_PACE_SEC, NO_MISTAKES, autoPlayDay, restockWarehouse } from '../../src/js/self-serve/autoplay.js'
@@ -55,12 +55,15 @@ function tryBuy(s, cost, reserve, buy) {
   return next.money < s.money ? next : null
 }
 
-/** Between days: unlock ingredients, then interior, then seats / pots / fire, while the reserve allows. */
+/** Between days: unlock ingredients and add side menus, then interior, then seats / pots / fire, while the reserve allows. */
 function shopPolicy(s, tier) {
   let cur = s
   const reserve = reserveFor(cur, tier)
   for (const ing of VARIANT_INGREDIENTS.filter((i) => i.unlockCost > 0 && !cur.unlocked.includes(i.id))) {
     cur = tryBuy(cur, ing.unlockCost, reserve, (x) => unlockIngredient(x, ing.id)) ?? cur
+  }
+  for (const side of SIDE_ITEMS.filter((i) => canOpenSide(cur, i))) {
+    cur = tryBuy(cur, side.openCost, reserve, (x) => openSide(x, side.id)) ?? cur
   }
   for (let bought = true; bought;) {
     bought = false

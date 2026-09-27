@@ -1,14 +1,14 @@
-// Side menu (production/epics/side-menu/story-001-side-menu.md): unlock days, ordering, pricing, stock,
-// serving with the main pot, save, and the dev bot.
+// Side menu (production/epics/side-menu/story-001-side-menu.md): adding a side in the shop (playtest 2026-09-27
+// #2), ordering, pricing, stock, serving with the main pot, save, and the dev bot.
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  adjustCharge, buySidePack, chargeBreakdown, confirmCharge, counterPrice, createNewGame, openSides, pickPot,
+  adjustCharge, buySidePack, canOpenSide, chargeBreakdown, confirmCharge, counterPrice, createNewGame, hasWok, openSide, openSides, pickPot,
   serveTable, spawnCustomer, startCooking, startDay,
 } from '../../../src/js/self-serve/logic.js'
 import { autoPlayDay, restockWarehouse } from '../../../src/js/self-serve/autoplay.js'
 import { loadGame, saveGame } from '../../../src/js/self-serve/save.js'
-import { SAVE_KEY, SIDE_BY_ID, SIDE_GIFT, sideStockId } from '../../../src/js/self-serve/data.js'
+import { SAVE_KEY, SIDE_BY_ID, SIDE_GIFT, SIDE_ITEMS, sideStockId } from '../../../src/js/self-serve/data.js'
 
 const RICH = 10_000_000
 const QUIET = 999
@@ -23,7 +23,12 @@ function memoryStorage() {
 }
 beforeEach(() => { globalThis.localStorage = memoryStorage() })
 
-const dayOn = (day, over = {}) => startDay({ ...createNewGame(), day, money: RICH, ...over })
+/** The shop the night before `day` with every side that can be added by then added (a player who adds them). */
+function shopBefore(day, over = {}) {
+  const shop = { ...createNewGame(), phase: 'shop', day: day - 1, money: RICH, ...over }
+  return SIDE_ITEMS.filter((i) => i.unlockDay <= day).reduce((s, i) => openSide(s, i.id), shop)
+}
+const dayOn = (day, over = {}) => startDay({ ...shopBefore(day, over), day })
 const makeBowl = () => ({ weighed: { noodle: 1, enoki: 1 }, mode: 'maratang', beef: 0, lamb: 0, skewers: {}, cilantro: false })
 function atCounter(day, side) {
   const s = dayOn(day)
@@ -35,23 +40,50 @@ const chargeExactly = (s) => {
   return confirmCharge(adjustCharge(s, correct - charged))
 }
 
-// ---------- unlock days ----------
+// ---------- adding a side in the shop ----------
 
-test('test_side_menu_opens_drink_friedrice_guobao_on_days_8_10_12', () => {
-  const ids = (day) => openSides({ day }).map((i) => i.id)
+test('test_side_menu_each_side_can_be_added_from_the_night_before_its_day', () => {
+  for (const side of SIDE_ITEMS) {
+    const shop = (day) => ({ ...createNewGame(), phase: 'shop', day, money: RICH })
+    assert.ok(!canOpenSide(shop(side.unlockDay - 2), side), `${side.id} not two nights early`)
+    assert.ok(canOpenSide(shop(side.unlockDay - 1), side), `${side.id} the night before`)
+    assert.equal(openSide(shop(side.unlockDay - 2), side.id).sideGifts.length, 0, 'refused early')
+  }
+})
+
+test('test_side_menu_adding_a_side_costs_open_cost_and_brings_the_gift_box_once', () => {
+  const shop = { ...createNewGame(), phase: 'shop', day: 7, money: RICH }
+  const added = openSide(shop, 'drink')
+  assert.equal(added.money, RICH - SIDE_BY_ID.drink.openCost)
+  assert.equal(added.stock[sideStockId('drink')], SIDE_GIFT)
+  assert.deepEqual(added.sideGifts, ['drink'])
+  assert.match(added.toasts.at(-1).text, /중국음료/)
+  assert.equal(openSide(added, 'drink'), added, 'no second purchase or gift')
+})
+
+test('test_side_menu_adding_a_side_needs_the_money', () => {
+  const shop = { ...createNewGame(), phase: 'shop', day: 7, money: SIDE_BY_ID.drink.openCost - 1 }
+  const after = openSide(shop, 'drink')
+  assert.deepEqual(after.sideGifts, [])
+  assert.equal(after.money, shop.money)
+  assert.equal(after.toasts.at(-1).kind, 'bad')
+})
+
+test('test_side_menu_a_side_never_opens_by_itself', () => {
+  const s = startDay({ ...createNewGame(), day: 12, money: RICH })
+  assert.deepEqual(openSides(s), [])
+  assert.equal(s.stock[sideStockId('guobao')], 0)
+  assert.ok(!hasWok(s), 'no wok without a cooked side')
+})
+
+test('test_side_menu_open_sides_are_the_added_ones_and_the_wok_follows_cooked_ones', () => {
+  const ids = (day) => openSides(dayOn(day)).map((i) => i.id)
   assert.deepEqual(ids(7), [])
   assert.deepEqual(ids(8), ['drink'])
   assert.deepEqual(ids(10), ['drink', 'friedrice'])
   assert.deepEqual(ids(12), ['drink', 'friedrice', 'guobao'])
-})
-
-test('test_side_menu_opening_day_gives_one_gift_box_once', () => {
-  const day8 = dayOn(8)
-  assert.equal(day8.stock[sideStockId('drink')], SIDE_GIFT)
-  assert.deepEqual(day8.sideGifts, ['drink'])
-  assert.match(day8.toasts.map((t) => t.text).join(' '), /중국음료/)
-  const day9 = startDay({ ...day8, phase: 'shop', day: 9 })
-  assert.equal(day9.stock[sideStockId('drink')], SIDE_GIFT, 'no second gift')
+  assert.ok(!hasWok(dayOn(9)))
+  assert.ok(hasWok(dayOn(10)))
 })
 
 // ---------- ordering ----------
@@ -121,10 +153,10 @@ test('test_side_menu_cooked_side_goes_out_with_the_main_pot', () => {
 
 // ---------- shop, save, bot ----------
 
-test('test_side_menu_side_boxes_only_for_open_sides', () => {
-  const s = { ...createNewGame(), phase: 'shop', day: 9, money: RICH }
-  assert.equal(buySidePack(s, 'drink').stock[sideStockId('drink')], 10)
-  assert.equal(buySidePack(s, 'guobao'), s, 'not open yet')
+test('test_side_menu_side_boxes_only_for_added_sides', () => {
+  const s = { ...shopBefore(8), day: 9 }
+  assert.equal(buySidePack(s, 'drink').stock[sideStockId('drink')], SIDE_GIFT + 10)
+  assert.equal(buySidePack(s, 'guobao'), s, 'not added yet')
 })
 
 test('test_side_menu_stock_and_gifts_round_trip_through_save', () => {
