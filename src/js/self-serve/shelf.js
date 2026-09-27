@@ -1,6 +1,6 @@
 // Shelf (진열대) rules: warehouse → shelf restocking, FIFO self-serve, wilting.
 // A shelf maps ingredient id → batches [{ qty, age }], oldest first. All functions are pure.
-import { BOX_SIZE, PERISHABLE_IDS, SHELF_CAPACITY, WILT_SEC, WILT_WARN_RATIO } from './data.js'
+import { BOX_SIZE, PERISHABLE_IDS, SHELF_CAPACITY, START_SHELF_QTY, WILT_SEC, WILT_WARN_RATIO } from './data.js'
 
 const RATIO_EPSILON = 1e-9
 
@@ -23,9 +23,9 @@ export function isWilting(shelf, id) {
   return f !== null && f <= WILT_WARN_RATIO + RATIO_EPSILON
 }
 
-/** Moves up to one box from warehouse to shelf as a fresh batch; `moved` is 0 when nothing fits. */
-export function restockShelf(stock, shelf, id) {
-  const moved = Math.max(0, Math.min(BOX_SIZE, stock[id] ?? 0, SHELF_CAPACITY - shelfQty(shelf, id)))
+/** Moves up to `amount` (one box) from warehouse to shelf as a fresh batch; `moved` is 0 when nothing fits. */
+export function restockShelf(stock, shelf, id, amount = BOX_SIZE) {
+  const moved = Math.max(0, Math.min(amount, stock[id] ?? 0, SHELF_CAPACITY - shelfQty(shelf, id)))
   if (moved === 0) return { stock, shelf, moved }
   return {
     stock: { ...stock, [id]: stock[id] - moved },
@@ -34,10 +34,10 @@ export function restockShelf(stock, shelf, id) {
   }
 }
 
-/** Opening prep: one box of every unlocked ingredient goes onto an empty shelf. */
+/** Opening prep: START_SHELF_QTY of every shelf item (or all the warehouse has) goes onto an empty shelf. */
 export const openShelf = (stock, unlocked) =>
   unlocked.reduce(({ stock: st, shelf }, id) => {
-    const r = restockShelf(st, shelf, id)
+    const r = restockShelf(st, shelf, id, START_SHELF_QTY)
     return { stock: r.stock, shelf: r.shelf }
   }, { stock, shelf: {} })
 

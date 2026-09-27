@@ -4,7 +4,7 @@ import {
   buyPack, buyUpgrade, createNewGame, generateWish, hiddenItemLabel, hiddenItems, setMenuPrice, startDay, tick, unlockIngredient,
 } from '../../../src/js/self-serve/logic.js'
 import { DAY_LENGTH_SEC, PACK_SIZE } from '../../../src/js/data.js'
-import { MENU_PRICE, START_WAREHOUSE_STOCK } from '../../../src/js/self-serve/data.js'
+import { MENU_PRICE, QUEUE_PATIENCE_RATE, START_WAREHOUSE_STOCK } from '../../../src/js/self-serve/data.js'
 
 const seq = (...values) => { let i = 0; return () => values[i++ % values.length] }
 
@@ -36,7 +36,7 @@ test('hiddenItems lists nothing for a vegetable-only bowl', () => {
 })
 
 test('queued customers leave when patience runs out and the counter moves on', () => {
-  const s = tick({ ...dayWithQueuedCustomer(), spawnTimer: 999 }, 41, () => 0.5)
+  const s = tick({ ...dayWithQueuedCustomer(), spawnTimer: 999 }, 40 / QUEUE_PATIENCE_RATE + 1, () => 0.5)
   assert.equal(s.stats.left, 1)
   assert.equal(s.queue.length, 0)
   assert.equal(s.counter.customerId, null)

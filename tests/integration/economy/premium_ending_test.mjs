@@ -42,10 +42,10 @@ function saveWithoutPremiumFields(s) {
 
 // ---------- amounts ----------
 
-test('test_premium_total_is_ten_d_paid_in_four_equal_instalments', () => {
-  // 10D, confirmed by the B001 28-day sim (was 8D)
-  assert.equal(PREMIUM_TOTAL, 970_000)
-  assert.equal(PREMIUM_INSTALMENT, 242_500)
+test('test_premium_total_is_eleven_d_paid_in_four_instalments', () => {
+  // 11D (feedback 2026-09-27, was 10D after B001, 8D before)
+  assert.equal(PREMIUM_TOTAL, 1_067_000)
+  assert.equal(PREMIUM_INSTALMENT, 266_800) // day 28 takes whatever is left (1,067,000 − 3 × 266,800 = 266,600)
   assert.equal(PART1_LAST_DAY, 28)
   assert.equal(createNewGame().premiumLeft, PREMIUM_TOTAL)
 })

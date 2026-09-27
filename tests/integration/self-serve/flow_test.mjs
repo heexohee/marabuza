@@ -8,7 +8,7 @@ import {
 } from '../../../src/js/self-serve/logic.js'
 import { shelfQty } from '../../../src/js/self-serve/shelf.js'
 import { CHECKOUT_PRICE, DAY_LENGTH_SEC, INGREDIENTS } from '../../../src/js/data.js'
-import { BOX_SIZE, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, RESTOCK_BUSY_SEC, WILT_SEC } from '../../../src/js/self-serve/data.js'
+import { BOX_SIZE, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, RESTOCK_BUSY_SEC, START_SHELF_QTY, WILT_SEC } from '../../../src/js/self-serve/data.js'
 
 const constant = (v) => () => v
 const QUIET = 999 // spawn timer far in the future
@@ -35,8 +35,8 @@ const finishCooking = (s) => tick(s, 30, constant(0.5))
 test('test_flow_start_day_stocks_the_shelf_from_the_warehouse', () => {
   const fresh = createNewGame()
   const s = startDay(fresh)
-  assert.equal(shelfQty(s.shelf, 'noodle'), BOX_SIZE)
-  assert.equal(s.stock.noodle, fresh.stock.noodle - BOX_SIZE)
+  assert.equal(shelfQty(s.shelf, 'noodle'), START_SHELF_QTY)
+  assert.equal(s.stock.noodle, fresh.stock.noodle - START_SHELF_QTY)
   assert.deepEqual(s.queue, [])
 })
 
@@ -220,7 +220,8 @@ test('test_flow_seated_customer_who_gives_up_is_refunded', () => {
 // ---------- restock & busy ----------
 
 test('test_flow_restock_moves_a_box_and_keeps_the_owner_busy', () => {
-  const s = dayWithQueue({})
+  const opened = dayWithQueue({})
+  const s = { ...opened, shelf: { ...opened.shelf, noodle: [] } } // an emptied slot, so a whole box fits
   const r = restock(s, 'noodle')
   assert.equal(shelfQty(r.shelf, 'noodle'), shelfQty(s.shelf, 'noodle') + BOX_SIZE)
   assert.equal(r.stock.noodle, s.stock.noodle - BOX_SIZE)
@@ -239,7 +240,7 @@ test('test_flow_wilted_vegetables_are_counted_as_waste', () => {
   assert.equal(shelfQty(next.shelf, 'bokchoy'), 0)
   assert.ok(next.stats.wasted >= BOX_SIZE)
   assert.ok(next.stats.wasteCost > 0)
-  assert.equal(shelfQty(next.shelf, 'noodle'), BOX_SIZE)
+  assert.equal(shelfQty(next.shelf, 'noodle'), START_SHELF_QTY)
 })
 
 // ---------- closing ----------

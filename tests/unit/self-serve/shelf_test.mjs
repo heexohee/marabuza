@@ -4,15 +4,15 @@ import assert from 'node:assert/strict'
 import {
   ageShelf, closeShelf, fillBowl, openShelf, restockShelf, shelfQty, takeFromShelf,
 } from '../../../src/js/self-serve/shelf.js'
-import { BOX_SIZE, SHELF_CAPACITY, WILT_SEC } from '../../../src/js/self-serve/data.js'
+import { BOX_SIZE, SHELF_CAPACITY, START_SHELF_QTY, WILT_SEC } from '../../../src/js/self-serve/data.js'
 
 const constant = (v) => () => v
 
-test('test_shelf_open_moves_one_box_per_unlocked_ingredient', () => {
+test('test_shelf_open_puts_start_qty_of_every_shelf_item_or_all_the_warehouse_has', () => {
   const { stock, shelf } = openShelf({ noodle: 12, bokchoy: 2, beef: 9 }, ['noodle', 'bokchoy'])
-  assert.equal(shelfQty(shelf, 'noodle'), BOX_SIZE)
+  assert.equal(shelfQty(shelf, 'noodle'), START_SHELF_QTY)
   assert.equal(shelfQty(shelf, 'bokchoy'), 2, 'moves only what the warehouse has')
-  assert.equal(stock.noodle, 12 - BOX_SIZE)
+  assert.equal(stock.noodle, 12 - START_SHELF_QTY)
   assert.equal(stock.bokchoy, 0)
   assert.equal(stock.beef, 9, 'locked ingredients stay in the warehouse')
 })

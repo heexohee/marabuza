@@ -60,11 +60,16 @@ export const RATING_DELTA = {
 // The shared START_STOCK (10) was sized for the original flow, where nothing is shelved or wilts.
 export const START_WAREHOUSE_STOCK = 30
 export const BOX_SIZE = 5 // units moved warehouse → shelf per restock click
+// Opening prep (feedback 2026-09-27): each shelf slot starts the day with this many, or all the warehouse has if fewer
+export const START_SHELF_QTY = 10
 export const SHELF_CAPACITY = 12 // max units per shelf slot
 // Owner is away from the counter while restocking. Was 1.2s: in the first playtest the rush left
 // no time to restock at all (production/qa/playtests/playtest-2026-09-25-dev.md), so it is cut
 // to keep "restock or serve?" a decision rather than a lost cause.
 export const RESTOCK_BUSY_SEC = 0.5
+// Waiting in line drains patience at this rate per second (feedback 2026-09-27: the line gave up too soon; was 1).
+// Seated customers keep their own slower rate (logic.js SEATED_PATIENCE_RATE).
+export const QUEUE_PATIENCE_RATE = 0.9
 export const DIG_BUSY_SEC = 0.3 // one dig through the customer's bowl
 export const WILT_SEC = 55 // perishable batches older than this are thrown away
 export const PERISHABLE_IDS = new Set(['bokchoy', 'sprout', 'enoki', 'woodear', 'cilantro'])
@@ -98,7 +103,10 @@ export const ECONOMY_MULTIPLE = {
   // Confirmed 2026-09-27 by the 28-day bot sim (economy B001, tools/sim/part1_run.mjs): 10 — at 8 even a
   // clumsy player paid it all; at 10 the clumsy one carries some into the forgiven ending, the usual one pays
   // every instalment on time with interior ≥3, and a payoff-first one clears it by day 21.
-  premium: 10,
+  // Raised to 11 (feedback 2026-09-27): shelves open with 10 and the line waits longer (QUEUE_PATIENCE_RATE 0.9),
+  // so at 10 the clumsy bot paid in full 7 runs of 8; at 11 it is forgiven 7 of 8 again, the other goals hold,
+  // and the usual player's interior climbs to ~4.3 stages (was ~3.4).
+  premium: 11,
 }
 
 // Economy B001 (design/quick-specs/playtest-2026-09-27.md #1): a new game starts with ≈5D, so the first

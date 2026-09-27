@@ -7,7 +7,7 @@ import { buyPack, createNewGame, restock, shelfIds, spawnCustomer, startDay, tic
 import { fillBowl, shelfQty } from '../../../src/js/self-serve/shelf.js'
 import { INGREDIENTS, PACK_SIZE } from '../../../src/js/data.js'
 import {
-  BOX_SIZE, EXTRA_IDS, RATING_DELTA, SELF_SKEWER_ITEMS, SHELF_ITEM_BY_ID, WILT_SEC,
+  BOX_SIZE, EXTRA_IDS, RATING_DELTA, SELF_SKEWER_ITEMS, SHELF_ITEM_BY_ID, START_SHELF_QTY, WILT_SEC,
 } from '../../../src/js/self-serve/data.js'
 
 const constant = (v) => () => v
@@ -28,8 +28,9 @@ test('test_extras_start_in_warehouse_and_open_on_shelf', () => {
   EXTRA_IDS.forEach((id) => assert.equal(fresh.stock[id], SHELF_ITEM_BY_ID[id].startStock))
   const s = startDay(fresh)
   EXTRA_IDS.forEach((id) => {
-    assert.equal(shelfQty(s.shelf, id), BOX_SIZE)
-    assert.equal(s.stock[id], SHELF_ITEM_BY_ID[id].startStock - BOX_SIZE)
+    const opening = Math.min(START_SHELF_QTY, SHELF_ITEM_BY_ID[id].startStock)
+    assert.equal(shelfQty(s.shelf, id), opening)
+    assert.equal(s.stock[id], SHELF_ITEM_BY_ID[id].startStock - opening)
   })
   assert.deepEqual(shelfIds(s), [...s.unlocked, ...EXTRA_IDS])
 })
@@ -68,11 +69,12 @@ test('test_extras_cilantro_wilts_but_skewers_keep', () => {
   const s = startDay(createNewGame())
   const next = tick({ ...s, spawnTimer: QUIET }, WILT_SEC + 1, constant(0.5))
   assert.equal(shelfQty(next.shelf, 'cilantro'), 0)
-  skewerIds.forEach((id) => assert.equal(shelfQty(next.shelf, id), BOX_SIZE))
+  skewerIds.forEach((id) => assert.equal(shelfQty(next.shelf, id), shelfQty(s.shelf, id)))
 })
 
 test('test_extras_restock_and_shop_purchase', () => {
-  const s = withoutShelf(startDay(createNewGame()), ['skewer_sausage_deluxe'])
+  const opened = withoutShelf(startDay(createNewGame()), ['skewer_sausage_deluxe'])
+  const s = { ...opened, stock: { ...opened.stock, skewer_sausage_deluxe: PACK_SIZE } } // the opening took all 5
   const r = restock(s, 'skewer_sausage_deluxe')
   assert.equal(shelfQty(r.shelf, 'skewer_sausage_deluxe'), BOX_SIZE)
   const shop = { ...createNewGame(), phase: 'shop' }

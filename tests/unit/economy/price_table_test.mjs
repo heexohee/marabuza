@@ -17,7 +17,7 @@ test('test_price_table_price_of_rounds_to_100', () => {
 test('test_price_table_uses_the_measured_d', () => {
   assert.ok(BASELINE_D > 0 && BASELINE_D % 1000 === 0)
   assert.equal(priceOf(ECONOMY_MULTIPLE.rent), 2 * BASELINE_D)
-  assert.equal(ECONOMY_MULTIPLE.premium, 10) // 1부 28일, 4주 분할 — B001 시뮬로 확정 (2026-09-27)
+  assert.equal(ECONOMY_MULTIPLE.premium, 11) // 1부 28일, 4주 분할 — B001 10D → 진열대 10개·대기열 0.9 반영 11D (2026-09-27)
 })
 
 test('test_price_table_interior_multiples_and_unlock_days', () => {

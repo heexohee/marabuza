@@ -14,7 +14,7 @@ import {
 } from '../logic.js'
 import {
   CILANTRO_CHANCE, DAY_LINE_SEC, INTERIOR_EFFECT, INTERIOR_STAGES, DIG_BUSY_SEC, NAME_MAX_LEN, EXTRA_IDS, FEEDBACK_TOAST_SEC, MENU_PRICE, MODE_LABEL, WILT_FLASH_SEC, MAX_SKEWERS, MIN_BOWL_ITEMS, QUEUE_MAX, RATING_DELTA, REGULAR_FROM_CUSTOMER,
-  PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, RENT, SELF_SKEWER_ITEMS, SELF_START_MONEY, SPAWN_PER_DAY, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
+  PART1_LAST_DAY, PREMIUM_INSTALMENT, PREMIUM_TOTAL, QUEUE_PATIENCE_RATE, RENT, SELF_SKEWER_ITEMS, SELF_START_MONEY, SPAWN_PER_DAY, RESTOCK_BUSY_SEC, SELF_UPGRADES, SELF_UPGRADE_BY_ID, SHANGUO_CHANCE, SIDE_BY_ID, SIDE_CHANCE, SIDE_GIFT, SIDE_ITEMS, SHELF_EXTRAS, SHELF_ITEM_BY_ID, SKEWER_CHANCE, START_WAREHOUSE_STOCK,
   VARIANT_INGREDIENTS, VARIANT_INGREDIENT_BY_ID, priceOf, sideStockId, weekdayOf,
 } from './data.js'
 import { ageShelf, closeShelf, fillBowl, openShelf, restockShelf, takeFromShelf } from './shelf.js'
@@ -651,7 +651,7 @@ export function tick(s, dt, rng = Math.random) {
     dayTime: s.dayTime + dt,
     busy: Math.max(0, s.busy - dt),
     pots: s.pots.map((p) => (p ? { ...p, remaining: Math.max(0, p.remaining - dt) } : p)),
-    queue: s.queue.map((c) => ({ ...c, patience: c.patience - dt })),
+    queue: s.queue.map((c) => ({ ...c, patience: c.patience - dt * QUEUE_PATIENCE_RATE })),
     tables: s.tables.map((t) => (t ? { ...t, patience: t.patience - dt * SEATED_PATIENCE_RATE } : t)),
     toasts: s.toasts.map((t) => ({ ...t, ttl: t.ttl - dt })).filter((t) => t.ttl > 0),
   }
