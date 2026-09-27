@@ -1,0 +1,27 @@
+/**
+ * Galmuri 2.40.3 — bundled locally so the game runs offline (no CDN).
+ * Copyright (c) 2019–2025 Lee Minseo (quiple@quiple.dev), with Reserved Font Name "Galmuri".
+ * Licensed under the SIL Open Font License 1.1 — see OFL-Galmuri.md in this folder.
+ * Only the faces the game uses are shipped: Galmuri11 400/700 and the Galmuri9 fallback.
+ */
+@font-face {
+  font-family: Galmuri11;
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./Galmuri11.woff2') format('woff2');
+}
+@font-face {
+  font-family: Galmuri11;
+  font-style: normal;
+  font-weight: 700;
+  font-display: block;
+  src: url('./Galmuri11-Bold.woff2') format('woff2');
+}
+@font-face {
+  font-family: Galmuri9;
+  font-style: normal;
+  font-weight: 400;
+  font-display: block;
+  src: url('./Galmuri9.woff2') format('woff2');
+}

@@ -1,12 +1,34 @@
 // Turns an emoji into a chunky outlined pixel sprite (data URL), cached.
 // Drawn tiny on a canvas, alpha-quantized, colour-posterized, then outlined,
 // so CSS `image-rendering: pixelated` upscaling gives a retro pixel look.
+// The emoji art comes from bundled Noto PNGs (src/img/emoji, see tools/art/bundle_emoji.mjs) so
+// every device shows the same picture; the OS emoji font is only a fallback for unbundled emoji.
 
+import { EMOJI_IMAGES } from './emoji-images.js'
+
+const EMOJI_DIR = new URL('../img/emoji/', import.meta.url)
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'
 const ALPHA_CUTOFF = 110
 const POSTERIZE_STEP = 28
 const OUTLINE = [58, 31, 43]
 const cache = new Map()
+
+const images = new Map() // emoji (no variation selectors) → decoded HTMLImageElement
+const stripVs = (s) => s.replace(/\uFE0F/g, '')
+
+/** Loads every bundled emoji image; sprites are drawn synchronously, so this runs before first render. */
+async function preloadEmojiImages() {
+  await Promise.all(Object.entries(EMOJI_IMAGES).map(([emoji, file]) => new Promise((resolve) => {
+    const img = new Image()
+    img.onload = () => { images.set(emoji, img); resolve() }
+    img.onerror = () => { console.warn(`emoji image failed to load: ${file}`); resolve() }
+    img.src = new URL(file, EMOJI_DIR).href
+  })))
+}
+
+// Top-level await: every module importing sprites.js waits until the art is ready.
+// Node (unit tests) has no Image, so sprites there fall back to the font path on a fake canvas.
+if (typeof Image !== 'undefined') await preloadEmojiImages()
 
 const posterize = (v) => Math.min(255, Math.round(v / POSTERIZE_STEP) * POSTERIZE_STEP)
 
@@ -35,10 +57,17 @@ function drawEmoji(emoji, px) {
   scratch.width = scratchSize
   scratch.height = scratchSize
   const sctx = scratch.getContext('2d', { willReadFrequently: true })
-  sctx.font = `${px}px ${EMOJI_FONT}`
-  sctx.textAlign = 'center'
-  sctx.textBaseline = 'middle'
-  sctx.fillText(emoji, scratchSize / 2, scratchSize / 2)
+  const img = images.get(stripVs(emoji))
+  if (img) {
+    // Noto art is 64px with its own padding; drawn at px and re-measured below like a glyph.
+    sctx.imageSmoothingQuality = 'high'
+    sctx.drawImage(img, px / 2, px / 2, px, px)
+  } else {
+    sctx.font = `${px}px ${EMOJI_FONT}`
+    sctx.textAlign = 'center'
+    sctx.textBaseline = 'middle'
+    sctx.fillText(emoji, scratchSize / 2, scratchSize / 2)
+  }
 
   const canvas = document.createElement('canvas')
   canvas.width = px + 2
