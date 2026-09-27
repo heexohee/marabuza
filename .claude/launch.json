@@ -22,6 +22,19 @@
       ],
       "port": 8124,
       "autoPort": true
+    },
+    {
+      "name": "maratang-release",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-m",
+        "http.server",
+        "8131",
+        "--directory",
+        "dist"
+      ],
+      "port": 8131,
+      "autoPort": false
     }
   ]
 }

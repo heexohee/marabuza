@@ -23,8 +23,8 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 ### Code Quality (scanned 27 files in `src/` — .js/.html/.css, cloud-config 제외)
 - [x] TODO 0 · FIXME 0 · HACK 0
 - [x] `console.*` 디버그 출력 0
-- [ ] **개발 모드 끄기** ⛔ — `src/js/self-serve/dev.js`가 `localhost`이거나 `?dev`면 개발 바(자동 영업·+10만)를 켬. 포장 앱은 localhost로 돌 수 있어 출시판에 노출될 위험 → 빌드 플래그로 완전히 제거
-- [ ] 레거시 흐름 링크 정리 — 설정의 "기존 흐름" 링크, `index.html`을 출시 빌드에서 빼기
+- [x] **개발 모드 끄기** ⛔ — 출시 빌드 `node tools/release/release.mjs` → dist/ (`src/js/build-flags.js` IS_RELEASE=true면 localhost·`?dev`여도 개발 바 없음, 2026-09-27). 포장 앱은 dist/를 담을 것
+- [x] 레거시 흐름 링크 정리 — 설정 링크 제거(#11), 출시 빌드는 `index.html`을 빼고 만듦 (2026-09-27)
 - [x] 하드코딩된 테스트 계정·키 없음 (cloud-config.js는 git 제외, 출시 대상 아님)
 - [ ] 크래시·오류 보고 (선택) — 없음
 

@@ -1,6 +1,7 @@
 // Dev mode for the self-serve flow: a small fixed bar with shortcuts for checking between-day UI
 // (interior, pots, shop) without playing every day by hand. On by default on localhost; `?dev` turns it
-// on anywhere, `?dev=0` turns it off (e.g. for clean evidence screenshots).
+// on anywhere, `?dev=0` turns it off (e.g. for clean evidence screenshots). Never on in a release build.
+import { IS_RELEASE } from '../build-flags.js'
 import { addToast } from './logic.js'
 import { autoPlayDay, autoPlayDays } from './autoplay.js'
 
@@ -8,8 +9,9 @@ const LOCAL_HOSTS = ['localhost', '127.0.0.1', '[::1]']
 export const DEV_MONEY_STEP = 100000
 const WEEK_DAYS = 6 // 월~토 business days (design/game-brief.md §경제 레벨링)
 
-/** True when the dev bar should show for this page location. */
-export function isDevMode(loc = window.location) {
+/** True when the dev bar should show for this page location; always false in a release build. */
+export function isDevMode(loc = window.location, isRelease = IS_RELEASE) {
+  if (isRelease) return false
   const flag = new URLSearchParams(loc.search).get('dev')
   if (flag !== null) return flag !== '0'
   return LOCAL_HOSTS.includes(loc.hostname)
