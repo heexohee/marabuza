@@ -182,6 +182,14 @@ button:not(:disabled), a[href], [data-action] { cursor: var(--cursor-click); }
 .opening-illustration > img { display: block; width: 100%; height: 100%; object-fit: contain; image-rendering: auto; }
 .scene.opening-layered { position: relative; aspect-ratio: 1672 / 941; }
 .opening-layered > .opening-cast { position: absolute; height: auto; pointer-events: none; }
+/* BUG-002: a picture that just changed fades in over the previous one (inline background-image, decoded ahead by
+   preload.js); on the rainy beats that share the plate only the cast fades. Reduced motion: a plain cut. */
+.scene.art-enter { background-position: center; background-size: contain; background-repeat: no-repeat; }
+.art-enter > img, .cast-enter > .opening-cast { animation: art-in .2s ease-out both; }
+@keyframes art-in { from { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .art-enter > img, .cast-enter > .opening-cast { animation: none; }
+}
 /* painted by tools/art/scene_office.py (384×152 art px, ~×2 here); bump ?v= when regenerating so caches refresh */
 .scene-office { background: #1e2c4c url("img/scene-office.png?v=6") center / 100% 100% no-repeat; }
 /* painted by tools/art/scene_regular.py — the panda's old shop, in the scene's original warm browns */

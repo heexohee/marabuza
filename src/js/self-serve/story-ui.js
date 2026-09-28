@@ -81,12 +81,48 @@ const RAIN_CAST = {
   '04-offer': [['talk-protagonist', 150, 368, 205], ['talk-panda', 355, 368, 441]],
 }
 
-function openingArtHtml(art, alt) {
+const OPENING_DIR = 'img/opening-approved/'
+const LAYER_DIR = 'img/opening-approved/layers/'
+const ENDING_DIR = 'img/story-v2/ending/'
+const ENDING_ART = ['01-ledger', '02-settlement', '08-certificate', '04-rabbit', '05-franchise', '06-hiring-pose-overlay']
+/** The picture a beat's box shows: its own art, or the shared rain plate under a layered cast. */
+const openingSrc = (art) => `${OPENING_DIR}${RAIN_CAST[art] ? 'rain-background' : art}.png`
+
+/** Every story illustration (opening, ending, part-2 teaser), for preload.js to decode ahead (BUG-002). */
+export function storyArtUrls() {
+  const opening = Object.values(OPENING_ART).flat().map(([, art]) => openingSrc(art))
+  const casts = Object.values(RAIN_CAST).flat().map(([file]) => `${LAYER_DIR}${file}.png`)
+  return [...new Set([...opening, ...casts, ...ENDING_ART.map((art) => `${ENDING_DIR}${art}.png`)])]
+}
+
+/**
+ * A picture that just changed fades in (CSS .art-enter) over the previous one, painted as the box background —
+ * already decoded, so there is never an empty box (BUG-002). No previous picture: it fades in from the box.
+ */
+function artEnter(prevSrc, src) {
+  if (prevSrc === src) return { cls: '', style: '' }
+  return { cls: ' art-enter', style: prevSrc ? ` style="background-image:url('${prevSrc}')"` : '' }
+}
+
+const openingArtAt = (sceneIdx, lineIdx) => OPENING_ART[OPENING_SCENES[sceneIdx].id].filter(([from]) => lineIdx >= from).at(-1)
+
+/** The art on screen just before this line: the line before, or the previous scene's last line. */
+function previousOpeningArt(sceneIdx, lineIdx) {
+  if (lineIdx > 0) return openingArtAt(sceneIdx, lineIdx - 1)[1]
+  if (sceneIdx === 0) return null
+  return openingArtAt(sceneIdx - 1, OPENING_SCENES[sceneIdx - 1].lines.length - 1)[1]
+}
+
+function openingArtHtml(art, alt, prevArt) {
   const cast = RAIN_CAST[art]
-  if (!cast) return `<div class="scene opening-illustration"><img src="img/opening-approved/${art}.png" alt="${alt}" draggable="false" fetchpriority="high"></div>`
-  return `<div class="scene opening-illustration opening-layered" role="img" aria-label="${alt}">
-    <img class="opening-plate" src="img/opening-approved/rain-background.png" alt="" draggable="false" fetchpriority="high">
-    ${cast.map(([file, x, y, width]) => `<img class="opening-cast" src="img/opening-approved/layers/${file}.png" alt="" draggable="false" style="left:${pct(x, 1672)};top:${pct(y, 941)};width:${pct(width, 1672)}">`).join('')}
+  const changed = prevArt !== art
+  const { cls, style } = changed ? artEnter(prevArt && openingSrc(prevArt), openingSrc(art)) : artEnter(null, null)
+  if (!cast) return `<div class="scene opening-illustration${cls}"${style}><img src="${openingSrc(art)}" alt="${alt}" draggable="false" fetchpriority="high"></div>`
+  // two rainy beats share the plate: only the cast is new, so only the cast fades in
+  const castCls = changed ? ' cast-enter' : ''
+  return `<div class="scene opening-illustration opening-layered${cls}${castCls}" role="img" aria-label="${alt}"${style}>
+    <img class="opening-plate" src="${openingSrc(art)}" alt="" draggable="false" fetchpriority="high">
+    ${cast.map(([file, x, y, width]) => `<img class="opening-cast" src="${LAYER_DIR}${file}.png" alt="" draggable="false" style="left:${pct(x, 1672)};top:${pct(y, 941)};width:${pct(width, 1672)}">`).join('')}
   </div>`
 }
 
@@ -95,11 +131,11 @@ export function openingHtml(s) {
   const { scene: sceneIdx, line: lineIdx } = s.story
   const scene = OPENING_SCENES[sceneIdx]
   const line = scene.lines[lineIdx]
-  const [, art, alt] = OPENING_ART[scene.id].filter(([from]) => lineIdx >= from).at(-1)
+  const [, art, alt] = openingArtAt(sceneIdx, lineIdx)
   const dots = OPENING_SCENES.map((_, i) => `<i class="${i === sceneIdx ? 'on' : ''}"></i>`).join('')
   return `
     <div class="opening-screen" data-action="storyNext">
-      ${openingArtHtml(art, alt)}
+      ${openingArtHtml(art, alt, previousOpeningArt(sceneIdx, lineIdx))}
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>
@@ -227,16 +263,19 @@ export const wallFrameHtml = (paidInFull, drop = false) =>
  * Illustrated part-1 ending: ledger, settlement, then the succession certificate.
  * The paid and forgiven dialogue branches share the art; only full repayment earns the badge.
  */
+const endingArt = (step) => (step >= ENDING_FRAME_STEP ? '08-certificate' : step >= 1 ? '02-settlement' : '01-ledger')
+
 export function endingHtml(s) {
   const step = s.endingStep ?? 0
   const line = endingLine(step, s.premiumPaidInFull)
   const isLast = step >= ENDING_LINE_COUNT - 1
-  const art = step >= ENDING_FRAME_STEP ? '08-certificate' : step >= 1 ? '02-settlement' : '01-ledger'
+  const art = endingArt(step)
+  const { cls, style } = artEnter(step > 0 ? `${ENDING_DIR}${endingArt(step - 1)}.png` : null, `${ENDING_DIR}${art}.png`)
   const alt = step >= ENDING_FRAME_STEP ? '붉은 발바닥 도장이 찍힌 마라판다의 맛 전수증을 전하는 판다 사장님' : step >= 1 ? '마지막 장부를 함께 확인하는 주인공과 판다 사장님' : '일요일 저녁 마지막 정산을 하는 주인공'
   const paidBadge = s.premiumPaidInFull && step >= 1 ? '<span class="ending-paid">권리금 완납</span>' : ''
   return `
     <div class="opening-screen sunday-screen ending-screen" data-action="endingNext">
-      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${paidBadge}</div>
+      <div class="scene opening-illustration ending-illustration${cls}"${style}><img src="${ENDING_DIR}${art}.png" alt="${alt}" draggable="false">${paidBadge}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>
@@ -254,21 +293,24 @@ export const endingKey = (s) => `ending|${s.endingStep ?? 0}|${s.premiumPaidInFu
 // ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
 
 /** Day 29: a small, cute rabbit applies, then the rival storefront is revealed before the credits. */
+const teaserArt = (step) => (step >= PART2_BANNER_STEP && step < PART2_HIRING_STEP ? '05-franchise' : '04-rabbit')
+
 export function teaserHtml(s) {
   const step = s.teaserStep ?? 0
   const line = teaserLine(step)
   const isLast = step >= PART2_TEASER_LINE_COUNT - 1
   const hiring = step >= PART2_HIRING_STEP
   const rival = step >= PART2_BANNER_STEP && !hiring
-  const art = rival ? '05-franchise' : '04-rabbit'
+  const art = teaserArt(step)
+  const { cls, style } = artEnter(step > 0 ? `${ENDING_DIR}${teaserArt(step - 1)}.png` : null, `${ENDING_DIR}${art}.png`)
   const alt = hiring ? '토끼를 향해 웃으며 함께 일하기로 결심하는 주인공' : rival ? '창밖 맞은편의 새 마라탕 가게를 바라보는 주인공과 작은 토끼' : '월요일 아침 가게에 찾아온 귀여운 토끼 알바 지원자'
-  const pose = hiring ? '<img class="hiring-pose" src="img/story-v2/ending/06-hiring-pose-overlay.png" alt="" draggable="false">' : ''
+  const pose = hiring ? `<img class="hiring-pose" src="${ENDING_DIR}06-hiring-pose-overlay.png" alt="" draggable="false">` : ''
   const banner = rival
     ? `<span class="franchise-banner">대형 마라탕 프랜차이즈<b>오픈 예정</b></span>`
     : ''
   return `
     <div class="opening-screen sunday-screen ending-screen teaser-screen" data-action="teaserNext">
-      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${pose}${banner}</div>
+      <div class="scene opening-illustration ending-illustration${cls}"${style}><img src="${ENDING_DIR}${art}.png" alt="${alt}" draggable="false">${pose}${banner}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>

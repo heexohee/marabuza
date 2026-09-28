@@ -9,6 +9,8 @@ import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
+import { preloadImages } from './preload.js'
+import { storyArtUrls } from './story-ui.js'
 import { DAY_INTRO_MS, DAY_INTRO_REDUCED_MS, dayIntroInfo, mountDayIntro, shouldShowDayIntro } from './day-intro.js'
 import { createNightScene, mountTitleAnim } from './title-anim.js'
 import { createDayScene } from './title-day.js'
@@ -235,6 +237,8 @@ window.addEventListener('keydown', (e) => {
 // Dev mode (localhost or ?dev): auto-play days and add money to check between-day UI quickly.
 // Results land on the summary screen; "상점으로" then saves them like a played day.
 mountStageFit(window)
+// story art decoded while the title is up, so the opening's picture changes never show an empty box (BUG-002)
+preloadImages(storyArtUrls())
 // the still title-bg(-day).png stays behind if its art fails to load; ?title=day shows the day title (in review)
 mountTitleAnim(window, { scenes: { night: createNightScene, day: createDayScene } })
 
