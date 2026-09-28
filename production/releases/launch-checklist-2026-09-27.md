@@ -14,7 +14,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Build Health
 - [x] 유닛·통합 테스트 전부 통과 — `node --test` 412/412 (2026-09-28 갱신)
-- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 윈도우 빌드 확인, 아이콘, 코드 서명
+- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 윈도우 빌드 확인, 코드 서명. **아이콘 완료** (2026-09-29, 간소화한 마라탕 한 그릇 · 분홍 타일 — `tools/art/app_icon.py` → `assets/app-icon/` icns·ico·png, 웹 파비콘 `src/img/favicon.png`로 favicon 404 해소)
 - [ ] 포장된 빌드가 윈도우 · macOS(선택) · 스팀 덱(선택)에서 깨끗하게 실행
 - [x] 빌드 크기 확인 — 맥 arm64 앱 294MB (대부분 Electron 런타임, 게임 app.asar 2.9MB). 윈도우는 빌드 후 측정
   - [x] 출시 빌드 dist/ 69MB → 28MB (2026-09-28) — git 밖 삽화 초안 폴더(`img/ending`·`img/opening`·`img/story-v2/opening`)가 통째로 복사되던 것을 `release.mjs` 제외 목록에 추가. 코드가 참조하지 않는 이미지 폴더가 출시 빌드에 들어가면 실패하는 테스트 추가 (`release_build_test.mjs`)

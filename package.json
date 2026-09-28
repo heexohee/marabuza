@@ -17,7 +17,8 @@
     "appId": "com.marabuza.game",
     "productName": "Marabuza",
     "directories": {
-      "output": "out/desktop"
+      "output": "out/desktop",
+      "buildResources": "assets/app-icon"
     },
     "files": [
       "desktop/**",
