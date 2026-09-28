@@ -769,18 +769,27 @@ html, body { overflow: hidden; }
 /* ---------- title screen (feedback 2026-09-27, Dave the Diver style) ----------
    img/title-bg.png (tools/art/title_bg.py) covers the whole window edge to edge; its roof sign is the logo.
    The menu is white pixel-font text in a column on the right, the highlighted item brighter with a pink ▶. */
+/* The art covers a box: the whole window when it is at least as wide as the stage (1280×884), otherwise a band
+   the stage's shape across the middle, so a tall window never crops the roof-sign logo off the sides — it gets
+   sky above and ground below instead, the art's own edge colors. The menu sits in the stage, which fills that band. */
+:root { --title-art-ratio: 1.81; --title-box-h: min(100vh, 100vw * 884 / 1280); }
 html[data-screen="menu"], html[data-screen="menu"] body {
-  background: #0a0a1e url("img/title-bg.png?v=1") center / cover no-repeat; image-rendering: pixelated;
+  background:
+    url("img/title-bg.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
+    linear-gradient(#0a0a1e 50%, #221e34 50%);
+  image-rendering: pixelated;
 }
 /* the fine-weather day title (?title=day, src/js/self-serve/title-day.js): its own still under the canvas */
 html[data-screen="menu"][data-title-scene="day"], html[data-screen="menu"][data-title-scene="day"] body {
-  background: #7ec4f0 url("img/title-bg-day.png?v=1") center / cover no-repeat;
+  background:
+    url("img/title-bg-day.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
+    linear-gradient(#56a6e8 50%, #646270 50%);
 }
 #app[data-screen="menu"] { background: transparent; }
-/* the living title (src/js/self-serve/title-anim.js): the art-sized canvas scaled exactly like the background above */
+/* the living title (src/js/self-serve/title-anim.js): the art-sized canvas covers the same box as the background above */
 .title-anim {
-  position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center;
-  image-rendering: pixelated; pointer-events: none; display: none;
+  position: fixed; left: 0; top: 50%; width: 100%; height: var(--title-box-h); transform: translateY(-50%);
+  object-fit: cover; object-position: center; image-rendering: pixelated; pointer-events: none; display: none;
 }
 html[data-screen="menu"] .title-anim.on { display: block; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

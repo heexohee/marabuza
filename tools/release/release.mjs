@@ -9,8 +9,11 @@ import { fileURLToPath } from 'node:url'
 
 const SRC = 'src'
 const FLAGS = 'js/build-flags.js'
-/** Paths under src/ that a release never ships. */
-export const EXCLUDED = new Set(['index.html', 'CLAUDE.md'])
+/**
+ * Paths under src/ that a release never ships: the legacy entry page, dev notes, and story illustration drafts
+ * (the game reads the approved ones from img/opening-approved/ and img/story-v2/ending/).
+ */
+export const EXCLUDED = new Set(['index.html', 'CLAUDE.md', 'img/ending', 'img/opening', 'img/story-v2/opening'])
 
 /**
  * Builds the release into `outDir` (emptied first).

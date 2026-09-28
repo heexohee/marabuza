@@ -38,3 +38,28 @@ test('test_release_build_copies_src_flips_the_flag_and_drops_the_legacy_page', (
     fs.rmSync(out, { recursive: true, force: true })
   }
 })
+
+/** Every file under `dir`, relative to it, with forward slashes. */
+function listFiles(dir) {
+  return fs.readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile())
+    .map((entry) => path.relative(dir, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
+}
+
+test('test_release_build_ships_only_image_folders_the_game_code_references', () => {
+  // Arrange
+  const out = fs.mkdtempSync(path.join(os.tmpdir(), 'maratang-release-'))
+  try {
+    // Act
+    buildRelease(out)
+    const files = listFiles(out)
+    const code = files.filter((f) => /\.(js|css|html)$/.test(f)).map((f) => fs.readFileSync(path.join(out, f), 'utf8')).join('\n')
+    const imageFolders = new Set(files.filter((f) => f.startsWith('img/') && f.endsWith('.png')).map((f) => path.posix.dirname(f)))
+
+    // Assert — an image folder no shipped code names (e.g. an untracked draft left in src/img) is dead weight
+    const unreferenced = [...imageFolders].filter((dir) => dir !== 'img' && !code.includes(`${dir}/`))
+    assert.deepEqual(unreferenced, [], 'image folders shipped but never referenced by the game code')
+  } finally {
+    fs.rmSync(out, { recursive: true, force: true })
+  }
+})
