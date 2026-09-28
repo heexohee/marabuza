@@ -94,7 +94,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] 접근성 최소 기준 — `prefers-reduced-motion` 지원 있음. 글자 크기·색약 모드 없음
 
 ### Performance
-- [ ] 저사양 PC에서 60fps (포장 후) — `[?]`
+- [~] 저사양 PC에서 60fps — CPU 속도 제한 에뮬레이션(2026-09-29): 6× 제한까지 120fps·끊김 0, 20×에서만 41fps (`production/qa/evidence/perf-low-end/`). 남은 것: 윈도우 저사양 실기기(내장 그래픽)에서 포장 앱 1회
 - [ ] 로딩 시간 — `[?]`
 
 ---
