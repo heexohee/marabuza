@@ -115,7 +115,7 @@ test('test_teaser_lines_follow_the_design', () => {
   assert.equal(lines.length, 4)
   assert.deepEqual(lines.map((l) => l.who), ['caption', 'rabbit', 'me', 'caption'])
   assert.match(lines[0].text, /29일차, 월요일 아침/)
-  assert.match(lines[1].text, /여기서 일해도 돼요/)
+  assert.equal(lines[1].text, '안녕하세요, 사장님.\n저 여기서 일하고 싶어요!')
   assert.match(lines[2].text, /저기도 마라탕/)
   assert.match(lines[3].text, /2부 — 준비 중/)
 })

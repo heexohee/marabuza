@@ -7,7 +7,7 @@ import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './chara
 import { NAME_MAX_LEN, PREMIUM_EXTRA_STEPS, PREMIUM_TOTAL, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
 import {
   ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, PART2_BANNER_STEP, PART2_TEASER_LINE_COUNT, STAGE, SUNDAY_BG, endingLine, premiumLine,
-  SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, sceneBg, sceneCast, speakerName, storyName, sundayLine, teaserLine,
+  SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, speakerName, storyName, sundayLine, teaserLine,
 } from './story.js'
 
 const HTML_ESCAPES = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
@@ -67,18 +67,39 @@ const castSprite = (who, look) => (who === 'me' ? heroImg(look, 'hero-scene') : 
 
 const DIALOGUE_KIND = { notice: 'is-notice', caption: 'is-caption' }
 
+// Illustrated story beats; line thresholds preserve the script's entrances and departures.
+const OPENING_ART = {
+  office: [[0, '01-office', '야근을 마치고 마라판다로 걸어가는 주인공']],
+  regular: [[0, '02-regular', '단골 주인공을 반기는 판다 사장님']],
+  notice: [[0, '03-notice', '불 꺼진 가게의 안내문을 읽는 주인공'], [4, '04-offer', '가게 인수를 제안하는 판다 사장님']],
+  takeover: [[0, '05-apron', '판다 사장님에게 앞치마를 받는 주인공'], [5, '06-alone', '가게에 혼자 남은 주인공'], [7, '07-open', '마라부자의 첫 영업을 시작하는 주인공']],
+}
+
+// Both rainy beats share the approved 1672×941 plate; only the transparent cast moves.
+const RAIN_CAST = {
+  '03-notice': [['reading', 1070, 447, 198]],
+  '04-offer': [['talk-protagonist', 150, 368, 205], ['talk-panda', 355, 368, 441]],
+}
+
+function openingArtHtml(art, alt) {
+  const cast = RAIN_CAST[art]
+  if (!cast) return `<div class="scene opening-illustration"><img src="img/opening-approved/${art}.png" alt="${alt}" draggable="false" fetchpriority="high"></div>`
+  return `<div class="scene opening-illustration opening-layered" role="img" aria-label="${alt}">
+    <img class="opening-plate" src="img/opening-approved/rain-background.png" alt="" draggable="false" fetchpriority="high">
+    ${cast.map(([file, x, y, width]) => `<img class="opening-cast" src="img/opening-approved/layers/${file}.png" alt="" draggable="false" style="left:${pct(x, 1672)};top:${pct(y, 941)};width:${pct(width, 1672)}">`).join('')}
+  </div>`
+}
+
 /** One line of the opening: scene art on top, dialogue box below. Clicking anywhere advances. */
 export function openingHtml(s) {
   const { scene: sceneIdx, line: lineIdx } = s.story
   const scene = OPENING_SCENES[sceneIdx]
   const line = scene.lines[lineIdx]
-  const props = scene.props.map((p, i) => `<span class="prop prop-${i}">${spriteImg(p, 20, 'prop-img')}</span>`).join('')
-  const cast = sceneCast(sceneIdx, lineIdx).map((who) =>
-    `<span class="cast cast-${who} ${line.who === who ? 'talking' : ''}" style="${castStyle(who)}">${castSprite(who, s.character)}</span>`).join('')
+  const [, art, alt] = OPENING_ART[scene.id].filter(([from]) => lineIdx >= from).at(-1)
   const dots = OPENING_SCENES.map((_, i) => `<i class="${i === sceneIdx ? 'on' : ''}"></i>`).join('')
   return `
     <div class="opening-screen" data-action="storyNext">
-      <div class="scene ${sceneBg(sceneIdx, lineIdx)}">${props}${cast}</div>
+      ${openingArtHtml(art, alt)}
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, storyName(sceneIdx, s.character.name)))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>
@@ -195,30 +216,27 @@ export const sundayKey = (s) => `sunday|${s.day}|${s.sundayStep ?? 0}|${s.money}
 // ---------- day-28 ending (economy E004, design/quick-specs/part1-28-days-2026-09-27.md §C) ----------
 
 /**
- * The old "마라판다" sign as a small frame under the 마라부자 sign (CSS-drawn for now; pixel art is a later
- * art task). Hung in the ending, then stays on the hall wall for the rest of the game.
+ * The framed culinary succession certificate stays on the hall wall after the ending.
  * @param {boolean} paidInFull shows the gold "완납" plate
  * @param {boolean} [drop] plays the hang-up animation (only the moment it goes up in the ending)
  */
 export const wallFrameHtml = (paidInFull, drop = false) =>
-  `<span class="wall-frame${drop ? ' drop' : ''}"><b>마라판다</b>${paidInFull ? '<i class="wall-plate">완납</i>' : ''}</span>`
+  `<span class="wall-frame${drop ? ' drop' : ''}"><b>마라판다의 맛 · 전수증</b><small>마라판다 주인장</small><svg class="certificate-paw" viewBox="0 0 40 40" aria-hidden="true"><ellipse cx="20" cy="27" rx="11" ry="9"/><ellipse cx="7" cy="16" rx="4" ry="6"/><ellipse cx="15" cy="9" rx="4" ry="6"/><ellipse cx="25" cy="9" rx="4" ry="6"/><ellipse cx="33" cy="16" rx="4" ry="6"/></svg>${paidInFull ? '<i class="wall-plate">완납</i>' : ''}</span>`
 
 /**
- * The part-1 ending: the panda walks into the closed shop for the first time since the takeover. The stage is
- * the player's own hall at their interior stage (scene-shop(-N).png), so every run ends in the shop they built.
- * Same dialogue box as the Sunday scene; the frame goes up at ENDING_FRAME_STEP.
+ * Illustrated part-1 ending: ledger, settlement, then the succession certificate.
+ * The paid and forgiven dialogue branches share the art; only full repayment earns the badge.
  */
 export function endingHtml(s) {
   const step = s.endingStep ?? 0
   const line = endingLine(step, s.premiumPaidInFull)
   const isLast = step >= ENDING_LINE_COUNT - 1
-  const talking = (who) => (line.who === who ? 'talking' : '')
-  const cast = `
-      <span class="cast cast-me ${talking('me')}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>
-      ${step >= 1 ? `<span class="cast cast-panda ${talking('panda')}" style="${castStyle('panda')}">${castSprite('panda')}</span>` : ''}`
+  const art = step >= ENDING_FRAME_STEP ? '08-certificate' : step >= 1 ? '02-settlement' : '01-ledger'
+  const alt = step >= ENDING_FRAME_STEP ? '붉은 발바닥 도장이 찍힌 마라판다의 맛 전수증을 전하는 판다 사장님' : step >= 1 ? '마지막 장부를 함께 확인하는 주인공과 판다 사장님' : '일요일 저녁 마지막 정산을 하는 주인공'
+  const paidBadge = s.premiumPaidInFull && step >= 1 ? '<span class="ending-paid">권리금 완납</span>' : ''
   return `
     <div class="opening-screen sunday-screen ending-screen" data-action="endingNext">
-      <div class="scene ending-hall" data-interior="${s.interior ?? 0}">${step >= ENDING_FRAME_STEP ? wallFrameHtml(s.premiumPaidInFull, step === ENDING_FRAME_STEP) : ''}${cast}</div>
+      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${paidBadge}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>
@@ -235,27 +253,19 @@ export const endingKey = (s) => `ending|${s.endingStep ?? 0}|${s.premiumPaidInFu
 
 // ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
 
-// the rabbit regular (story N002's 🐰) stands where the panda stood in the ending, holding the flyer
-const rabbitCast = () => `<span class="rabbit-with-flyer"><img class="rabbit-sprite" src="img/rabbit-worker.png?v=1" width="64" height="160" alt="시험기간 토끼" draggable="false"><i class="flyer">알바 구함</i></span>`
-
-/**
- * Day 29's morning in the player's own hall, once after the ending: the rabbit asks for a job, then (from
- * PART2_BANNER_STEP) a franchise's "오픈 예정" banner shows across the street. The last beat opens day 29.
- */
+/** Day 29: a small, cute rabbit applies, then the rival storefront is revealed before the credits. */
 export function teaserHtml(s) {
   const step = s.teaserStep ?? 0
   const line = teaserLine(step)
   const isLast = step >= PART2_TEASER_LINE_COUNT - 1
-  const talking = (who) => (line.who === who ? 'talking' : '')
-  const cast = `
-      <span class="cast cast-me ${talking('me')}" style="${castStyle('me')}">${castSprite('me', s.character)}</span>
-      ${step >= 1 ? `<span class="cast cast-rabbit ${talking('rabbit')}" style="${castStyle('panda')}">${rabbitCast()}</span>` : ''}`
+  const art = step >= PART2_BANNER_STEP ? '05-franchise' : '04-rabbit'
+  const alt = step >= PART2_BANNER_STEP ? '창밖 맞은편의 새 마라탕 가게를 바라보는 주인공과 작은 토끼' : '월요일 아침 가게에 찾아온 귀여운 토끼 알바 지원자'
   const banner = step >= PART2_BANNER_STEP
-    ? `<span class="franchise-banner${step === PART2_BANNER_STEP ? ' drop' : ''}">대형 마라탕 프랜차이즈<b>오픈 예정</b></span>`
+    ? `<span class="franchise-banner">대형 마라탕 프랜차이즈<b>오픈 예정</b></span>`
     : ''
   return `
     <div class="opening-screen sunday-screen ending-screen teaser-screen" data-action="teaserNext">
-      <div class="scene ending-hall" data-interior="${s.interior ?? 0}">${s.endingSeen ? wallFrameHtml(s.premiumPaidInFull) : ''}${banner}${cast}</div>
+      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${banner}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>

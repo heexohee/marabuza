@@ -4,7 +4,7 @@
 
 import { PART1_LAST_DAY } from './data.js'
 
-const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주', rabbit: '시험기간 토끼' }
+const SPEAKERS = { panda: '판다 사장님', notice: '📜 안내문', landlord: '🏢 건물주', rabbit: '대학생 토끼' }
 
 /**
  * Opening scenes in order. bg = CSS scene class, props = emoji sprites drawn in the scene,
@@ -149,7 +149,7 @@ export const DAILY_LINES = {
 // day's customers comes as the regular: their face in the queue, their line in the counter's top bubble.
 export const REGULARS = {
   raccoon: { face: '🦝', name: '야근 너구리' },
-  rabbit: { face: '🐰', name: '시험기간 토끼' },
+  rabbit: { face: '🐰', name: '대학생 토끼' },
   bear: { face: '🐻', name: '택배 곰' },
 }
 const TOMORROW = '내일 사장님 오신다면서요?'
@@ -248,8 +248,8 @@ const ENDING_LINES = [
   { who: 'panda', paid: '장부 봤어. …다 갚았네.', forgiven: '장부 봤어. 조금 남았네.' },
   { who: 'me', paid: '사장님 덕분이에요.', forgiven: '죄송해요… 조금만 더 시간을 주시면—' },
   { who: 'panda', paid: '아니. 이제 네 가게구나.', forgiven: '됐어. 나머지는 그동안 손님들한테 내준 한 그릇으로 받았다 치자. …이제 네 가게구나.' },
-  { who: 'panda', text: '이젠 마라 맛 전수증을 넘겨줄게. 잘 보이는데 걸어둬.' },
-  { who: 'me', text: '{name} 사장의 마라부자. 내일도 한 그릇씩!' },
+  { who: 'panda', text: '이젠 마라 맛 전수증을 넘겨줄게. 잘 보이는 데 걸어 둬.' },
+  { who: 'me', text: '감사합니다. 앞으로도 잘해 나갈게요!' },
   { who: 'caption', text: '마라부자 1부 — 끝' },
 ]
 export const ENDING_LINE_COUNT = ENDING_LINES.length
@@ -267,7 +267,7 @@ export function endingLine(step, paidInFull) {
 // "오픈 예정" banner goes up across the street (from PART2_BANNER_STEP on).
 const PART2_TEASER_LINES = [
   { who: 'caption', text: '29일차, 월요일 아침.' },
-  { who: 'rabbit', text: '사장님, 저 여기서 일해도 돼요?' },
+  { who: 'rabbit', text: '안녕하세요, 사장님.\n저 여기서 일하고 싶어요!' },
   { who: 'me', text: '(문밖을 보며) …저기도 마라탕?' },
   { who: 'caption', text: '마라부자 2부 — 준비 중' },
 ]
