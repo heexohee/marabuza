@@ -112,12 +112,13 @@ test('test_teaser_old_save_after_the_ending_still_gets_it_once_before_day_29', (
 
 test('test_teaser_lines_follow_the_design', () => {
   const lines = Array.from({ length: PART2_TEASER_LINE_COUNT }, (_, i) => teaserLine(i))
-  assert.equal(lines.length, 4)
-  assert.deepEqual(lines.map((l) => l.who), ['caption', 'rabbit', 'me', 'caption'])
+  assert.equal(lines.length, 5)
+  assert.deepEqual(lines.map((l) => l.who), ['caption', 'rabbit', 'me', 'me', 'caption'])
   assert.match(lines[0].text, /29일차, 월요일 아침/)
   assert.equal(lines[1].text, '안녕하세요, 사장님.\n저 여기서 일하고 싶어요!')
   assert.match(lines[2].text, /저기도 마라탕/)
-  assert.match(lines[3].text, /2부 — 준비 중/)
+  assert.equal(lines[3].text, '좋아요. 우리, 같이 해 봐요!')
+  assert.match(lines[4].text, /2부 — 준비 중/)
 })
 
 // ---------- save ----------

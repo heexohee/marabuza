@@ -264,16 +264,19 @@ export function endingLine(step, paidInFull) {
 
 // ---------- part-2 teaser (story N003, design/quick-specs/part1-28-days-2026-09-27.md §D) ----------
 // Day 29's morning, once, after the ending: the rabbit brings a "알바 구함" flyer, and a franchise's
-// "오픈 예정" banner goes up across the street (from PART2_BANNER_STEP on).
+// The rival shop is revealed before she agrees to hire the rabbit.
 const PART2_TEASER_LINES = [
   { who: 'caption', text: '29일차, 월요일 아침.' },
   { who: 'rabbit', text: '안녕하세요, 사장님.\n저 여기서 일하고 싶어요!' },
   { who: 'me', text: '(문밖을 보며) …저기도 마라탕?' },
+  { who: 'me', text: '좋아요. 우리, 같이 해 봐요!' },
   { who: 'caption', text: '마라부자 2부 — 준비 중' },
 ]
 export const PART2_TEASER_LINE_COUNT = PART2_TEASER_LINES.length
 /** Beat where the franchise banner across the street comes into view. */
 export const PART2_BANNER_STEP = 2
+/** Return to the rabbit and agree to work together after seeing the rival shop. */
+export const PART2_HIRING_STEP = 3
 
 /** Line `step` of the part-2 teaser. */
 export const teaserLine = (step) => PART2_TEASER_LINES[Math.min(Math.max(step, 0), PART2_TEASER_LINES.length - 1)]

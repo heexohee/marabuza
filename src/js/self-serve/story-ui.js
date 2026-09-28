@@ -6,7 +6,7 @@ import { won } from '../ui.js'
 import { APRON_COLORS, HAIR_COLORS, HAIR_STYLES, characterSprite } from './character.js'
 import { NAME_MAX_LEN, PREMIUM_EXTRA_STEPS, PREMIUM_TOTAL, RENT, WEEKDAY_LABEL, weekOf, weekdayOf } from './data.js'
 import {
-  ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, PART2_BANNER_STEP, PART2_TEASER_LINE_COUNT, STAGE, SUNDAY_BG, endingLine, premiumLine,
+  ENDING_FRAME_STEP, ENDING_LINE_COUNT, OPENING_SCENES, PART2_BANNER_STEP, PART2_HIRING_STEP, PART2_TEASER_LINE_COUNT, STAGE, SUNDAY_BG, endingLine, premiumLine,
   SUNDAY_LAST_STEP, SUNDAY_LEDGER_STEP, castSpot, lineText, speakerName, storyName, sundayLine, teaserLine,
 } from './story.js'
 
@@ -258,14 +258,17 @@ export function teaserHtml(s) {
   const step = s.teaserStep ?? 0
   const line = teaserLine(step)
   const isLast = step >= PART2_TEASER_LINE_COUNT - 1
-  const art = step >= PART2_BANNER_STEP ? '05-franchise' : '04-rabbit'
-  const alt = step >= PART2_BANNER_STEP ? '창밖 맞은편의 새 마라탕 가게를 바라보는 주인공과 작은 토끼' : '월요일 아침 가게에 찾아온 귀여운 토끼 알바 지원자'
-  const banner = step >= PART2_BANNER_STEP
+  const hiring = step >= PART2_HIRING_STEP
+  const rival = step >= PART2_BANNER_STEP && !hiring
+  const art = rival ? '05-franchise' : '04-rabbit'
+  const alt = hiring ? '토끼를 향해 웃으며 함께 일하기로 결심하는 주인공' : rival ? '창밖 맞은편의 새 마라탕 가게를 바라보는 주인공과 작은 토끼' : '월요일 아침 가게에 찾아온 귀여운 토끼 알바 지원자'
+  const pose = hiring ? '<img class="hiring-pose" src="img/story-v2/ending/06-hiring-pose-overlay.png" alt="" draggable="false">' : ''
+  const banner = rival
     ? `<span class="franchise-banner">대형 마라탕 프랜차이즈<b>오픈 예정</b></span>`
     : ''
   return `
     <div class="opening-screen sunday-screen ending-screen teaser-screen" data-action="teaserNext">
-      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${banner}</div>
+      <div class="scene opening-illustration ending-illustration"><img src="img/story-v2/ending/${art}.png" alt="${alt}" draggable="false">${pose}${banner}</div>
       <div class="dialogue ${DIALOGUE_KIND[line.who] ?? ''}">
         ${line.who === 'caption' ? '' : `<b class="speaker">${esc(speakerName(line.who, s.character.name))}</b>`}
         <p>${esc(lineText(line.text, s.character.name))}</p>

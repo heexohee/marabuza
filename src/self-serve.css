@@ -988,6 +988,7 @@ img.txt-emoji { width: 1.15em; height: 1.15em; vertical-align: -0.2em; display: 
 
 /* Illustrated ending captions remain separate from the art for repayment branches and readable Korean. */
 .ending-illustration { container-type: inline-size; }
+.ending-illustration > .hiring-pose { position: absolute; inset: 0; pointer-events: none; }
 .ending-paid { position: absolute; right: 3%; bottom: 5%; padding: 6px 12px; border: 2px solid #79521f; border-radius: 4px; background: #ffdf83; color: #513519; font-weight: 700; font-size: clamp(12px, 2.7cqw, 21px); box-shadow: 0 2px 0 #51351955; }
 .ending-illustration .franchise-banner { left: 68.3%; top: 30.2%; width: 32%; transform: translate(-50%, -50%) skewY(-6deg); padding: 0; border: 0; background: transparent; box-shadow: none; font-size: clamp(8px, 2cqw, 15px); line-height: 1.3; text-shadow: 1px 2px #6c261f; }
 
