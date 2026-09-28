@@ -34,10 +34,10 @@ export const OPENING_SCENES = [
       { who: 'caption', text: '며칠 뒤, 회사를 그만둔 날.' },
       { who: 'me', text: '퇴사하고 제일 먼저 달려온 곳인데… 불이 꺼져 있네.' },
       { who: 'notice', text: '그동안 감사했습니다. 고향으로 내려갑니다. 가게 넘깁니다. — 마라판다' },
-      { who: 'me', text: '이 맛마저 없어지면… 난 뭘로 버티지?' },
+      { who: 'me', text: '회사 그만두면 여기서 느긋하게 먹으려고 했는데….' },
       { who: 'panda', text: '…왔구나, 우리 단골.' },
       { who: 'panda', text: '자네가 해 볼 텐가? 권리금은 천천히 갚아도 돼.' },
-      { who: 'me', text: '퇴직금 전부 걸게요. 이 가게, 제가 지킬게요!' },
+      { who: 'me', text: '네, 퇴직금 전부 걸게요. 이 가게, 제가 지킬게요!' },
     ],
   },
   {
@@ -248,12 +248,12 @@ const ENDING_LINES = [
   { who: 'panda', paid: '장부 봤어. …다 갚았네.', forgiven: '장부 봤어. 조금 남았네.' },
   { who: 'me', paid: '사장님 덕분이에요.', forgiven: '죄송해요… 조금만 더 시간을 주시면—' },
   { who: 'panda', paid: '아니. 이제 네 가게구나.', forgiven: '됐어. 나머지는 그동안 손님들한테 내준 한 그릇으로 받았다 치자. …이제 네 가게구나.' },
-  { who: 'panda', text: '이건 가져가려다 말았어. 여기 두는 게 맞겠다.' },
+  { who: 'panda', text: '이젠 마라 맛 전수증을 넘겨줄게. 잘 보이는데 걸어둬.' },
   { who: 'me', text: '{name} 사장의 마라부자. 내일도 한 그릇씩!' },
   { who: 'caption', text: '마라부자 1부 — 끝' },
 ]
 export const ENDING_LINE_COUNT = ENDING_LINES.length
-/** Beat where the old "마라판다" sign goes up as a frame on the wall. */
+/** Beat where the panda presents the framed culinary succession certificate. */
 export const ENDING_FRAME_STEP = 4
 
 /** Line `step` of the ending, in the paid-in-full or forgiven branch. */
