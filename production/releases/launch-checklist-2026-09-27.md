@@ -14,9 +14,9 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ### Build Health
 - [x] 유닛·통합 테스트 전부 통과 — `node --test` 412/412 (2026-09-28 갱신)
-- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 윈도우 빌드 확인, 코드 서명. **아이콘 완료** (2026-09-29, 간소화한 마라탕 한 그릇 · 분홍 타일 — `tools/art/app_icon.py` → `assets/app-icon/` icns·ico·png, 웹 파비콘 `src/img/favicon.png`로 favicon 404 해소)
+- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 코드 서명. **윈도우 빌드 완료** (2026-09-29, 맥 arm64에서 wine 없이 교차 빌드 — `npm run desktop:win` → `out/desktop/win-unpacked/Marabuza.exe`(x64, 새 아이콘 7크기 확인) + 설치 파일 `Marabuza Setup 0.1.0.exe` 139.5MB, 서명 없음). 실제 윈도우 PC에서 실행은 아직 — 저사양 실기기 확인과 함께. **아이콘 완료** (2026-09-29, 간소화한 마라탕 한 그릇 · 분홍 타일 — `tools/art/app_icon.py` → `assets/app-icon/` icns·ico·png, 웹 파비콘 `src/img/favicon.png`로 favicon 404 해소)
 - [ ] 포장된 빌드가 윈도우 · macOS(선택) · 스팀 덱(선택)에서 깨끗하게 실행
-- [x] 빌드 크기 확인 — 맥 arm64 앱 294MB (대부분 Electron 런타임, 게임 app.asar 2.9MB). 윈도우는 빌드 후 측정
+- [x] 빌드 크기 확인 — 맥 arm64 앱 315MB, app.asar 28MB (2026-09-29). 윈도우: 설치 파일 139.5MB, 설치 후 폴더(win-unpacked) 395MB
   - [x] 출시 빌드 dist/ 69MB → 28MB (2026-09-28) — git 밖 삽화 초안 폴더(`img/ending`·`img/opening`·`img/story-v2/opening`)가 통째로 복사되던 것을 `release.mjs` 제외 목록에 추가. 코드가 참조하지 않는 이미지 폴더가 출시 빌드에 들어가면 실패하는 테스트 추가 (`release_build_test.mjs`)
 - [ ] 빌드 버전 표기와 git 태그 — 타이틀에 "v0.1" 표기만 있음
 - [ ] 장시간 플레이(28일 + 2부 루프) 메모리·프레임 확인 — `[?]` 측정한 적 없음
