@@ -528,8 +528,11 @@ export function afterSummary(s) {
   return weekdayOf(s.day) === 6 ? enterSunday({ ...s, day: s.day + 1 }) : openShop(s)
 }
 
-/** Resumes a save into the shop, unless it was made mid-'sunday' (that phase is saved as-is; see save.js). */
-export const resumeShop = (s) => (s.phase === 'sunday' ? s : openShop(s))
+/**
+ * Resumes a save into the shop, unless it was made mid-'sunday' (that phase is saved as-is) or before day 1
+ * opened ('ready', saved at character creation — straight into day 1). See save.js.
+ */
+export const resumeShop = (s) => (s.phase === 'sunday' ? s : s.phase === 'ready' ? startDay(s) : openShop(s))
 
 /** Picks the ingredients a new customer would like: distinct unlocked ids × 1..maxQty. */
 export function generateWish(unlocked, rng) {

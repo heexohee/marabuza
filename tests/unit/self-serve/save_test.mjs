@@ -2,7 +2,7 @@
 // rejects malformed data, and never touches the original flow's slot.
 import { test, beforeEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { buyPack, createNewGame } from '../../../src/js/self-serve/logic.js'
+import { beginNewGame, buyPack, createNewGame, finishCharacter, resumeShop } from '../../../src/js/self-serve/logic.js'
 import { isValidSave, loadGame, saveGame } from '../../../src/js/self-serve/save.js'
 import { SAVE_KEY } from '../../../src/js/self-serve/data.js'
 
@@ -41,4 +41,38 @@ test('test_selfserve_save_rejects_unknown_or_negative_stock', () => {
   assert.equal(isValidSave({ ...good, stock: { hacked: 5 } }), false)
   assert.equal(isValidSave({ ...good, stock: { cilantro: -1 } }), false)
   assert.equal(isValidSave({ ...good, unlocked: ['cilantro'] }), false, 'extras are never "unlocked" ingredients')
+})
+
+// First save right after character creation (decision 2026-09-29, QA sign-off part1-delta condition 3): quitting
+// in the rest of the opening or during day 1 no longer loses the character — 이어하기 opens day 1.
+test('test_selfserve_save_after_character_creation_resumes_at_day_one', () => {
+  // Arrange: creation finished, the takeover scene of the opening is playing
+  const created = finishCharacter({ ...beginNewGame(), phase: 'create', character: { ...createNewGame().character, name: '초아' } })
+
+  // Act
+  assert.equal(saveGame(created), true)
+  const loaded = loadGame()
+  const resumed = resumeShop(loaded)
+
+  // Assert
+  assert.equal(JSON.parse(localStorage.getItem(SAVE_KEY)).phase, 'ready')
+  assert.equal(loaded.phase, 'ready')
+  assert.equal(loaded.character.name, '초아')
+  assert.equal(resumed.phase, 'day')
+  assert.equal(resumed.day, 1)
+  assert.equal(resumed.money, created.money)
+})
+
+test('test_selfserve_save_phase_accepts_ready_and_sunday_only', () => {
+  const good = { version: 1, day: 1, money: 0, rating: 3, pricePer100g: 2200, stock: { noodle: 1 }, unlocked: ['noodle'], upgrades: { pots: 1 } }
+  assert.equal(isValidSave({ ...good, phase: 'ready' }), true)
+  assert.equal(isValidSave({ ...good, phase: 'sunday' }), true)
+  assert.equal(isValidSave({ ...good, phase: 'day' }), false)
+})
+
+test('test_selfserve_save_between_days_still_resumes_at_the_shop', () => {
+  saveGame({ ...createNewGame(), phase: 'shop', day: 3 })
+  const resumed = resumeShop(loadGame())
+  assert.equal(resumed.phase, 'shop')
+  assert.equal(resumed.day, 3)
 })

@@ -89,7 +89,7 @@ const gameActions = {
     const [key, value] = String(arg).split(':')
     return setCharacterOption(s, key, value)
   },
-  charDone: (s) => finishCharacter(s),
+  charDone: (s) => persist(finishCharacter(s)), // first save: 이어하기 then opens day 1 (decision 2026-09-29)
   storyNext: (s) => advanceStory(s),
   storySkip: (s) => skipStory(s),
   sundayNext: (s) => (isSundayDone(s) ? persist(afterSummary(s)) : advanceSunday(s)),

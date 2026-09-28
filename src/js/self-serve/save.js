@@ -44,7 +44,8 @@ const isOptBool = (v) => v === undefined || typeof v === 'boolean'
 // A save made while the 'sunday' screen was open keeps that phase + its frozen ledger, so reopening the
 // game resumes there instead of skipping ahead to the shop (every other phase resumes at the shop — see
 // `resumeShop` in logic.js). No other phase is ever saved.
-const isSavedPhase = (p) => p === undefined || p === 'sunday'
+// 'ready': saved right after character creation, before day 1 opened (decision 2026-09-29) — resumes at day 1
+const isSavedPhase = (p) => p === undefined || p === 'sunday' || p === 'ready'
 const isLedger = (l) => l === undefined || l === null ||
   (typeof l === 'object' && isNonNegInt(l.weekRevenue) && isNonNegInt(l.rentDue) && typeof l.rentPaid === 'boolean')
 
@@ -94,9 +95,10 @@ export function saveGame(s) {
     endingSeen: s.endingSeen,
     premiumPaidInFull: s.premiumPaidInFull,
     part2TeaserSeen: s.part2TeaserSeen,
-    // Only the 'sunday' screen is saved as its own phase (see isSavedPhase) — every other phase resumes at
-    // the shop via resumeShop, so recording it would be dead weight.
+    // Only the 'sunday' screen and the rest of the opening (saved as 'ready': day 1 not yet opened) are saved
+    // as their own phase (see isSavedPhase) — every other phase resumes at the shop via resumeShop.
     ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
+    ...(s.phase === 'opening' ? { phase: 'ready' } : {}),
   }
   try {
     return saveStore().setItem(SAVE_KEY, JSON.stringify(data)) !== false
@@ -131,6 +133,7 @@ export function loadGame() {
       // part-2 teaser (story N003): saves from before it count it as seen once day 28 is behind them
       part2TeaserSeen: d.part2TeaserSeen ?? d.day > PART1_LAST_DAY,
       ...(d.phase === 'sunday' ? { phase: 'sunday', ledger: d.ledger ?? null } : {}),
+      ...(d.phase === 'ready' ? { phase: 'ready' } : {}),
     }
   } catch {
     return null
