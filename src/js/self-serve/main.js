@@ -9,6 +9,7 @@ import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
+import { DAY_INTRO_MS, DAY_INTRO_REDUCED_MS, dayIntroInfo, mountDayIntro, shouldShowDayIntro } from './day-intro.js'
 import { createNightScene, mountTitleAnim } from './title-anim.js'
 import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
@@ -194,7 +195,28 @@ function toggleFullscreen() {
   req?.catch?.(() => { state = addToast(state, '이 브라우저에서는 전체화면을 쓸 수 없어요', 'bad') })
 }
 
+// Day-change calendar (request 2026-09-28): up for a moment when a new day or Sunday opens; the day clock
+// waits for it, and a click or any key skips it.
+const REDUCED_MOTION = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false
+let introUntil = 0 // performance.now() when the calendar goes away; 0 = not showing
+let introDay = null // the day whose calendar was shown last
+const dayIntro = mountDayIntro(document, () => endDayIntro())
+function endDayIntro() {
+  introUntil = 0
+  dayIntro.hide()
+}
+function maybeStartDayIntro(now) {
+  if (!shouldShowDayIntro(state, lastPhase, introDay)) return
+  introDay = state.day
+  introUntil = now + (REDUCED_MOTION ? DAY_INTRO_REDUCED_MS : DAY_INTRO_MS)
+  dayIntro.show(dayIntroInfo(state.day))
+}
+
 window.addEventListener('keydown', (e) => {
+  if (introUntil) {
+    e.preventDefault()
+    return endDayIntro()
+  }
   // M mutes music anywhere, except while typing (the shop owner's name field)
   if (e.code === 'KeyM' && !e.target.closest?.('input, textarea')) {
     e.preventDefault()
@@ -234,7 +256,9 @@ let lastPhase = state.phase
 function frame(now) {
   const dt = Math.min(MAX_FRAME_SEC, (now - last) / 1000)
   last = now
-  const isRunning = state.phase === 'day' && !view.paused && !view.help
+  maybeStartDayIntro(now)
+  if (introUntil && now >= introUntil) endDayIntro()
+  const isRunning = state.phase === 'day' && !view.paused && !view.help && !introUntil
   state = isRunning ? tick(state, dt) : fadeToasts(state, dt)
   // every visit to the shop starts on the order tab
   if (state.phase === 'shop' && lastPhase !== 'shop') view = { ...view, shopTab: DEFAULT_SHOP_TAB }
