@@ -1,6 +1,4 @@
-# Deploys the web game in src/ to GitHub Pages on every push to main.
-# The site opens on the self-serve flow; the original flow stays reachable as classic.html
-# (the self-serve title links to index.html?classic, which the root page routes there).
+# Deploy the release build (development tools disabled) to GitHub Pages.
 name: Deploy to GitHub Pages
 
 on:
@@ -38,10 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build site (self-serve flow as the front page)
         run: |
-          mkdir _site
-          cp -R src/. _site/
-          rm -f _site/CLAUDE.md
-          mv _site/index.html _site/classic.html
+          node tools/release/release.mjs _site
           cat > _site/index.html <<'HTML'
           <!doctype html>
           <html lang="ko">
@@ -49,7 +44,7 @@ jobs:
             <meta charset="utf-8">
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <title>마라부자</title>
-            <script>location.replace(location.search.includes('classic') ? 'classic.html' : 'self-serve.html')</script>
+            <script>location.replace('self-serve.html' + location.search + location.hash)</script>
           </head>
           <body><a href="self-serve.html">마라부자 시작하기</a></body>
           </html>
