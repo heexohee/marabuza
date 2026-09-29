@@ -13,7 +13,7 @@ export function queueFaceImg(face) {
   const portrait = Object.hasOwn(ANIMAL_FACES, face) ? ANIMAL_FACES[face] : null
   if (!portrait) return spriteImg(face, 16, 'queue-portrait')
   const [file, name] = portrait
-  return `<img class="px queue-portrait" src="img/animal-faces/${file}.png?v=1" width="48" height="48" alt="${name} 손님" draggable="false">`
+  return `<img class="px queue-portrait${file === 'penguin' ? ' penguin-portrait' : ''}" src="img/animal-faces/${file}.png?v=${file === 'panda' ? 1 : 3}" width="48" height="48" alt="${name} 손님" draggable="false">`
 }
 
 // Fur remains independent of furniture upgrades; the dining bib is always cream.
@@ -28,6 +28,15 @@ const FUR = {
 }
 
 export function seatedCustomerHtml(face) {
+  // Every approved guest has a complete sprite; the panda remains the owner.
+  if (Object.hasOwn(ANIMAL_FACES, face) && face !== '🐼') {
+    const [file, name] = ANIMAL_FACES[face]
+    if (file === 'penguin') {
+      // Split at the chin (y=85 of 112); keep the bib and flippers at their original size.
+      return `<span class="seated-unified seated-penguin" role="img" aria-label="${name} 손님"><img class="penguin-body" src="img/seated-customers/penguin.png?v=3" width="96" height="112" alt="" draggable="false"><img class="penguin-head" src="img/seated-customers/penguin.png?v=3" width="96" height="112" alt="" draggable="false"></span>`
+    }
+    return `<img class="seated-unified" src="img/seated-customers/${file}.png?v=3" width="96" height="112" alt="${name} 손님" draggable="false">`
+  }
   const [fur, paw] = Object.hasOwn(FUR, face) ? FUR[face] : ['#94806a', '#eee5d6']
   return `<span class="seated-customer" data-animal="${Object.hasOwn(ANIMAL_FACES, face) ? ANIMAL_FACES[face][0] : 'unknown'}" style="--customer-fur:${fur};--customer-paw:${paw}">
     <i class="customer-torso" aria-hidden="true"><i class="dining-bib"></i></i>

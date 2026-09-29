@@ -6,7 +6,7 @@ import {
   unlockIngredient,
 } from './logic.js'
 import { clearSave, hasSave, loadGame, saveGame } from './save.js'
-import { render } from './ui.js'
+import { render } from './ui.js?v=guests4'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
 import { preloadImages } from './preload.js'
