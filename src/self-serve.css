@@ -287,7 +287,7 @@ button:not(:disabled), a[href], [data-action] { cursor: var(--cursor-click); }
 .ss .rail > .hint { grid-column: 2 / -1; }
 .ss .rail-title { white-space: nowrap; }
 .ss .ticket { min-width: 0; justify-content: center; font-size: 11px; padding: 2px 3px; gap: 2px; white-space: nowrap; }
-.ss .ticket .mini-face { width: 14px; height: 14px; }
+.ss .ticket .mini-face, .ss .ticket .queue-portrait { width: 14px; height: 14px; object-fit: contain; }
 .ss .ticket .chili { width: 10px; height: 10px; }
 .ss .tspice { display: inline-flex; align-items: center; }
 .ss-shelf .info { font-size: 11px; line-height: 1.35; }
@@ -516,6 +516,20 @@ ol.help-steps li::before { counter-increment: step; content: counter(step); posi
 }
 .shop-scene .seated-customer { inset: 0; left: 0; transform: none; pointer-events: none; }
 .shop-scene .seated-customer > * { position: absolute; left: 50%; transform: translateX(-50%); }
+.shop-scene .seated-unified {
+  z-index: 5; bottom: calc(var(--apx) * 32); width: calc(var(--apx) * 40); height: calc(var(--apx) * 46.666667);
+  image-rendering: pixelated; pointer-events: none;
+}
+.penguin-portrait { scale: .85; }
+.shop-scene .seated-penguin { --chin: calc(100% * 85 / 112); }
+.shop-scene .seated-penguin img {
+  position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated;
+}
+.shop-scene .penguin-body { clip-path: inset(var(--chin) 0 0); }
+.shop-scene .penguin-head {
+  clip-path: inset(0 0 calc(100% - var(--chin)));
+  transform-origin: 50% var(--chin); transform: scale(.85);
+}
 .shop-scene .customer-torso {
   z-index: 1; bottom: calc(var(--apx) * 32); width: calc(var(--apx) * 24); height: calc(var(--apx) * 10);
   background: var(--customer-fur); border: var(--apx) solid #594236; box-sizing: border-box;

@@ -6,7 +6,7 @@ import {
   SPICE_LEVELS,
 } from '../data.js'
 import { spriteImg } from '../sprites.js'
-import { queueFaceImg, seatedCustomerHtml } from './animal-faces.js'
+import { queueFaceImg, seatedCustomerHtml } from './animal-faces.js?v=4'
 import { chiliRow, stars, won } from '../ui.js'
 import {
   EXTRA_IDS, MODE_LABEL, PERISHABLE_IDS, SIDE_BY_ID, RESTOCK_BUSY_SEC, SHELF_CAPACITY, SHELF_EXTRAS, SHELF_ITEM_BY_ID, VARIANT_INGREDIENTS,
@@ -138,7 +138,7 @@ const spiceTag = (level) => (level === 0 ? '순한' : `${spriteImg('🌶️', 10
 function railHtml(s) {
   const tickets = s.rail.map((o) => `
     <button class="ticket" data-action="cook" data-arg="${o.ticketNo}" title="눌러서 냄비에 넣기 · ${MODE_LABEL[o.mode]} ${o.spice}단계">
-      <b>🎫${o.ticketNo}</b>${spriteImg(o.face, 16, 'mini-face')}${o.side ? spriteImg(SIDE_BY_ID[o.side].emoji, 14, 'mini-face') : ''}
+      <b>🎫${o.ticketNo}</b>${queueFaceImg(o.face)}${o.side ? spriteImg(SIDE_BY_ID[o.side].emoji, 14, 'mini-face') : ''}
       <span>${MODE_LABEL[o.mode]}</span><span class="tspice">${spiceTag(o.spice)}</span>
     </button>`).join('')
   return `<div class="rail-title">주문표 <kbd>C</kbd></div>${tickets || '<span class="hint">결제하면 주문표가 여기 걸려요</span>'}`
