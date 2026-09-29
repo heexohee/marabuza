@@ -798,7 +798,7 @@ html, body { overflow: hidden; }
 html[data-screen="menu"], html[data-screen="menu"] body {
   background:
     url("img/title-rain-approved.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
-    linear-gradient(#0a0a1e 50%, #221e34 50%);
+    linear-gradient(#091f5e 50%, #09163c 50%); /* title-rain-approved.png's own top-row sky and bottom-row street */
   image-rendering: pixelated;
 }
 /* the fine-weather day title (?title=day, src/js/self-serve/title-day.js): its own still under the canvas */
