@@ -253,10 +253,10 @@ export const titleSceneName = (search) => (new URLSearchParams(search).get('titl
  */
 export function mountTitleAnim(win = window, { rng = Math.random, onError = () => {}, scenes = { night: createNightScene } } = {}) {
   const doc = win.document
-  const { w, h } = TITLE_ART
   const name = titleSceneName(win.location?.search ?? '')
   const scene = (scenes[name] ?? createNightScene)(rng)
   doc.documentElement.dataset.titleScene = scenes[name] ? name : 'night'
+  const { w, h } = scene.size ?? TITLE_ART
   const canvas = doc.createElement('canvas')
   canvas.className = 'title-anim'
   canvas.width = w

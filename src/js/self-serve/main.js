@@ -12,7 +12,8 @@ import { mountStageFit } from './fit.js'
 import { preloadImages } from './preload.js'
 import { storyArtUrls } from './story-ui.js'
 import { DAY_INTRO_MS, DAY_INTRO_REDUCED_MS, dayIntroInfo, mountDayIntro, shouldShowDayIntro } from './day-intro.js'
-import { createNightScene, mountTitleAnim } from './title-anim.js'
+import { mountTitleAnim } from './title-anim.js?v=approved1'
+import { createApprovedNightScene } from './title-approved.js?v=1'
 import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
 import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
@@ -240,7 +241,7 @@ mountStageFit(window)
 // story art decoded while the title is up, so the opening's picture changes never show an empty box (BUG-002)
 preloadImages(storyArtUrls())
 // the still title-bg(-day).png stays behind if its art fails to load; ?title=day shows the day title (in review)
-mountTitleAnim(window, { scenes: { night: createNightScene, day: createDayScene } })
+mountTitleAnim(window, { scenes: { night: createApprovedNightScene, day: createDayScene } })
 
 if (isDevMode()) {
   mountDevBar(document, (action) => {

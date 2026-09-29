@@ -794,15 +794,16 @@ html, body { overflow: hidden; }
 /* The art covers a box: the whole window when it is at least as wide as the stage (1280×884), otherwise a band
    the stage's shape across the middle, so a tall window never crops the roof-sign logo off the sides — it gets
    sky above and ground below instead, the art's own edge colors. The menu sits in the stage, which fills that band. */
-:root { --title-art-ratio: 1.81; --title-box-h: min(100vh, 100vw * 884 / 1280); }
+:root { --title-art-ratio: 1.551; --title-box-h: min(100vh, 100vw * 884 / 1280); }
 html[data-screen="menu"], html[data-screen="menu"] body {
   background:
-    url("img/title-bg.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
+    url("img/title-rain-approved.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
     linear-gradient(#0a0a1e 50%, #221e34 50%);
   image-rendering: pixelated;
 }
 /* the fine-weather day title (?title=day, src/js/self-serve/title-day.js): its own still under the canvas */
 html[data-screen="menu"][data-title-scene="day"], html[data-screen="menu"][data-title-scene="day"] body {
+  --title-art-ratio: 1.81;
   background:
     url("img/title-bg-day.png?v=1") center / max(100vw, var(--title-box-h) * var(--title-art-ratio)) auto no-repeat,
     linear-gradient(#56a6e8 50%, #646270 50%);
