@@ -9,8 +9,11 @@ import { clearSave, hasSave, loadGame, saveGame } from './save.js'
 import { render } from './ui.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
+import { preloadImages } from './preload.js'
+import { storyArtUrls } from './story-ui.js'
 import { DAY_INTRO_MS, DAY_INTRO_REDUCED_MS, dayIntroInfo, mountDayIntro, shouldShowDayIntro } from './day-intro.js'
-import { mountTitleAnim } from './title-anim.js'
+import { createNightScene, mountTitleAnim } from './title-anim.js'
+import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
 import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
 import { sfxForAction } from './sfx.js'
@@ -86,7 +89,7 @@ const gameActions = {
     const [key, value] = String(arg).split(':')
     return setCharacterOption(s, key, value)
   },
-  charDone: (s) => finishCharacter(s),
+  charDone: (s) => persist(finishCharacter(s)), // first save: 이어하기 then opens day 1 (decision 2026-09-29)
   storyNext: (s) => advanceStory(s),
   storySkip: (s) => skipStory(s),
   sundayNext: (s) => (isSundayDone(s) ? persist(afterSummary(s)) : advanceSunday(s)),
@@ -234,7 +237,10 @@ window.addEventListener('keydown', (e) => {
 // Dev mode (localhost or ?dev): auto-play days and add money to check between-day UI quickly.
 // Results land on the summary screen; "상점으로" then saves them like a played day.
 mountStageFit(window)
-mountTitleAnim(window) // the still title-bg.png stays behind if its art fails to load
+// story art decoded while the title is up, so the opening's picture changes never show an empty box (BUG-002)
+preloadImages(storyArtUrls())
+// the still title-bg(-day).png stays behind if its art fails to load; ?title=day shows the day title (in review)
+mountTitleAnim(window, { scenes: { night: createNightScene, day: createDayScene } })
 
 if (isDevMode()) {
   mountDevBar(document, (action) => {

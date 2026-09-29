@@ -85,12 +85,18 @@ export function creditsHtml({ action = 'closeCredits', label = '닫기' } = {}) 
   const roll = CREDITS.map((c) => `
           <div class="credit"><b>${esc(c.role)}</b>${c.names.map((n) => `<span>${esc(n)}</span>`).join('')}</div>`).join('')
   return `
-    <div class="overlay"><div class="modal credits" role="dialog" aria-label="엔딩 크레딧">
-      <div class="credits-window"><div class="credits-roll">
-          <h2 class="title-logo small">마라부자</h2>${roll}
-          <p class="credits-end">감사합니다!</p>
-      </div></div>
-      <button class="btn ghost" data-action="${action}">${label}</button>
+    <div class="overlay credits-overlay"><div class="modal credits" role="dialog" aria-modal="true" aria-label="엔딩 크레딧">
+      <div class="credits-memory">
+        <img src="img/story-v2/ending/07-credits-service-neutral.png" alt="식사하는 토끼와 너구리에게 서빙하는 주인공, 창밖에서 바라보는 판다 사장님" draggable="false">
+      </div>
+      <div class="credits-details">
+        <header class="credits-heading"><span>PART 01 · COMPLETE</span><h1 class="title-logo small">마라부자</h1><p>퇴사하고 마라탕집 사장님</p></header>
+        <div class="credits-window" tabindex="0" aria-label="제작진 명단. 마우스를 올리거나 포커스하면 멈춥니다"><div class="credits-roll">
+          ${roll}<div class="credit credits-player"><b>그리고, 이 가게의 사장님</b><span>플레이해 주신 당신</span></div>
+          <p class="credits-end">우리의 다음 영업도<br>잘 부탁드립니다.</p>
+        </div></div>
+        <footer class="credits-footer"><span>이야기는 내일도 계속됩니다.</span><button class="btn ghost" data-action="${action}">${label}</button></footer>
+      </div>
     </div></div>`
 }
 

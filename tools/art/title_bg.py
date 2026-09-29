@@ -12,6 +12,7 @@ v2 (feedback 2026-09-27): finer pixel work at twice the resolution, every light 
 street lamp, spill and reflections), no subtitle text under the logo — the game's subtitle is lettered on the shop's
 neon sign instead — and the logo sits right above the shop with no empty band. Deterministic (fixed seed).
 """
+import math
 import random
 from pathlib import Path
 
@@ -40,6 +41,7 @@ CREAM = (255, 240, 244)
 NEON, NEON_HALO = (255, 238, 248), (255, 100, 170)
 TUBE_OFF = (128, 72, 100)  # an unlit neon tube (the animated title's flicker frame, tools/art/title_layers.py)
 NEON_LIT = True  # False = both signs switched off; set per build
+DETAILED_INTERIOR = True  # the furnished shop interior (feedback 2026-09-28); the day title (title_day.py) keeps the plain one
 LIGHT = (255, 150, 200)  # her shop's pink light
 LIT_WARM, LIT_BLUE = (244, 212, 140), (140, 190, 224)  # the neighbours (scene_office.py)
 LAMP = (255, 214, 140)  # sodium street lamp
@@ -343,9 +345,108 @@ def customer(x, y, kind, counter_y):
         glow(bx - 2 + (k % 3) * 2 + (k // 3), counter_y - 7 - k * 2, (255, 255, 255), 0.45 - k * 0.05)
 
 
-def shop_window(x0, y0, x1, y1):
-    rect(x0 - 4, y0 - 4, x1 + 4, y1 + 4, PINK_DEEP)
-    rect(x0 - 2, y0 - 2, x1 + 2, y1 + 2, (120, 44, 80))
+def shop_interior(x0, y0, x1, y1):
+    """Her shop seen through the window at night (feedback 2026-09-28, no people): pendant lamps, menu posters on
+    a pink wall over a wainscot, a table for two with steaming bowls, and on the right the kitchen counter with
+    pots on the boil and shelves of stacked bowls. Own seeded draws, so the rest of the scene is unchanged."""
+    g = random.Random(SEED + 7)
+    mid = (x0 + x1) // 2
+    wall, wall_dot = (246, 188, 210), (236, 170, 196)
+    wains, wains_line, rail = (238, 154, 186), (220, 128, 164), (206, 104, 146)
+    for y in range(y0, y1):  # back wall: dotted pink paper, a wainscot below a chair rail, a tiled floor
+        for x in range(x0, x1):
+            if y < y0 + 4:
+                c = (246, 186, 210)
+            elif y < y1 - 30:
+                c = wall_dot if (x % 4 == 0 and y % 4 == 2) else dither(x, y, (252, 206, 224), wall, (y - y0) / 40)
+            elif y < y1 - 7:
+                c = wains_line if (x - x0) % 12 == 0 else wains
+            else:
+                c = (214, 118, 156) if (x // 6 + y) % 2 else (224, 132, 168)
+            px[x, y] = c
+    rect(x0, y1 - 31, x1, y1 - 29, rail)
+    rect(x0, y1 - 8, x1, y1 - 7, (190, 92, 132))  # skirting
+    for bx, by, bw, bh in ((x0 + 46, y0 + 22, 18, 22), (x0 + 102, y0 + 22, 20, 20), (x0 + 128, y0 + 25, 12, 12)):
+        rect(bx - 1, by - 1, bx + bw + 1, by + bh + 1, (220, 110, 150))  # menu posters
+        rect(bx, by, bx + bw, by + bh, (255, 232, 240))
+        rect(bx + 2, by + 2, bx + bw - 2, by + 4, (236, 96, 130))  # title bar
+        for ly in range(by + 6, by + bh - 2, 3):
+            rect(bx + 2, ly, bx + bw - 2 - g.randrange(0, 5), ly + 1, (214, 140, 170))
+    # kitchen, right pane: tiled splashback, the counter, pots on the boil, shelves of bowls
+    kx0 = mid + 16
+    for y in range(y1 - 36, y1 - 26):
+        for x in range(kx0, x1):
+            px[x, y] = (255, 236, 244) if (x - kx0) % 5 and (y - y1) % 4 else (240, 200, 216)
+    rect(kx0 - 2, y1 - 27, x1, y1 - 24, (255, 206, 222))  # counter top
+    rect(kx0 - 2, y1 - 24, x1, y1 - 23, (206, 110, 148))
+    rect(kx0 - 2, y1 - 23, x1, y1 - 8, (236, 146, 180))  # counter front
+    for x in range(kx0 + 8, x1, 16):
+        rect(x, y1 - 21, x + 1, y1 - 9, (214, 118, 156))
+    rect(kx0 - 2, y1 - 23, kx0, y1 - 8, (214, 118, 156))
+    for pxx, pw, open_ in ((kx0 + 4, 14, False), (kx0 + 24, 16, True)):  # two pots
+        top = y1 - 35
+        rect(pxx, top, pxx + pw, y1 - 27, (128, 120, 140))
+        rect(pxx, top, pxx + pw, top + 1, (170, 164, 184))
+        rect(pxx - 2, top + 3, pxx, top + 5, (100, 94, 112))  # handles
+        rect(pxx + pw, top + 3, pxx + pw + 2, top + 5, (100, 94, 112))
+        if open_:
+            rect(pxx + 1, top - 1, pxx + pw - 1, top + 1, (226, 70, 70))  # red 마라 broth
+            put(pxx + 4, top - 1, (255, 170, 110))
+            put(pxx + 9, top, (255, 220, 120))
+        else:
+            rect(pxx + 1, top - 2, pxx + pw - 1, top, (150, 144, 164))  # lid
+            rect(pxx + pw // 2 - 1, top - 4, pxx + pw // 2 + 2, top - 2, (90, 84, 104))
+        for k in range(9):  # steam
+            sx = pxx + pw // 2 + round(2 * math.sin(k * 0.9)) + (k % 2)
+            glow(sx, top - 4 - k * 2, (255, 255, 255), 0.85 - k * 0.07)
+            glow(sx + 1, top - 5 - k * 2, (255, 255, 255), 0.6 - k * 0.05)
+    rect(x1 - 12, y1 - 32, x1 - 4, y1 - 27, (90, 84, 104))  # a small pot at the back
+    rect(x1 - 13, y1 - 33, x1 - 3, y1 - 32, (120, 114, 134))
+    for sy in (y0 + 20, y0 + 32, y0 + 44):  # shelves on the right wall
+        rect(x1 - 26, sy, x1, sy + 2, (206, 104, 146))
+        rect(x1 - 26, sy + 2, x1, sy + 3, (180, 84, 124))
+        for bx in range(x1 - 24, x1 - 2, 7):  # stacks of bowls
+            n = g.randrange(2, 4)
+            for k in range(n):
+                rect(bx, sy - 2 - k * 2, bx + 6, sy - k * 2, (255, 244, 248) if k % 2 == 0 else (240, 200, 216))
+            rect(bx + 1, sy - 2 * n - 1, bx + 5, sy - 2 * n, (236, 110, 140))  # the top bowl's pink rim
+    # dining, left pane: a table for two with steaming bowls, a chair either side
+    tx0, tx1, ty = x0 + 26, x0 + 70, y1 - 25
+    for cx, back in ((tx0 - 8, -1), (tx1 + 8, 1)):  # chairs, backs on the outside
+        rect(cx - 5, ty + 7, cx + 6, ty + 9, (176, 104, 88))  # seat
+        rect(cx - 5, ty + 9, cx + 6, ty + 10, (140, 78, 70))
+        post = cx + 5 if back > 0 else cx - 5
+        rect(post, ty - 7, post + 1, ty + 18, (150, 86, 74))  # back post and rear leg
+        rect(min(post, cx) if back > 0 else post, ty - 7, (post + 1) if back > 0 else cx - 1, ty - 5, (176, 104, 88))
+        rect(cx - 5 if back > 0 else cx + 5, ty + 10, (cx - 4) if back > 0 else cx + 6, ty + 18, (150, 86, 74))
+    rect(tx0, ty, tx1, ty + 2, (196, 120, 100))  # table top
+    rect(tx0, ty, tx1, ty + 1, (220, 150, 124))
+    rect(tx0, ty + 2, tx1, ty + 3, (150, 86, 74))
+    for lx in (tx0 + 3, tx1 - 5):
+        rect(lx, ty + 3, lx + 2, y1 - 7, (150, 86, 74))
+    for bx in (tx0 + 8, tx1 - 16):  # a bowl each, steaming
+        rect(bx, ty - 3, bx + 9, ty - 2, (255, 246, 240))
+        rect(bx + 1, ty - 2, bx + 8, ty, (236, 96, 100))
+        rect(bx + 1, ty - 3, bx + 8, ty - 2, (240, 90, 70))
+        put(bx + 3, ty - 3, (255, 190, 120))
+        for k in range(7):
+            sx = bx + 4 + round(1.5 * math.sin(k * 1.1))
+            glow(sx, ty - 5 - k * 2, (255, 255, 255), 0.85 - k * 0.1)
+            glow(sx + 1, ty - 6 - k * 2, (255, 255, 255), 0.5 - k * 0.06)
+    rect(tx0 + 20, ty - 4, tx0 + 23, ty, (255, 240, 200))  # a little cup and the cutlery pot
+    rect(tx0 + 26, ty - 5, tx0 + 28, ty, (200, 120, 150))
+    put(tx0 + 26, ty - 7, (220, 220, 230))
+    put(tx0 + 27, ty - 8, (220, 220, 230))
+    for i, lx in enumerate((x0 + 22, x0 + 66, mid + 22, mid + 62)):  # pendant lamps with warm pools
+        rect(lx, y0, lx + 1, y0 + 13, (170, 70, 110))
+        for k in range(5):
+            rect(lx - 2 - k, y0 + 13 + k, lx + 3 + k, y0 + 14 + k, (228, 96, 146) if k < 4 else (200, 70, 120))
+        rect(lx - 5, y0 + 18, lx + 6, y0 + 19, (255, 244, 220))
+        pool(lx, y0 + 26, 20, 14, (255, 246, 230), 0.34)
+
+
+def _plain_interior(x0, y0, x1, y1):
+    """The first, empty interior: a pink gradient, pendant lamps and a counter line (the day title's)."""
     for y in range(y0, y1):
         for x in range(x0, x1):
             px[x, y] = dither(x, y, INSIDE_TOP, INSIDE_LOW, (y - y0) / (y1 - y0))
@@ -355,11 +456,21 @@ def shop_window(x0, y0, x1, y1):
         pool(lx, y0 + 14, 18, 10, (255, 240, 248), 0.4)
     rect(x0, y1 - 22, x1, y1 - 19, (200, 110, 140))  # counter
     # no diners in the window (feedback 2026-09-27: keep the shop interior empty); customer() kept for later use
+
+
+def shop_window(x0, y0, x1, y1):
+    rect(x0 - 4, y0 - 4, x1 + 4, y1 + 4, PINK_DEEP)
+    rect(x0 - 2, y0 - 2, x1 + 2, y1 + 2, (120, 44, 80))
+    if DETAILED_INTERIOR:
+        shop_interior(x0, y0, x1, y1)
+    else:
+        _plain_interior(x0, y0, x1, y1)
+    fog = 0.12 if DETAILED_INTERIOR else 0.25  # thinner fog, so the furnished room reads
     for y in range(y1 - 18, y1):  # fogged lower glass
         for x in range(x0, x1):
-            glow(x, y, (255, 255, 255), 0.25 * (y - y1 + 18) / 18)
+            glow(x, y, (255, 255, 255), fog * (y - y1 + 18) / 18)
             if (x * 5 + y * 3) % 23 == 0:
-                glow(x, y, (255, 255, 255), 0.5)
+                glow(x, y, (255, 255, 255), fog * 2)
     for i in range(0, x1 - x0 + y1 - y0, 60):  # diagonal glass sheen
         for d in range(6):
             for k in range(y1 - y0):
@@ -368,7 +479,8 @@ def shop_window(x0, y0, x1, y1):
                     glow(xx, yy, (255, 255, 255), 0.10)
     mid = (x0 + x1) // 2
     rect(mid - 1, y0, mid + 2, y1, PINK_DEEP)
-    rect(x0, (y0 + y1) // 2 - 30, x1, (y0 + y1) // 2 - 28, PINK_DEEP)  # transom bar
+    transom = y0 + 8 if DETAILED_INTERIOR else (y0 + y1) // 2 - 30  # high up, clear of the posters
+    rect(x0, transom, x1, transom + 2, PINK_DEEP)  # transom bar
     for y in range(y1 + 6, BASE + 16):  # pink spill on the sidewalk
         for x in range(x0 - 20, x1 + 20):
             t = (y - y1 - 6) / (BASE + 16 - y1 - 6)

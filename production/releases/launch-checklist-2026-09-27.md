@@ -13,10 +13,11 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 ## 1. Code Readiness
 
 ### Build Health
-- [x] 유닛·통합 테스트 전부 통과 — `node --test` 338/338 (2026-09-27 갱신)
-- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 윈도우 빌드 확인, 아이콘, 코드 서명
+- [x] 유닛·통합 테스트 전부 통과 — `node --test` 412/412 (2026-09-28 갱신)
+- [x] **데스크톱 앱 포장** (Electron) — `npm run desktop` / `npm run desktop:pack` → `out/desktop/` (맥 arm64 확인, 2026-09-27, `production/qa/evidence/desktop/`). 남은 것: 코드 서명. **윈도우 빌드 완료** (2026-09-29, 맥 arm64에서 wine 없이 교차 빌드 — `npm run desktop:win` → `out/desktop/win-unpacked/Marabuza.exe`(x64, 새 아이콘 7크기 확인) + 설치 파일 `Marabuza Setup 0.1.0.exe` 139.5MB, 서명 없음). 실제 윈도우 PC에서 실행은 아직 — 저사양 실기기 확인과 함께. **아이콘 완료** (2026-09-29, 간소화한 마라탕 한 그릇 · 분홍 타일 — `tools/art/app_icon.py` → `assets/app-icon/` icns·ico·png, 웹 파비콘 `src/img/favicon.png`로 favicon 404 해소)
 - [ ] 포장된 빌드가 윈도우 · macOS(선택) · 스팀 덱(선택)에서 깨끗하게 실행
-- [x] 빌드 크기 확인 — 맥 arm64 앱 294MB (대부분 Electron 런타임, 게임 app.asar 2.9MB). 윈도우는 빌드 후 측정
+- [x] 빌드 크기 확인 — 맥 arm64 앱 315MB, app.asar 28MB (2026-09-29). 윈도우: 설치 파일 139.5MB, 설치 후 폴더(win-unpacked) 395MB
+  - [x] 출시 빌드 dist/ 69MB → 28MB (2026-09-28) — git 밖 삽화 초안 폴더(`img/ending`·`img/opening`·`img/story-v2/opening`)가 통째로 복사되던 것을 `release.mjs` 제외 목록에 추가. 코드가 참조하지 않는 이미지 폴더가 출시 빌드에 들어가면 실패하는 테스트 추가 (`release_build_test.mjs`)
 - [ ] 빌드 버전 표기와 git 태그 — 타이틀에 "v0.1" 표기만 있음
 - [ ] 장시간 플레이(28일 + 2부 루프) 메모리·프레임 확인 — `[?]` 측정한 적 없음
 
@@ -70,11 +71,15 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 ## 3. Quality Assurance
 
 ### Testing
-- [x] 자동 테스트 321개 통과
+- [x] 자동 테스트 412개 통과 (2026-09-28)
 - [ ] 1부 전체 회귀 QA (`/team-qa`) — 마지막 QA 2026-09-25는 레거시 흐름 대상
 - [x] 스모크 체크 보고서 — `production/qa/smoke-2026-09-27.md` PASS (출시 빌드 dist/, 374 테스트)
 - [ ] S1·S2 버그 0 — `[?]` 버그 트래커 없음(`production/qa/bugs/` 비어 있음)
 - [ ] 저장소 가득 참·강제 종료 후 저장 복구 확인
+- [x] **첫 저장 시점** (2026-09-29 결정·구현) — 캐릭터 만들기 직후 저장(`phase: 'ready'`), 이어하기 → 1일차 영업부터. 이전에는 1일차 마감 전 종료 시 오프닝·캐릭터부터 다시. 방치로 평점 0 → 폐업 → 저장 삭제(영구 사망)는 유지
+- [x] 출시 빌드 점검 (2026-09-28, 브랜치 `chore/pre-release-qa`) — `?dev`여도 개발 바 없음, 타이틀→오프닝 콘솔 오류·404·깨진 이미지 0, 960×600·1024×768·1920×1080에서 스크롤 없음. 소스(개발) 빌드는 localhost에서 개발 바 4버튼 그대로
+- [x] **세로로 긴 창에서 타이틀 잘림** (2026-09-28 발견·수정) — 타이틀 그림이 창 높이에 맞춰 확대돼 좌우가 잘리며 "마라부자" 간판이 반쯤 사라짐. 창이 무대(1280×884)보다 좁은 비율이면 그림을 무대 모양 띠에 맞추고 위아래를 그림 가장자리 색(하늘·바닥)으로 채우도록 `self-serve.css` 수정. 밤·낮 타이틀 960×1200, 1280×800, 1920×1080 확인 — 가로 창은 이전과 동일, 스크롤 없음
+- [ ] 새 게임 직후 첫 오프닝 삽화가 약 2초 검은 화면 뒤 표시 — 페이드 연출인지 로딩인지 확인 필요 (삽화 PNG 장당 약 2MB)
 
 ### Platform Certification — Steam
 - [ ] Steamworks SDK 연동 (Electron: `steamworks.js` 등) — 도전과제·클라우드·오버레이
@@ -89,7 +94,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 - [ ] 접근성 최소 기준 — `prefers-reduced-motion` 지원 있음. 글자 크기·색약 모드 없음
 
 ### Performance
-- [ ] 저사양 PC에서 60fps (포장 후) — `[?]`
+- [~] 저사양 PC에서 60fps — CPU 속도 제한 에뮬레이션(2026-09-29): 6× 제한까지 120fps·끊김 0, 20×에서만 41fps (`production/qa/evidence/perf-low-end/`). 남은 것: 윈도우 저사양 실기기(내장 그래픽)에서 포장 앱 1회
 - [ ] 로딩 시간 — `[?]`
 
 ---
@@ -136,7 +141,7 @@ Build under review: 셀프 담기 흐름 (`src/self-serve.html`, `src/js/self-se
 
 ## Go / No-Go Decision
 
-**Overall Status**: **NOT READY** (출시일 미정 — 준비 단계) · 2026-09-27 갱신: 차단 14 → 7 (E004·N001·N002·N003·B001·이모지 그림·글꼴 내장 완료)
+**Overall Status**: **NOT READY** (출시일 미정 — 준비 단계) · 2026-09-28 출시 빌드 점검 반영 · 2026-09-27 갱신: 차단 14 → 7 (E004·N001·N002·N003·B001·이모지 그림·글꼴 내장 완료)
 
 ### Blocking Items (⛔ 14)
 1. 데스크톱 앱 포장
