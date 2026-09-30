@@ -151,8 +151,10 @@ test('test_save_resumes_into_the_sunday_screen_when_closed_there', () => {
   assert.deepEqual(resumed.ledger, s.ledger)
 })
 
+// 'summary' (and 'day') are saved as-is since the mid-day save (2026-09-29, tests/unit/self-serve/save_test.mjs);
+// phases that are not, like the end-of-part-1 credits, still resume at the shop.
 test('test_save_resumes_into_the_shop_from_every_other_phase', () => {
-  saveGame({ ...createNewGame(), phase: 'summary' })
+  saveGame({ ...createNewGame(), phase: 'credits' })
   assert.equal(resumeShop(loadGame()).phase, 'shop')
 })
 

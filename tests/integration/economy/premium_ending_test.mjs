@@ -163,9 +163,11 @@ test('test_day_28_short_leads_into_the_forgiven_ending_with_nothing_left', () =>
   assert.equal(end.premiumCarry, 0)
 })
 
-test('test_bankrupt_on_day_28_closes_the_shop_instead_of_ending', () => {
+// Changed 2026-09-29 (balance run): day 28 used to close a twice-late shop instead of ending; now the last
+// Sunday always leads into the ending (tests/integration/economy/finale_rent_test.mjs).
+test('test_second_rent_miss_on_day_28_still_leads_into_the_ending', () => {
   const s = afterSummary(sundayOf(28, { money: 0, rentOverdue: 1 }))
-  assert.equal(s.phase, 'closed')
+  assert.equal(s.phase, 'ending')
 })
 
 test('test_ending_steps_then_leads_into_the_part2_teaser', () => {

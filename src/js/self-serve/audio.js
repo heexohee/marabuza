@@ -36,6 +36,13 @@ const PREFS_KEY = 'maratang.audio.v1'
 export const musicForPhase = (phase) => PHASE_MUSIC[phase] ?? null
 
 /**
+ * True when the page may start audio without a click — the desktop app lifts Chromium's autoplay rule and says
+ * so through its preload (desktop/preload.cjs). A browser tab keeps audio locked until the first gesture.
+ * @param {object} [win] the page's global object
+ */
+export const canAutoplay = (win) => win?.marabuzaDesktop?.autoplayAudio === true
+
+/**
  * Jingle to play when the phase changes, or null.
  * @param {string|null} from @param {string} to @returns {string|null}
  */

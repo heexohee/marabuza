@@ -23,6 +23,7 @@ function createWindow() {
     autoHideMenuBar: true,
     webPreferences: {
       contextIsolation: true, nodeIntegration: false, sandbox: true, devTools: !app.isPackaged,
+      autoplayPolicy: 'no-user-gesture-required', // title music from launch, not after the first click
       preload: path.join(__dirname, 'preload.cjs'),
     },
   })

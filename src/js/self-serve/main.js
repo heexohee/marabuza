@@ -16,7 +16,7 @@ import { mountTitleAnim } from './title-anim.js?v=approved1'
 import { createApprovedNightScene } from './title-approved.js?v=1'
 import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
-import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
+import { VOLUME_STEP, canAutoplay, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
 import { sfxForAction } from './sfx.js'
 
 const MAX_FRAME_SEC = 0.1
@@ -49,12 +49,25 @@ function setAudioPrefs(prefs) {
   saveAudioPrefs(storage, prefs) // a failed save only loses the preference next launch
 }
 
-// Browsers keep audio locked until the first user gesture.
+// Browsers keep audio locked until the first user gesture; the desktop app allows it from launch.
+if (canAutoplay(window)) audio.unlock()
 window.addEventListener('pointerdown', () => audio.unlock(), { capture: true })
 window.addEventListener('keydown', () => audio.unlock(), { capture: true })
 
 function persist(s) {
   return saveGame(s) ? s : addToast(s, '저장에 실패했어요 (브라우저 저장소를 확인하세요)', 'bad')
+}
+
+// Mid-day save (decision 2026-09-29): the running day is saved as it stands — every AUTOSAVE_SEC of play, on
+// pause, when the window hides or closes, and when the day's results come up — so 이어하기 resumes that exact
+// moment and quitting to the title cannot re-roll a bad day. Silent: a failed write keeps the last save.
+const AUTOSAVE_SEC = 10
+const MIDDAY_PHASES = new Set(['day', 'summary'])
+let sinceAutosave = 0
+function saveMidDay() {
+  if (!MIDDAY_PHASES.has(state.phase)) return
+  sinceAutosave = 0
+  saveGame(state)
 }
 
 const gameActions = {
@@ -106,7 +119,8 @@ const gameActions = {
 }
 
 const viewActions = {
-  pause: (v) => ({ ...v, paused: !v.paused }),
+  pause: (v) => ({ ...v, paused: !v.paused, confirmTitle: false }),
+  menuCancel: (v) => ({ ...v, confirmTitle: false }), // back to the pause menu, still paused
   help: (v) => ({ ...v, help: true, settings: false }),
   settings: (v) => ({ ...v, settings: true }),
   closeSettings: (v) => ({ ...v, settings: false }),
@@ -120,8 +134,14 @@ const viewActions = {
 
 function run(action, arg) {
   if (action === 'menu') {
+    // mid-day it asks first (ui.js confirm-title); the second press is the confirmation
+    if (state.phase === 'day' && !view.confirmTitle) {
+      view = { ...view, paused: true, confirmTitle: true }
+      return
+    }
+    saveMidDay()
     state = createNewGame()
-    view = { ...view, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave() }
+    view = { ...view, paused: false, confirmTitle: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave() }
     view = { ...view, titleSel: defaultTitleSel(view) }
     return
   }
@@ -136,6 +156,7 @@ function run(action, arg) {
     return audio.playSfx('tap') // a sample when turning sounds on (silent when turning them off)
   }
   if (viewActions[action]) {
+    if (action === 'pause' && !view.paused) saveMidDay()
     view = viewActions[action](view, arg)
     return
   }
@@ -145,6 +166,11 @@ function run(action, arg) {
   const prev = state
   state = gameActions[action](state, arg)
   audio.playSfx(sfxForAction(action, prev, state))
+  // resuming a mid-day save: start paused, and no day-change calendar — this day already began
+  if (action === 'continue' && state.phase === 'day') {
+    view = { ...view, paused: true }
+    introDay = state.day
+  }
   if (state.phase !== 'shop' && view.ledger) view = { ...view, ledger: false } // the popup belongs to this shop visit
 }
 
@@ -253,8 +279,13 @@ if (isDevMode()) {
 }
 
 document.addEventListener('visibilitychange', () => {
-  if (document.hidden && state.phase === 'day') view = { ...view, paused: true }
+  if (!document.hidden) return
+  saveMidDay()
+  if (state.phase === 'day') view = { ...view, paused: true }
 })
+// closing the window or tab (the desktop app's close button included) keeps the running day
+window.addEventListener('pagehide', saveMidDay)
+window.addEventListener('beforeunload', saveMidDay)
 
 let last = performance.now()
 let lastPhase = state.phase
@@ -265,6 +296,8 @@ function frame(now) {
   if (introUntil && now >= introUntil) endDayIntro()
   const isRunning = state.phase === 'day' && !view.paused && !view.help && !introUntil
   state = isRunning ? tick(state, dt) : fadeToasts(state, dt)
+  if (isRunning && (sinceAutosave += dt) >= AUTOSAVE_SEC) saveMidDay()
+  if (state.phase === 'summary' && lastPhase === 'day') saveMidDay() // the results, before 상점으로
   // every visit to the shop starts on the order tab
   if (state.phase === 'shop' && lastPhase !== 'shop') view = { ...view, shopTab: DEFAULT_SHOP_TAB }
   // a closed-down shop ends the run: drop the save so "이어하기" cannot skip past it (economy E003)
