@@ -1070,3 +1070,34 @@ img.txt-emoji { width: 1.15em; height: 1.15em; vertical-align: -0.2em; display: 
 .wall-frame small { color: #65402b; font-size: max(4px, calc(var(--apx) * 2)); align-self: flex-start; padding-top: calc(var(--apx) * 8); padding-right: calc(var(--apx) * 10); }
 .certificate-paw { position: absolute; right: 4%; bottom: 12%; width: calc(var(--apx) * 8); height: calc(var(--apx) * 8); fill: #b33132; transform: rotate(-9deg); }
 .wall-frame .wall-plate { position: absolute; top: 100%; margin-top: 3px; }
+
+/* Approved service-title v2: the art already contains the requested left shading. */
+html[data-screen="menu"]:not([data-title-scene="day"]),
+html[data-screen="menu"]:not([data-title-scene="day"]) body { background: #241a21; }
+html:not([data-title-scene="day"]) #app[data-screen="menu"] {
+  left: 0; top: 0; width: 100vw; height: 100dvh; padding: 0; transform: none;
+}
+html:not([data-title-scene="day"]) #app[data-screen="menu"] .title-screen {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  width: min(100vw, 100dvh * 1672 / 941); height: auto; aspect-ratio: 1672 / 941;
+  container-type: inline-size; background: url("img/title-service-v2.png") center / 100% 100% no-repeat;
+}
+.service-title-heading { position: absolute; left: 3.3%; top: 16.6%; width: 29%; text-align: center; color: #fff0d0; }
+.service-title-heading h1 { margin: 0; font-size: 6.9cqw; line-height: 1.15; color: #ff9aaa; letter-spacing: -.35cqw; text-shadow: 0 .4cqw #d94072, .3cqw .8cqw #650d36; }
+.service-title-heading p { margin: 1.3cqw 0 0; font-size: 1.95cqw; font-weight: 700; white-space: nowrap; }
+html:not([data-title-scene="day"]) .title-menu {
+  left: 5.7%; right: auto; top: 43.5%; width: 19.7%; padding: 0; transform: none;
+  gap: 1.2cqw; background: none; align-items: stretch;
+}
+html:not([data-title-scene="day"]) .title-item {
+  box-sizing: border-box; width: 100%; height: 4.65cqw; padding: .3cqw 1.5cqw;
+  border: 1px solid #baa5a68c; border-radius: 0; background: #20171a40;
+  font-size: 2.05cqw; color: #fff0d0; letter-spacing: .12cqw; text-shadow: 1px 2px #271019;
+}
+html:not([data-title-scene="day"]) .title-item.on,
+html:not([data-title-scene="day"]) .title-item:focus-visible { border-color: #ff9eb7; background: #6d294270; box-shadow: 0 0 0 1px #e87598; outline: none; }
+html:not([data-title-scene="day"]) .title-item.on::before { left: .9cqw; font-size: 1.4cqw; }
+html:not([data-title-scene="day"]) .title-item:disabled { color: #d6c6baa6; }
+html:not([data-title-scene="day"]) .title-item small { font-size: .75cqw; line-height: 1; }
+html:not([data-title-scene="day"]) .title-ver { font-size: .8cqw; bottom: 1%; right: 1%; }
+html[data-title-scene="day"] .service-title-heading { display: none; }

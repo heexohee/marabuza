@@ -267,7 +267,10 @@ mountStageFit(window)
 // story art decoded while the title is up, so the opening's picture changes never show an empty box (BUG-002)
 preloadImages(storyArtUrls())
 // the still title-bg(-day).png stays behind if its art fails to load; ?title=day shows the day title (in review)
-mountTitleAnim(window, { scenes: { night: createApprovedNightScene, day: createDayScene } })
+// The service illustration is static; the optional day preview retains its own animation.
+if (new URLSearchParams(window.location.search).get('title') === 'day') {
+  mountTitleAnim(window, { scenes: { night: createApprovedNightScene, day: createDayScene } })
+}
 
 if (isDevMode()) {
   mountDevBar(document, (action) => {

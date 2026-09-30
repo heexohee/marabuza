@@ -29,7 +29,7 @@ export const titleItemEnabled = (item, view) => Boolean(item.action) && (!item.n
 /** Which item starts highlighted: 이어서 하기 when there is a save, else 새 게임. */
 export const defaultTitleSel = (view) => TITLE_MENU.findIndex((it) => it.id === (view.hasSave ? 'continue' : 'new'))
 
-/** Title screen: the logo is painted on the background's roof sign; this is the menu over it. */
+/** Service-scene title: live logo and buttons stay separate from the approved background. */
 export function menuHtml(view) {
   const sel = view.titleSel ?? defaultTitleSel(view)
   const items = TITLE_MENU.map((it, i) => {
@@ -38,7 +38,7 @@ export function menuHtml(view) {
   }).join('')
   return `
     <div class="title-screen">
-      <h1 class="sr-only">마라부자 — 퇴사하고 마라탕집 사장님</h1>
+      <header class="service-title-heading"><h1>마라부자</h1><p>퇴사하고 마라탕집 사장님</p></header>
       <nav class="title-menu" aria-label="타이틀 메뉴">${items}</nav>
       <span class="title-ver">v0.1 · 셀프 담기</span>
     </div>`
