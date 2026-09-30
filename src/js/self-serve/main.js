@@ -16,7 +16,7 @@ import { mountTitleAnim } from './title-anim.js?v=approved1'
 import { createApprovedNightScene } from './title-approved.js?v=1'
 import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
-import { VOLUME_STEP, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
+import { VOLUME_STEP, canAutoplay, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
 import { sfxForAction } from './sfx.js'
 
 const MAX_FRAME_SEC = 0.1
@@ -49,7 +49,8 @@ function setAudioPrefs(prefs) {
   saveAudioPrefs(storage, prefs) // a failed save only loses the preference next launch
 }
 
-// Browsers keep audio locked until the first user gesture.
+// Browsers keep audio locked until the first user gesture; the desktop app allows it from launch.
+if (canAutoplay(window)) audio.unlock()
 window.addEventListener('pointerdown', () => audio.unlock(), { capture: true })
 window.addEventListener('keydown', () => audio.unlock(), { capture: true })
 
