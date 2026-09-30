@@ -209,6 +209,10 @@ export function sundayLine(step, ledger, day = 0) {
   if (step === 1) return { who: 'me', text: `${day === PART1_LAST_DAY ? '한 달' : '한 주'} 동안 수고했어. 장부부터 정리하자.` }
   if (step === SUNDAY_LEDGER_STEP) return null
   if (ledger?.bankrupt) return { who: 'landlord', text: '두 주 연속이면… 더는 어렵겠어요. 가게를 비워 주셔야겠어요.' }
+  // the last Sunday never closes the shop (logic.js enterSunday): there is no next week to owe
+  if (ledger?.rentPaid === false && day === PART1_LAST_DAY) {
+    return { who: 'landlord', text: '임대료가 모자라네요… 그런데 판다 사장님이 이번 달 치는 대신 내 주셨어요.' }
+  }
   return ledger?.rentPaid === false
     ? { who: 'landlord', text: '임대료가 모자라네요… 이번 주는 봐 드릴게요. 다음 주엔 두 주 치, 꼭이요!' }
     : { who: 'me', text: '임대료 완납! 이번 주도 잘 버텼다.' }

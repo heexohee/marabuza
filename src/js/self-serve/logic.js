@@ -400,7 +400,9 @@ export const finishCredits = (s) => (s.phase === 'credits' ? openShop(s) : s)
 export function enterSunday(s) {
   const due = RENT * (s.rentOverdue ? 2 : 1)
   const rentPaid = s.money >= due
-  const bankrupt = !rentPaid && s.rentOverdue === 1
+  // the last Sunday of part 1 never closes the shop: the ending follows and the panda settles the rent too
+  const isFinale = s.day === PART1_LAST_DAY && !s.endingSeen
+  const bankrupt = !rentPaid && s.rentOverdue === 1 && !isFinale
   const afterRent = {
     ...s,
     money: rentPaid ? s.money - due : s.money,
@@ -487,8 +489,8 @@ export function payPremium(s, amount) {
 }
 
 /**
- * Day 28's ledger closes part 1: the panda walks in. Whatever 권리금 is left is forgiven (the scene runs the
- * same either way; story.js endingLine picks the branch).
+ * Day 28's ledger closes part 1: the panda walks in. Whatever 권리금 is left is forgiven, and so is rent the
+ * last Sunday could not cover (the scene runs the same either way; story.js endingLine picks the branch).
  */
 function enterEnding(s) {
   return {
@@ -499,6 +501,7 @@ function enterEnding(s) {
     premiumPaidInFull: s.premiumLeft <= 0,
     premiumLeft: 0,
     premiumCarry: 0,
+    rentOverdue: 0,
   }
 }
 
@@ -529,10 +532,12 @@ export function afterSummary(s) {
 }
 
 /**
- * Resumes a save into the shop, unless it was made mid-'sunday' (that phase is saved as-is) or before day 1
- * opened ('ready', saved at character creation — straight into day 1). See save.js.
+ * Resumes a save into the shop, unless it was made mid-'sunday' or mid-day ('day' / 'summary' — those phases
+ * are saved as-is and resume at that moment) or before day 1 opened ('ready', saved at character creation —
+ * straight into day 1). See save.js.
  */
-export const resumeShop = (s) => (s.phase === 'sunday' ? s : s.phase === 'ready' ? startDay(s) : openShop(s))
+const AS_SAVED_PHASES = new Set(['sunday', 'day', 'summary'])
+export const resumeShop = (s) => (AS_SAVED_PHASES.has(s.phase) ? s : s.phase === 'ready' ? startDay(s) : openShop(s))
 
 /** Picks the ingredients a new customer would like: distinct unlocked ids × 1..maxQty. */
 export function generateWish(unlocked, rng) {

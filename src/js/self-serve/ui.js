@@ -373,6 +373,10 @@ function overlayHtml(s, view) {
   if (s.phase === 'summary') return summaryHtml(s)
   if (s.phase === 'closed') return closedHtml(s)
   if (view.help) return helpHtml()
+  // 타이틀로 mid-day asks first (decision 2026-09-29): the day is saved as it stands, and 이어하기 resumes it here
+  if (view.paused && view.confirmTitle) {
+    return `<div class="overlay"><div class="modal small confirm-title"><h2>타이틀로 갈까요?</h2><p>지금 장사 상황이 그대로 저장돼요.<br><b>이어서 하기</b>를 누르면<br>DAY ${s.day}의 이 순간부터 이어져요.</p><button class="btn big" data-action="menuCancel">계속 장사하기</button><button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
+  }
   if (view.paused) {
     return `<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button>${musicControlsHtml(view.audio)}<button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
   }
@@ -458,6 +462,6 @@ export function render(root, s, view) {
   patch(slot(root, 'side'), `${s.money}|${s.rating.toFixed(2)}|${JSON.stringify(s.stats)}|${view.paused}`, () => sideHtml(s, view))
   patch(slot(root, 'toasts'), s.toasts.map((t) => t.id).join(','), () =>
     s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join(''))
-  patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.help}|${audioKey(view)}`, () => overlayHtml(s, view))
+  patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.confirmTitle}|${view.help}|${audioKey(view)}`, () => overlayHtml(s, view))
   return updateBars(root, s)
 }

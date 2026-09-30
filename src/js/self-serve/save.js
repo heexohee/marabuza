@@ -45,7 +45,18 @@ const isOptBool = (v) => v === undefined || typeof v === 'boolean'
 // game resumes there instead of skipping ahead to the shop (every other phase resumes at the shop — see
 // `resumeShop` in logic.js). No other phase is ever saved.
 // 'ready': saved right after character creation, before day 1 opened (decision 2026-09-29) — resumes at day 1
-const isSavedPhase = (p) => p === undefined || p === 'sunday' || p === 'ready'
+// 'day' / 'summary': saved mid-day (decision 2026-09-29) with the running day in `snapshot` — resumes at that
+// exact moment, so quitting to the title cannot re-roll a bad day
+const DAY_PHASES = new Set(['day', 'summary'])
+const isSavedPhase = (p) => p === undefined || p === 'sunday' || p === 'ready' || DAY_PHASES.has(p)
+/** The running day's own fields (logic.js startDay / tick); everything else is saved as for a shop save. */
+const DAY_FIELDS = [
+  'dayTime', 'shelf', 'queue', 'counter', 'tables', 'rail', 'pots', 'heldPot', 'busy', 'wiltedAt',
+  'ownerLine', 'regularsDue', 'spawnTimer', 'nextCustomerId', 'nextTicketNo', 'stats',
+]
+const isDaySnapshot = (v) => v !== null && typeof v === 'object' && Number.isFinite(v.dayTime) && v.dayTime >= 0 &&
+  Array.isArray(v.queue) && Array.isArray(v.tables) && Array.isArray(v.pots) && v.stats !== null && typeof v.stats === 'object'
+const pickDay = (s) => Object.fromEntries(DAY_FIELDS.filter((k) => s[k] !== undefined).map((k) => [k, s[k]]))
 const isLedger = (l) => l === undefined || l === null ||
   (typeof l === 'object' && isNonNegInt(l.weekRevenue) && isNonNegInt(l.rentDue) && typeof l.rentPaid === 'boolean')
 
@@ -71,6 +82,7 @@ export function isValidSave(d) {
     isOptNonNegInt(d.premiumLeft) && isOptNonNegInt(d.premiumCarry) &&
     isOptBool(d.endingSeen) && isOptBool(d.premiumPaidInFull) && isOptBool(d.part2TeaserSeen) &&
     isSavedPhase(d.phase) &&
+    (!DAY_PHASES.has(d.phase) || isDaySnapshot(d.snapshot)) &&
     isLedger(d.ledger)
 }
 
@@ -99,6 +111,8 @@ export function saveGame(s) {
     // as their own phase (see isSavedPhase) — every other phase resumes at the shop via resumeShop.
     ...(s.phase === 'sunday' ? { phase: 'sunday', ledger: s.ledger } : {}),
     ...(s.phase === 'opening' ? { phase: 'ready' } : {}),
+    // a day without its running fields saves like a shop save rather than writing one that cannot load
+    ...(DAY_PHASES.has(s.phase) && isDaySnapshot(pickDay(s)) ? { phase: s.phase, snapshot: pickDay(s) } : {}),
   }
   try {
     return saveStore().setItem(SAVE_KEY, JSON.stringify(data)) !== false
@@ -134,6 +148,7 @@ export function loadGame() {
       part2TeaserSeen: d.part2TeaserSeen ?? d.day > PART1_LAST_DAY,
       ...(d.phase === 'sunday' ? { phase: 'sunday', ledger: d.ledger ?? null } : {}),
       ...(d.phase === 'ready' ? { phase: 'ready' } : {}),
+      ...(DAY_PHASES.has(d.phase) ? { phase: d.phase, ...pickDay(d.snapshot) } : {}),
     }
   } catch {
     return null
