@@ -65,8 +65,9 @@ export function musicControlsHtml(audio) {
 /**
  * Settings from the title: how to play, the tutorial, music and fullscreen (the legacy-flow link is gone — docs/flows.md).
  * @param {boolean} [tutorialDone] false once 튜토리얼 다시 보기 is armed — the button then says so instead
+ * @param {'ko'|'en'} [lang] the language now; the button names the other one in its own language
  */
-export function settingsHtml(audio, tutorialDone = true) {
+export function settingsHtml(audio, tutorialDone = true, lang = 'ko') {
   const tutorial = tutorialDone
     ? '<button class="btn big" data-action="tutorialReplay" title="다음 영업을 시작할 때 튜토리얼을 다시 보여 줘요">튜토리얼 보기</button>'
     : '<button class="btn big" disabled title="다음 영업을 시작할 때 튜토리얼이 나와요">✓ 다음 영업 때</button>'
@@ -76,7 +77,7 @@ export function settingsHtml(audio, tutorialDone = true) {
       <div class="settings-pair"><button class="btn big" data-action="help">게임방법</button>${tutorial}</div>
       ${musicControlsHtml(audio)}
       <button class="btn big" data-action="fullscreen">전체화면 켜기 / 끄기</button>
-      <button class="btn big" data-action="credits">엔딩 크레딧</button>
+      <div class="settings-pair"><button class="btn big" data-action="credits">엔딩 크레딧</button><button class="btn big lang-btn" data-action="langToggle" aria-label="언어 바꾸기">🌐 ${lang === 'en' ? '한국어' : 'English'}</button></div>
       <button class="btn ghost" data-action="closeSettings">닫기</button>
     </div></div>`
 }
