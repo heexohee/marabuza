@@ -1105,7 +1105,7 @@ html[data-title-scene="day"] .service-title-heading { display: none; }
 /* ---------- first-day tutorial (tutorial.js, request 2026-10-02) ----------
    The panda's bubble sits over the hall (or the kitchen strip when the hall's tables are the target), and what the
    step asks for gets a pulsing pink outline. Nothing is dimmed or blocked — the player can press anything. */
-.tutorial-slot { position: absolute; inset: 0; pointer-events: none; z-index: 25; }
+.tutorial-slot { position: absolute; inset: 0; pointer-events: none; z-index: 15; } /* under pause / help (.overlay 20) */
 .tut-bubble {
   position: absolute; left: 14px; width: 560px; pointer-events: auto;
   display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; align-items: center;
@@ -1125,3 +1125,8 @@ html[data-title-scene="day"] .service-title-heading { display: none; }
 /* 설정: 게임방법 and 튜토리얼 다시 보기 share one row, so the settings box keeps its height inside the stage */
 .settings-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .settings-pair .btn { margin: 0; min-width: 0; padding: 10px 4px; font-size: 16px; white-space: nowrap; }
+
+/* ---------- English (i18n.js, request 2026-10-02) ----------
+   English words run longer than the Korean the fixed stage was measured for; these keep each panel its Korean size. */
+html[lang="en"] .ing-card .card-name { font-size: 12px; line-height: 1.1; letter-spacing: -0.02em; } /* "Fish Cake Skewer" */
+html[lang="en"] .service-title-heading p { font-size: 1.55cqw; } /* the English subtitle stays over the dark doorway */

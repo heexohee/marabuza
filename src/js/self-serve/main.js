@@ -6,7 +6,8 @@ import {
   unlockIngredient,
 } from './logic.js'
 import { clearSave, hasSave, loadGame, saveGame } from './save.js'
-import { render } from './ui.js?v=guests4'
+import { render, translatorFor } from './ui.js?v=guests4'
+import { loadLang, otherLang, saveLang } from './i18n.js'
 import { DEV_ACTIONS, isDevMode, mountDevBar } from './dev.js'
 import { mountStageFit } from './fit.js'
 import { preloadImages } from './preload.js'
@@ -37,7 +38,15 @@ let state = createNewGame()
 let view = {
   hover: null, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB,
   audio: loadAudioPrefs(storage), tutorialDone: isTutorialDone(storage),
+  lang: loadLang(storage, window.navigator), // the saved choice, else the system language (decision 2026-10-02)
 }
+
+/** The page's own language and title follow the game's language. */
+function applyDocumentLang(lang) {
+  document.documentElement.lang = lang
+  document.title = translatorFor(lang)('마라부자 · 셀프 담기')
+}
+applyDocumentLang(view.lang)
 view = { ...view, titleSel: defaultTitleSel(view) }
 
 const audio = createAudioPlayer({
@@ -157,6 +166,14 @@ function run(action, arg) {
   }
   if (action === 'musicToggle') return setAudioPrefs(toggleMuted(view.audio))
   if (action === 'musicVol') return setAudioPrefs(changeVolume(view.audio, Number(arg) * VOLUME_STEP))
+  // 설정 → 🌐: switches between Korean and English and remembers it (a failed save only forgets it next launch)
+  if (action === 'langToggle') {
+    const lang = otherLang(view.lang)
+    saveLang(storage, lang)
+    view = { ...view, lang }
+    applyDocumentLang(lang)
+    return
+  }
   // 설정 → 튜토리얼 다시 보기: armed for the next business day that opens
   if (action === 'tutorialReplay') {
     setTutorialDone(storage, false)
@@ -252,7 +269,7 @@ function maybeStartDayIntro(now) {
   if (!shouldShowDayIntro(state, lastPhase, introDay)) return
   introDay = state.day
   introUntil = now + (REDUCED_MOTION ? DAY_INTRO_REDUCED_MS : DAY_INTRO_MS)
-  dayIntro.show(dayIntroInfo(state.day))
+  dayIntro.show(dayIntroInfo(state.day), translatorFor(view.lang))
 }
 
 // First-day tutorial (request 2026-10-02): when a business day opens fresh and the tutorial has not been finished

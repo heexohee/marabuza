@@ -70,8 +70,9 @@ export function mountDayIntro(doc, onSkip) {
   layer.addEventListener('click', onSkip)
   doc.body.appendChild(layer)
   return {
-    show(info) {
-      layer.innerHTML = dayIntroHtml(info)
+    /** @param {(html: string) => string} [translate] the current language's translator (ui.js translatorFor) */
+    show(info, translate = (html) => html) {
+      layer.innerHTML = translate(dayIntroHtml(info))
       layer.classList.add('on')
     },
     hide() {

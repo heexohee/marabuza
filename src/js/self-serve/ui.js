@@ -26,14 +26,22 @@ import {
   createHtml, createKey, esc, heroImg, closedSceneHtml, endingHtml, endingKey, openingHtml, openingKey, sundayHtml, sundayKey, teaserHtml, teaserKey,
   wallFrameHtml,
 } from './story-ui.js'
+import { createTranslator, keepKorean } from './i18n.js'
+import { EN } from './i18n-en.js'
 
 const LOW_SHELF = 2
+
+// English is applied to each section's finished markup (i18n.js); Korean passes through untouched.
+const TRANSLATORS = { ko: keepKorean, en: createTranslator(EN) }
+/** The translator for a language ('ko' | 'en'), for text drawn outside render() (calendar, page title). */
+export const translatorFor = (lang) => TRANSLATORS[lang] ?? keepKorean
+let tr = keepKorean
 
 /** Re-renders el only when key changed (keeps buttons stable between clicks); emoji in text become sprites. */
 function patch(el, key, html) {
   if (!el || el.__key === key) return
   el.__key = key
-  el.innerHTML = spriteText(html())
+  el.innerHTML = spriteText(tr(html()))
 }
 
 const slot = (root, name) => root.querySelector(`[data-slot="${name}"]`)
@@ -429,7 +437,7 @@ function updateBars(root, s) {
   const left = Math.max(0, DAY_LENGTH_SEC - s.dayTime)
   setBar(root, 'clock', left / DAY_LENGTH_SEC)
   const clockText = root.querySelector('[data-text="clock"]')
-  if (clockText) clockText.textContent = isClosing(s) ? '마감! 남은 손님만 받아요' : `영업 ${Math.ceil(left)}초 남음`
+  if (clockText) clockText.textContent = tr(isClosing(s) ? '마감! 남은 손님만 받아요' : `영업 ${Math.ceil(left)}초 남음`)
   s.queue.forEach((c) => setLevelBar(root, `queue-${c.id}`, c.patience / c.maxPatience))
   // the customer being charged gets a big gauge in their order bubble (playtest 2026-09-27 #3)
   const front = frontCustomer(s)
@@ -449,17 +457,23 @@ const audioKey = (view) => `${view.audio.muted}|${view.audio.sfxMuted}|${view.au
 
 /** Renders the current phase into root. `view` holds UI-only state (hover, pause, help). */
 export function render(root, s, view) {
+  tr = translatorFor(view.lang)
+  // a language switch rebuilds the screen, so every section is drawn again in the new language
+  if (root.dataset.lang !== view.lang) {
+    root.dataset.lang = view.lang
+    root.dataset.screen = ''
+  }
   const isRentClosed = s.phase === 'closed' && s.closedReason === 'rent'
   const screen = isRentClosed ? 'closed' : ['menu', 'shop', 'create', 'opening', 'sunday', 'ending', 'teaser', 'credits'].includes(s.phase) ? s.phase : 'game'
   if (root.dataset.screen !== screen) {
     root.dataset.screen = screen
     document.documentElement.dataset.screen = screen // the title's background covers the whole window
     root.__key = null
-    root.innerHTML = screen === 'game' ? spriteText(GAME_SKELETON) : ''
+    root.innerHTML = screen === 'game' ? spriteText(tr(GAME_SKELETON)) : ''
   }
   if (screen === 'menu') {
     return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}|${view.tutorialDone}`, () =>
-      menuHtml(view) + (view.settings ? settingsHtml(view.audio, view.tutorialDone) : '') + (view.help ? helpHtml() : '') + (view.credits ? creditsHtml() : ''))
+      menuHtml(view) + (view.settings ? settingsHtml(view.audio, view.tutorialDone, view.lang) : '') + (view.help ? helpHtml() : '') + (view.credits ? creditsHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
