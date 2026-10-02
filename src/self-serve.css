@@ -1101,3 +1101,27 @@ html:not([data-title-scene="day"]) .title-item:disabled { color: #d6c6baa6; }
 html:not([data-title-scene="day"]) .title-item small { font-size: .75cqw; line-height: 1; }
 html:not([data-title-scene="day"]) .title-ver { font-size: .8cqw; bottom: 1%; right: 1%; }
 html[data-title-scene="day"] .service-title-heading { display: none; }
+
+/* ---------- first-day tutorial (tutorial.js, request 2026-10-02) ----------
+   The panda's bubble sits over the hall (or the kitchen strip when the hall's tables are the target), and what the
+   step asks for gets a pulsing pink outline. Nothing is dimmed or blocked — the player can press anything. */
+.tutorial-slot { position: absolute; inset: 0; pointer-events: none; z-index: 25; }
+.tut-bubble {
+  position: absolute; left: 14px; width: 560px; pointer-events: auto;
+  display: grid; grid-template-columns: 40px minmax(0, 1fr); column-gap: 10px; row-gap: 8px; align-items: center;
+  background: #fffbe8; border: 3px solid var(--ink); border-radius: 12px; box-shadow: 0 4px 0 var(--ink);
+  padding: 10px 12px; animation: line-in .25s ease-out;
+}
+.tut-bubble[data-at="hall"] { top: 64px; }
+.tut-bubble[data-at="kitchen"] { top: 470px; }
+.tut-bubble .owner-face { position: relative; width: 36px; height: 36px; align-self: start; }
+.tut-text { margin: 0; font-size: 15px; font-weight: 700; line-height: 1.4; word-break: keep-all; }
+.tut-text kbd { font-size: 12px; }
+.tut-actions { grid-column: 2; display: flex; justify-content: flex-end; gap: 8px; }
+.tut-actions .btn { font-size: 13px; padding: 4px 12px; }
+.tut-focus { outline: 3px solid #ff5fa2; outline-offset: 2px; border-radius: 6px; animation: tut-pulse 1.1s ease-in-out infinite; }
+@keyframes tut-pulse { 50% { outline-color: #ffc2dc; outline-offset: 5px; } }
+@media (prefers-reduced-motion: reduce) { .tut-bubble, .tut-focus { animation: none; } }
+/* 설정: 게임방법 and 튜토리얼 다시 보기 share one row, so the settings box keeps its height inside the stage */
+.settings-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.settings-pair .btn { margin: 0; min-width: 0; padding: 10px 4px; font-size: 16px; white-space: nowrap; }
