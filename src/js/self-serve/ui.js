@@ -320,6 +320,11 @@ const counterKey = (s) => `${s.queue.map((c) => c.id).join(',')}|${JSON.stringif
 const SHELF_SLOTS = [...VARIANT_INGREDIENTS, ...SHELF_EXTRAS]
 const isSlotLocked = (s, id) => !EXTRA_IDS.includes(id) && !s.unlocked.includes(id)
 
+// A slot fits one line of about this many letters. Longer names ("Fish Cake Skewer" — only English has them) wrap to
+// two lines, so their slot gets a smaller icon to make room (self-serve.css .slot.long-name, feedback 2026-10-02).
+const SLOT_NAME_ONE_LINE = 9
+const isLongSlotName = (name) => [...tr(name)].length > SLOT_NAME_ONE_LINE
+
 // Locked ingredients cannot be restocked during the day, so their slots are left off the shelf
 // (they are unlocked in the shop); keeps the shelf column short enough to fit the screen.
 function shelfHtml(s, view) {
@@ -329,6 +334,7 @@ function shelfHtml(s, view) {
     const cls = [
       qty === 0 && 'out', qty > 0 && qty <= LOW_SHELF && 'low', wilting && 'wilting',
       isJustWilted(s, ing.id) && 'just-wilted', view.hover === ing.id && 'hover',
+      isLongSlotName(ing.shortName ?? ing.name) && 'long-name',
     ].filter(Boolean).join(' ')
     const fresh = PERISHABLE_IDS.has(ing.id) && qty > 0 ? `<i class="fresh"><b data-bar="fresh-${ing.id}"></b></i>` : ''
     return `

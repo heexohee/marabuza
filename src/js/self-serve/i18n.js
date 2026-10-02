@@ -27,6 +27,7 @@ const HTML_ESCAPES = { '"': '&quot;', "'": '&#39;' }
 const escRegex = (text) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const escHtml = (text) => text.replace(/["']/g, (ch) => HTML_ESCAPES[ch])
 const HANGUL = /[가-힣]/
+const MEMO_MAX = 2000 // translated text pieces kept (each a line or a label, not a whole section)
 
 /** A pattern entry as a regex, with its placeholder names in capture order. */
 function compilePattern(ko, en) {
@@ -43,7 +44,7 @@ function compilePattern(ko, en) {
 }
 
 // text between tags, a leading run before the first tag, and attribute values people read
-const TEXT_RUNS = /(>)([^<]+)(<)|^([^<]+)(<|$)|((?:title|alt|aria-label|placeholder|value)=")([^"]*)(")/g
+const TEXT_RUNS = /(>)([^<]+)(<|$)|^([^<]+)(<|$)|((?:title|alt|aria-label|placeholder|value)=")([^"]*)(")/g
 
 /**
  * Builds a translator from a Korean → English dictionary.
@@ -58,7 +59,16 @@ export function createTranslator(dict) {
     ...entries.filter(([ko]) => HAS_PLACEHOLDER.test(ko)).map(([ko, en]) => compilePattern(ko, en)),
     ...[...exact].filter(([ko]) => ko.length > 1).map(([ko, en]) => ({ ko, en, literal: ko.length })),
   ].sort((a, b) => b.literal - a.literal)
+  // Performance (feedback 2026-10-02: the English game stuttered in Electron): only the text pieces that hold Hangul
+  // are translated — never the whole section, whose markup (sprite <img> data URLs) can be many KB — and each piece
+  // is remembered on its own. The same lines come back all day, so nearly every piece is a cache hit, and the cache
+  // holds short strings only.
   const memo = new Map()
+  const remember = (key, value) => {
+    if (memo.size >= MEMO_MAX) memo.delete(memo.keys().next().value) // oldest first
+    memo.set(key, value)
+    return value
+  }
 
   // a pattern's captured words go through piece() (hoisted below), so "청경채" arrives in English too
   const fill = (rule) => (...groups) => rule.keys.reduce((out, key, i) =>
@@ -72,21 +82,15 @@ export function createTranslator(dict) {
     }
     return out
   }
+  /** One text run or attribute value: a whole entry if it is one, else every rule in order. */
   function piece(text) {
+    if (!HANGUL.test(text)) return text
+    const hit = memo.get(text)
+    if (hit !== undefined) return hit
     const trimmed = text.trim()
-    if (!HANGUL.test(trimmed)) return text
     const whole = exact.get(trimmed)
-    return whole === undefined ? applyRules(text) : text.replace(trimmed, whole)
+    return remember(text, whole === undefined ? applyRules(text) : text.replace(trimmed, whole))
   }
-  const exactRuns = (html) => html.replace(TEXT_RUNS, (all, a, text, b, lead, end, attr, value, close) => {
-    const swap = (t) => {
-      const whole = exact.get(t.trim())
-      return whole === undefined ? t : t.replace(t.trim(), whole)
-    }
-    if (text !== undefined) return a + swap(text) + b
-    if (lead !== undefined) return swap(lead) + end
-    return attr + swap(value) + close
-  })
 
   // entries that span tags ("<b>이어서 하기</b>를 누르면") go before the per-run pass would split them up
   const spanning = rules.filter((rule) => rule.ko.includes('<'))
@@ -95,12 +99,11 @@ export function createTranslator(dict) {
 
   return function translate(html) {
     if (typeof html !== 'string' || !HANGUL.test(html)) return html
-    const hit = memo.get(html)
-    if (hit !== undefined) return hit
-    const out = applyRules(exactRuns(applySpanning(html)))
-    if (memo.size > 5000) memo.clear()
-    memo.set(html, out)
-    return out
+    return applySpanning(html).replace(TEXT_RUNS, (all, a, text, b, lead, end, attr, value, close) => {
+      if (text !== undefined) return a + piece(text) + b
+      if (lead !== undefined) return piece(lead) + end
+      return attr + piece(value) + close
+    })
   }
 }
 
