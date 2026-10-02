@@ -1130,3 +1130,8 @@ html[data-title-scene="day"] .service-title-heading { display: none; }
    English words run longer than the Korean the fixed stage was measured for; these keep each panel its Korean size. */
 html[lang="en"] .ing-card .card-name { font-size: 12px; line-height: 1.1; letter-spacing: -0.02em; } /* "Fish Cake Skewer" */
 html[lang="en"] .service-title-heading p { font-size: 1.55cqw; } /* the English subtitle stays over the dark doorway */
+/* shelf slots whose name wraps to two lines (ui.js isLongSlotName): a 16px icon and no row gaps leave the name the
+   20px it needs above the shelf count — the slot keeps its 84px, so the bottom row still fits the stage */
+.ss-shelf .slot.long-name { grid-template-rows: 16px minmax(0, 1fr) auto auto; row-gap: 0; }
+.ss-shelf .slot.long-name .slot-img { width: 16px; height: 16px; }
+.ss-shelf .shelf .slot.long-name .slot-name { font-size: 10px; line-height: 10px; max-height: 20px; letter-spacing: -0.03em; }
