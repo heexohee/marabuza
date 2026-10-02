@@ -18,6 +18,7 @@ import { createDayScene } from './title-day.js'
 import { DEFAULT_SHOP_TAB, TITLE_MENU, defaultTitleSel, titleItemEnabled } from './screens.js'
 import { VOLUME_STEP, canAutoplay, changeVolume, createAudioPlayer, loadAudioPrefs, saveAudioPrefs, toggleMuted, toggleSfxMuted } from './audio.js'
 import { sfxForAction } from './sfx.js'
+import { isTutorialDone, nextTutorialStep, setTutorialDone, skipTutorial, startTutorial, tutorialAfterAction, tutorialTick } from './tutorial.js'
 
 const MAX_FRAME_SEC = 0.1
 const root = document.getElementById('app')
@@ -33,7 +34,10 @@ function storageOrUndefined() {
 const storage = storageOrUndefined()
 
 let state = createNewGame()
-let view = { hover: null, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB, audio: loadAudioPrefs(storage) }
+let view = {
+  hover: null, paused: false, help: false, settings: false, credits: false, ledger: false, hasSave: hasSave(), shopTab: DEFAULT_SHOP_TAB,
+  audio: loadAudioPrefs(storage), tutorialDone: isTutorialDone(storage),
+}
 view = { ...view, titleSel: defaultTitleSel(view) }
 
 const audio = createAudioPlayer({
@@ -112,6 +116,8 @@ const gameActions = {
   endingNext: (s) => (isEndingDone(s) ? persist(afterSummary(s)) : advanceEnding(s)),
   teaserNext: (s) => (isTeaserDone(s) ? finishTeaser(s) : advanceTeaser(s)),
   creditsDone: (s) => persist(finishCredits(s)), // end-of-part-1 credits → the day-28 shop
+  tutorialNext: (s) => nextTutorialStep(s),
+  tutorialSkip: (s) => skipTutorial(s),
   continue: (s) => {
     const loaded = loadGame()
     return loaded ? resumeShop(loaded) : addToast(s, '저장된 게임이 없어요', 'bad')
@@ -151,6 +157,12 @@ function run(action, arg) {
   }
   if (action === 'musicToggle') return setAudioPrefs(toggleMuted(view.audio))
   if (action === 'musicVol') return setAudioPrefs(changeVolume(view.audio, Number(arg) * VOLUME_STEP))
+  // 설정 → 튜토리얼 다시 보기: armed for the next business day that opens
+  if (action === 'tutorialReplay') {
+    setTutorialDone(storage, false)
+    view = { ...view, tutorialDone: false }
+    return
+  }
   if (action === 'sfxToggle') {
     setAudioPrefs(toggleSfxMuted(view.audio))
     return audio.playSfx('tap') // a sample when turning sounds on (silent when turning them off)
@@ -165,6 +177,8 @@ function run(action, arg) {
   if (isBlocked) return
   const prev = state
   state = gameActions[action](state, arg)
+  if (state.tutorial) state = tutorialAfterAction(prev, state, action)
+  if (prev.tutorial && !state.tutorial) markTutorialDone() // finished or skipped
   audio.playSfx(sfxForAction(action, prev, state))
   // resuming a mid-day save: start paused, and no day-change calendar — this day already began
   if (action === 'continue' && state.phase === 'day') {
@@ -241,6 +255,19 @@ function maybeStartDayIntro(now) {
   dayIntro.show(dayIntroInfo(state.day))
 }
 
+// First-day tutorial (request 2026-10-02): when a business day opens fresh and the tutorial has not been finished
+// or skipped yet, the panda guides its first customer. The day clock only stays at 0 while it runs, so a save made
+// mid-tutorial starts it again on 이어하기.
+function maybeStartTutorial() {
+  if (state.tutorial && state.phase !== 'day') state = { ...state, tutorial: null } // a dev skip ended the day
+  const isFreshDay = state.phase === 'day' && lastPhase !== 'day' && state.dayTime === 0
+  if (isFreshDay && !state.tutorial && !view.tutorialDone) state = startTutorial(state)
+}
+function markTutorialDone() {
+  setTutorialDone(storage, true) // a failed write only means it shows once more
+  view = { ...view, tutorialDone: true }
+}
+
 window.addEventListener('keydown', (e) => {
   if (introUntil) {
     e.preventDefault()
@@ -296,9 +323,11 @@ function frame(now) {
   const dt = Math.min(MAX_FRAME_SEC, (now - last) / 1000)
   last = now
   maybeStartDayIntro(now)
+  maybeStartTutorial()
   if (introUntil && now >= introUntil) endDayIntro()
   const isRunning = state.phase === 'day' && !view.paused && !view.help && !introUntil
-  state = isRunning ? tick(state, dt) : fadeToasts(state, dt)
+  const dayTick = state.tutorial ? tutorialTick : tick
+  state = isRunning ? dayTick(state, dt) : fadeToasts(state, dt)
   if (isRunning && (sinceAutosave += dt) >= AUTOSAVE_SEC) saveMidDay()
   if (state.phase === 'summary' && lastPhase === 'day') saveMidDay() // the results, before 상점으로
   // every visit to the shop starts on the order tab

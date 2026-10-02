@@ -20,6 +20,7 @@ import { REGULARS } from './story.js'
 import { closedHtml, creditsHtml, helpHtml, menuHtml, musicControlsHtml, settingsHtml, shopHtml, summaryHtml } from './screens.js'
 import { spriteText } from './emoji-text.js'
 import { potZoom, tableSpots } from './shop-stage.js'
+import { tutorialStep } from './tutorial.js'
 import { isWilting, shelfQty } from './shelf.js'
 import {
   createHtml, createKey, esc, heroImg, closedSceneHtml, endingHtml, endingKey, openingHtml, openingKey, sundayHtml, sundayKey, teaserHtml, teaserKey,
@@ -97,6 +98,7 @@ const GAME_SKELETON = `
     <div class="shelf" data-slot="shelf"></div>
     <div class="info" data-slot="info"></div>
   </section>
+  <div class="tutorial-slot" data-slot="tutorial"></div>
   <div class="toasts" data-slot="toasts"></div>
   <div class="overlay-slot" data-slot="overlay"></div>
 </div>`
@@ -378,9 +380,36 @@ function overlayHtml(s, view) {
     return `<div class="overlay"><div class="modal small confirm-title"><h2>타이틀로 갈까요?</h2><p>지금 장사 상황이 그대로 저장돼요.<br><b>이어서 하기</b>를 누르면<br>DAY ${s.day}의 이 순간부터 이어져요.</p><button class="btn big" data-action="menuCancel">계속 장사하기</button><button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
   }
   if (view.paused) {
-    return `<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button>${musicControlsHtml(view.audio)}<button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
+    return `<div class="overlay"><div class="modal small"><h2>일시정지</h2><button class="btn big" data-action="pause">계속하기</button><button class="btn big" data-action="help">게임방법</button>${musicControlsHtml(view.audio)}<button class="btn ghost" data-action="menu">타이틀로</button></div></div>`
   }
   return ''
+}
+
+// ---------- first-day tutorial (tutorial.js) ----------
+
+const TUTORIAL_FOCUS = 'tut-focus'
+
+/** The panda's tutorial bubble: the step's line, its key, and its button or 건너뛰기. */
+function tutorialHtml(s) {
+  const step = tutorialStep(s)
+  if (!step) return ''
+  const key = step.key ? ` <kbd>${step.key}</kbd>` : ''
+  const next = step.next ? `<button class="btn tut-next" data-action="tutorialNext">${step.next}</button>` : ''
+  const isLast = step.id === 'done'
+  return `
+    <div class="tut-bubble" data-at="${step.at ?? 'hall'}" role="status" aria-live="polite">
+      <span class="owner-face">${PANDA_FACE}</span>
+      <p class="tut-text">${esc(step.text)}${key}</p>
+      <div class="tut-actions">${isLast ? '' : '<button class="btn ghost tut-skip" data-action="tutorialSkip">튜토리얼 건너뛰기</button>'}${next}</div>
+    </div>`
+}
+
+/** Outlines what the current step asks for (sections re-render, so this runs every frame). */
+function markTutorialFocus(root, s) {
+  const selector = tutorialStep(s)?.focus
+  const want = new Set(selector ? root.querySelectorAll(selector) : [])
+  root.querySelectorAll(`.${TUTORIAL_FOCUS}`).forEach((el) => !want.has(el) && el.classList.remove(TUTORIAL_FOCUS))
+  want.forEach((el) => el.classList.add(TUTORIAL_FOCUS))
 }
 
 // ---------- per-frame bars ----------
@@ -429,8 +458,8 @@ export function render(root, s, view) {
     root.innerHTML = screen === 'game' ? spriteText(GAME_SKELETON) : ''
   }
   if (screen === 'menu') {
-    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}`, () =>
-      menuHtml(view) + (view.settings ? settingsHtml(view.audio) : '') + (view.help ? helpHtml() : '') + (view.credits ? creditsHtml() : ''))
+    return patch(root, `menu|${view.hasSave}|${view.help}|${view.settings}|${view.credits}|${view.titleSel}|${audioKey(view)}|${view.tutorialDone}`, () =>
+      menuHtml(view) + (view.settings ? settingsHtml(view.audio, view.tutorialDone) : '') + (view.help ? helpHtml() : '') + (view.credits ? creditsHtml() : ''))
   }
   if (screen === 'create') return patch(root, createKey(s), () => createHtml(s))
   if (screen === 'opening') return patch(root, openingKey(s), () => openingHtml(s))
@@ -463,5 +492,7 @@ export function render(root, s, view) {
   patch(slot(root, 'toasts'), s.toasts.map((t) => t.id).join(','), () =>
     s.toasts.map((t) => `<div class="toast ${t.kind}">${t.text}</div>`).join(''))
   patch(slot(root, 'overlay'), `${s.phase}|${view.paused}|${view.confirmTitle}|${view.help}|${audioKey(view)}`, () => overlayHtml(s, view))
+  patch(slot(root, 'tutorial'), tutorialStep(s)?.id ?? '', () => tutorialHtml(s))
+  markTutorialFocus(root, s)
   return updateBars(root, s)
 }
