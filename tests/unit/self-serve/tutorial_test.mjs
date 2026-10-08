@@ -2,7 +2,7 @@
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
 import {
-  confirmCharge, createNewGame, dig, pickPot, serveTable, startCooking, startDay,
+  confirmCharge, createNewGame, dig, pickPot, restock, serveTable, startCooking, startDay,
 } from '../../../src/js/self-serve/logic.js'
 import {
   TUTORIAL_STEPS, isTutorialDone, nextTutorialStep, setTutorialDone, skipTutorial, startTutorial, tutorialAfterAction,
@@ -79,6 +79,15 @@ test('test_tutorial_paying_early_skips_dig_and_ticket', () => {
   const s = nextTutorialStep(startedDay1())
   const paid = tutorialAfterAction(s, confirmCharge(s), 'chargeConfirm')
   assert.equal(stepId(paid), 'cook')
+})
+
+test('test_tutorial_dig_refused_while_hands_are_busy_does_not_count', () => {
+  // code review 2026-10-09: pressing dig mid-restock only adds "손이 바빠요" — the step must wait for a real dig
+  const atDig = nextTutorialStep(startedDay1())
+  const busy = restock(atDig, 'bokchoy')
+  assert.ok(busy.busy > 0)
+  const after = tutorialAfterAction(busy, dig(busy), 'dig')
+  assert.equal(stepId(after), 'dig')
 })
 
 test('test_tutorial_action_steps_ignore_the_next_button', () => {
