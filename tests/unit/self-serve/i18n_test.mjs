@@ -55,6 +55,13 @@ test('test_i18n_escaped_quotes_in_story_lines_still_match', () => {
   assert.equal(tr('<p>&quot;버티게 해주는 한 그릇&quot;</p>'), '<p>&quot;the bowl that keeps you going&quot;</p>')
 })
 
+test('test_i18n_dollar_signs_in_a_captured_name_stay_as_typed', () => {
+  // code review 2026-10-09: a string replacement read "$&" / "$'" in a player's name as replacement patterns
+  const tr = createTranslator({ '{t} 사장의 마라부자': "Boss {t}'s Marabuza" })
+  assert.equal(tr('<p>A$&B 사장의 마라부자</p>'), "<p>Boss A$&B's Marabuza</p>")
+  assert.equal(tr("<p>Z$'Q 사장의 마라부자</p>"), "<p>Boss Z$'Q's Marabuza</p>")
+})
+
 test('test_i18n_keep_korean_is_identity', () => {
   assert.equal(keepKorean('<p>안녕</p>'), '<p>안녕</p>')
 })

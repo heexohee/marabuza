@@ -76,11 +76,14 @@ export function tutorialTick(s, dt) {
   return advanceTutorial(aged)
 }
 
-/** After a game action: a step waiting for that action moves on if it did something. */
+/**
+ * After a game action: a step waiting for that action moves on if it did something. An action pressed while the
+ * hands are busy is refused with a toast (logic.js whenFree), so it does not count (code review 2026-10-09).
+ */
 export function tutorialAfterAction(prev, next, action) {
   const step = tutorialStep(next)
   if (!step) return next
-  const didIt = step.on?.includes(action) && next !== prev
+  const didIt = step.on?.includes(action) && next !== prev && !(prev.busy > 0)
   return advanceTutorial(didIt ? { ...next, tutorial: { step: next.tutorial.step + 1 } } : next)
 }
 

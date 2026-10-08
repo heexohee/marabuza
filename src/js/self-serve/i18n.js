@@ -70,9 +70,12 @@ export function createTranslator(dict) {
     return value
   }
 
-  // a pattern's captured words go through piece() (hoisted below), so "청경채" arrives in English too
-  const fill = (rule) => (...groups) => rule.keys.reduce((out, key, i) =>
-    out.replace(key, key.startsWith('{m') ? `₩${groups[i + 1]}` : piece(groups[i + 1])), rule.en)
+  // a pattern's captured words go through piece() (hoisted below), so "청경채" arrives in English too; the value is
+  // handed over as a function so "$&" / "$'" in a player's name stay literal (code review 2026-10-09)
+  const fill = (rule) => (...groups) => rule.keys.reduce((out, key, i) => {
+    const value = key.startsWith('{m') ? `₩${groups[i + 1]}` : piece(groups[i + 1])
+    return out.replace(key, () => value)
+  }, rule.en)
 
   function applyRules(text) {
     let out = text
